@@ -205,7 +205,7 @@ export default function SubnetsPage() {
                         <tbody className="divide-y divide-slate-200">
                             {filteredAndSortedSubnets.map((subnet, idx) => (
                                 <tr
-                                    key={`${subnet.projectId}-${subnet.vpcName}-${subnet.subnetName}`}
+                                    key={`${subnet.projectId}-${subnet.vpcName}-${subnet.subnetName}-${idx}`}
                                     className="hover:bg-slate-50 transition-colors"
                                 >
                                     <td className="px-6 py-4 text-sm font-medium text-slate-900">
