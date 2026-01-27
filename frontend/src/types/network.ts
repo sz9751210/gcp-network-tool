@@ -1,0 +1,144 @@
+/**
+ * TypeScript interfaces for GCP Network Planner.
+ * Matches backend Pydantic models for type safety.
+ */
+
+export interface Subnet {
+    name: string;
+    region: string;
+    ip_cidr_range: string;
+    gateway_ip: string | null;
+    private_ip_google_access: boolean;
+    secondary_ip_ranges: SecondaryIPRange[];
+    purpose: string | null;
+    self_link: string;
+    network: string | null;
+}
+
+export interface SecondaryIPRange {
+    range_name: string;
+    ip_cidr_range: string;
+}
+
+export interface VPCPeering {
+    name: string;
+    network: string;
+    state: string;
+    state_details: string;
+}
+
+export interface VPCNetwork {
+    name: string;
+    self_link: string;
+    project_id: string;
+    auto_create_subnetworks: boolean;
+    routing_mode: string;
+    mtu: number;
+    subnets: Subnet[];
+    is_shared_vpc_host: boolean;
+    shared_vpc_service_projects: string[];
+    peerings: VPCPeering[];
+}
+
+export interface Project {
+    project_id: string;
+    project_name: string;
+    project_number: string;
+    vpc_networks: VPCNetwork[];
+    is_shared_vpc_host: boolean;
+    shared_vpc_host_project: string | null;
+    scan_status: 'pending' | 'success' | 'error' | 'permission_denied';
+    error_message: string | null;
+}
+
+export interface NetworkTopology {
+    scan_id: string;
+    scan_timestamp: string;
+    source_type: 'folder' | 'organization' | 'project' | 'all_accessible';
+    source_id: string;
+    projects: Project[];
+    total_projects: number;
+    total_vpcs: number;
+    total_subnets: number;
+    failed_projects: number;
+}
+
+export interface ScanRequest {
+    source_type: 'folder' | 'organization' | 'project' | 'all_accessible';
+    source_id: string;
+    include_shared_vpc: boolean;
+}
+
+export interface ScanStatusResponse {
+    scan_id: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    progress: number;
+    projects_scanned: number;
+    total_projects: number;
+    message: string | null;
+}
+
+export interface CIDRCheckRequest {
+    cidr: string;
+    vpc_self_link?: string;
+    project_id?: string;
+}
+
+export interface CIDRConflict {
+    conflicting_cidr: string;
+    subnet_name: string;
+    vpc_name: string;
+    project_id: string;
+    region: string;
+    overlap_type: 'exact' | 'contains' | 'contained_by' | 'partial';
+}
+
+export interface CIDRCheckResponse {
+    input_cidr: string;
+    has_conflict: boolean;
+    conflicts: CIDRConflict[];
+    suggested_cidrs: string[];
+}
+
+export interface CIDRInfo {
+    cidr: string;
+    network_address: string;
+    broadcast_address: string;
+    netmask: string;
+    prefix_length: number;
+    total_hosts: number;
+    usable_hosts: number;
+    first_usable: string | null;
+    last_usable: string | null;
+    is_private: boolean;
+}
+
+export interface VPCUtilization {
+    vpc_cidr: string;
+    total_ips: number;
+    used_ips: number;
+    available_ips: number;
+    utilization_percent: number;
+    subnet_count: number;
+}
+
+// Tree table row types for hierarchical display
+export type RowType = 'project' | 'vpc' | 'subnet';
+
+export interface TreeRow {
+    id: string;
+    type: RowType;
+    depth: number;
+    name: string;
+    cidr?: string;
+    region?: string;
+    gatewayIp?: string;
+    privateGoogleAccess?: boolean;
+    isSharedVpcHost?: boolean;
+    scanStatus?: string;
+    errorMessage?: string;
+    parentId?: string;
+    children?: TreeRow[];
+    isExpanded?: boolean;
+    original: Project | VPCNetwork | Subnet;
+}

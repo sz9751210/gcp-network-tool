@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: gcp-network-planner-backend
+    container_name: gcp-network-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      # Mount GCP credentials
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/credentials.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    image: gcp-network-planner-frontend
+    container_name: gcp-network-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      # - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    command: sh -c "npm install && npm run dev"
