@@ -526,11 +526,21 @@ class GCPScanner:
                     rules = []
                     if policy.rules:
                         for rule in policy.rules:
+                            match_expr = None
+                            if rule.match:
+                                if rule.match.expr and rule.match.expr.expression:
+                                    match_expr = rule.match.expr.expression
+                                elif rule.match.config and rule.match.config.src_ip_ranges:
+                                    # Synthesize CEL for Basic Mode rules to maintain frontend compatibility
+                                    # This allows the frontend parser to extract IPs and the simulator to work
+                                    ranges = [f"inIpRange(origin.ip, '{ip}')" for ip in rule.match.config.src_ip_ranges]
+                                    match_expr = " || ".join(ranges)
+
                             rules.append(CloudArmorRule(
                                 priority=rule.priority if rule.priority else 2147483647,
                                 action=rule.action if rule.action else "allow",
                                 description=rule.description if rule.description else None,
-                                match_expression=rule.match.expr.expression if (rule.match and rule.match.expr) else None,
+                                match_expression=match_expr,
                                 preview=rule.preview if hasattr(rule, 'preview') else False
                             ))
                     
