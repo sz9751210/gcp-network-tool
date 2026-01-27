@@ -180,20 +180,20 @@ export default function FirewallPage() {
 
                                     return (
                                         <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-slate-700">{rule.priority}</td>
+                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-700">{rule.priority}</td>
                                             <td className="px-4 py-3 text-sm font-medium text-slate-800">{rule.name}</td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.direction === 'INGRESS'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-purple-100 text-purple-800'
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : 'bg-purple-100 text-purple-800'
                                                     }`}>
                                                     {rule.direction}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.action === 'ALLOW'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     {rule.action}
                                                 </span>

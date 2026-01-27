@@ -157,15 +157,15 @@ export default function CloudArmorPage() {
                                                             className="bg-white rounded-lg p-4 border border-slate-200"
                                                         >
                                                             <div className="flex items-start gap-4">
-                                                                <div className="flex-shrink-0 w-16 text-center">
+                                                                <div className="flex-shrink-0 w-28 text-center border-r border-slate-100 pr-4">
                                                                     <div className="text-xs text-slate-500 uppercase mb-1">Priority</div>
-                                                                    <div className="font-mono font-bold text-slate-800">{rule.priority}</div>
+                                                                    <div className="font-mono font-bold text-slate-800 break-all">{rule.priority}</div>
                                                                 </div>
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center gap-2 mb-2">
                                                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.action === 'allow'
-                                                                                ? 'bg-green-100 text-green-800'
-                                                                                : 'bg-red-100 text-red-800'
+                                                                            ? 'bg-green-100 text-green-800'
+                                                                            : 'bg-red-100 text-red-800'
                                                                             }`}>
                                                                             {rule.action.toUpperCase()}
                                                                         </span>
