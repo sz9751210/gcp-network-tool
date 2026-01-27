@@ -40,41 +40,50 @@ export default function CloudArmorPage() {
         }
     };
 
+    // Extract IPs/CIDRs from CEL expression
+    const extractCidrs = (expr: string) => {
+        const cidrs: string[] = [];
+        if (!expr) return cidrs;
+
+        const ipRangeRegex = /inIpRange\s*\(\s*origin\.ip\s*,\s*['"]([^'"]+)['"]\s*\)/g;
+        const ipExactRegex = /origin\.ip\s*==\s*['"]([^'"]+)['"]/g;
+
+        let match;
+        while ((match = ipRangeRegex.exec(expr)) !== null) {
+            cidrs.push(match[1]);
+        }
+        while ((match = ipExactRegex.exec(expr)) !== null) {
+            cidrs.push(match[1]);
+        }
+        return cidrs;
+    };
+
     // Helper: Check if rule matches input (IP or Text)
     const checkRuleMatch = (rule: any, input: string) => {
         if (!input) return false;
 
-        // 1. Text Match (simple)
+        // Text Match
         if (rule.match_expression?.toLowerCase().includes(input.toLowerCase()) ||
             rule.description?.toLowerCase().includes(input.toLowerCase())) {
             return true;
         }
 
-        // 2. IP Match (Simulator logic)
-        // Regex to find 'inIpRange(origin.ip, '1.2.3.4/24')'
-        const ipRangeRegex = /inIpRange\s*\(\s*origin\.ip\s*,\s*['"]([^'"]+)['"]\s*\)/g;
-        // Regex to find 'origin.ip == "1.2.3.4"'
-        const ipExactRegex = /origin\.ip\s*==\s*['"]([^'"]+)['"]/g;
-
-        let match;
-        // Check inIpRange
-        while ((match = ipRangeRegex.exec(rule.match_expression)) !== null) {
-            const range = match[1];
-            if (isIpInCidr(input, range)) return true;
-        }
-
-        // Check exact IP
-        while ((match = ipExactRegex.exec(rule.match_expression)) !== null) {
-            if (match[1] === input) return true;
+        // IP Match
+        const cidrs = extractCidrs(rule.match_expression);
+        for (const cidr of cidrs) {
+            if (cidr.includes('/')) {
+                if (isIpInCidr(input, cidr)) return true;
+            } else {
+                if (cidr === input) return true;
+            }
         }
 
         return false;
     };
 
-    // Filter policies to only show those that contain matching rules if in "Simulation Mode"
+    // Filter policies
     const displayPolicies = useMemo(() => {
         if (!testInput) {
-            // Normal filtering
             if (!filterText) return policies;
             const lower = filterText.toLowerCase();
             return policies.filter(p =>
@@ -84,7 +93,7 @@ export default function CloudArmorPage() {
             );
         }
 
-        // Simulation Mode: Find rules that match
+        // Simulation Mode
         return policies.map(policy => {
             const matchingRules = policy.rules.filter(rule => checkRuleMatch(rule, testInput));
             return {
@@ -92,12 +101,7 @@ export default function CloudArmorPage() {
                 hasMatch: matchingRules.length > 0,
                 matchingRules
             };
-        }).filter(p => p.hasMatch).sort((a, b) => {
-            // Sort by priority of first matching rule to bring most relevant to top? 
-            // Or just keep original order but filter out non-matching policies?
-            // Let's keep policies that have at least one match.
-            return 0;
-        });
+        }).filter(p => p.hasMatch);
 
     }, [policies, filterText, testInput]);
 
@@ -105,11 +109,10 @@ export default function CloudArmorPage() {
     useEffect(() => {
         if (testInput && displayPolicies.length > 0) {
             const newExpanded = new Set<string>();
-            displayPolicies.forEach(p => p.hasMatch && newExpanded.add(p.name));
+            displayPolicies.forEach((p: any) => p.hasMatch && newExpanded.add(p.name));
             setExpandedPolicies(newExpanded);
         }
     }, [testInput, displayPolicies]);
-
 
     const togglePolicy = (policyName: string) => {
         const newExpanded = new Set(expandedPolicies);
@@ -119,21 +122,6 @@ export default function CloudArmorPage() {
             newExpanded.add(policyName);
         }
         setExpandedPolicies(newExpanded);
-    };
-
-    // Helper to format CEL expression
-    const FormatCEL = ({ expression, matched }: { expression: string, matched: boolean }) => {
-        if (!expression) return <span className="text-slate-400">None</span>;
-
-        // Highlight logic could go here
-        return (
-            <code className={`block text-xs font-mono p-3 rounded border overflow-x-auto whitespace-pre-wrap ${matched
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm'
-                    : 'bg-slate-100 border-slate-200 text-slate-700'
-                }`}>
-                {expression}
-            </code>
-        );
     };
 
     if (loading) {
@@ -180,7 +168,7 @@ export default function CloudArmorPage() {
                                 Rule Simulator
                             </h3>
                             <p className="text-sm text-indigo-700 mb-4">
-                                Enter a <strong>Test IP</strong> (e.g. 1.2.3.4) or keyword to see which rules would apply.
+                                Enter a <strong>Test IP</strong> to see which rules would apply.
                             </p>
                             <div className="flex gap-4">
                                 <input
@@ -247,13 +235,11 @@ export default function CloudArmorPage() {
                             const denyRules = policy.rules.filter((r: any) => r.action.startsWith('deny')).length;
 
                             return (
-                                <div key={policy.name} className={`card overflow-hidden transition-all duration-300 ${policy.hasMatch ? 'ring-2 ring-indigo-500 shadow-md transform scale-[1.00]' : ''
-                                    }`}>
+                                <div key={policy.name} className={`card overflow-hidden transition-all duration-300 ${policy.hasMatch ? 'ring-2 ring-indigo-500 shadow-md' : ''}`}>
                                     {/* Policy Header */}
                                     <div
                                         onClick={() => togglePolicy(policy.name)}
-                                        className={`p-6 cursor-pointer transition-colors ${policy.hasMatch ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'hover:bg-slate-50'
-                                            }`}
+                                        className={`p-6 cursor-pointer transition-colors ${policy.hasMatch ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
@@ -304,73 +290,81 @@ export default function CloudArmorPage() {
                                     {isExpanded && policy.rules.length > 0 && (
                                         <div className="border-t border-slate-200 bg-slate-50">
                                             <div className="p-6">
-                                                <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">Rules</h4>
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Rules</h4>
+                                                    <div className="text-xs text-slate-500">
+                                                        Showing {policy.rules.length} rules
+                                                    </div>
+                                                </div>
                                                 <div className="space-y-3">
                                                     {policy.rules
                                                         .sort((a: any, b: any) => a.priority - b.priority)
                                                         .map((rule: any, idx: number) => {
                                                             const isRuleMatched = testInput && checkRuleMatch(rule, testInput);
+                                                            const cidrs = extractCidrs(rule.match_expression);
 
                                                             return (
                                                                 <div
                                                                     key={idx}
-                                                                    className={`rounded-lg p-5 border transition-all duration-300 ${isRuleMatched
-                                                                            ? 'bg-white border-indigo-400 ring-2 ring-indigo-200 shadow-lg'
-                                                                            : 'bg-white border-slate-200 opacity-90 hover:opacity-100'
+                                                                    className={`rounded-lg border transition-all duration-300 ${isRuleMatched
+                                                                        ? 'bg-white border-indigo-400 ring-2 ring-indigo-200 shadow-lg'
+                                                                        : 'bg-white border-slate-200'
                                                                         }`}
                                                                 >
-                                                                    <div className="flex items-start gap-6">
+                                                                    <div className="flex">
                                                                         {/* Priority Column */}
-                                                                        <div className="flex-shrink-0 w-28 text-center border-r border-slate-100 pr-6">
-                                                                            <div className="text-xs text-slate-500 uppercase mb-1">Priority</div>
-                                                                            <div className={`font-mono font-bold break-all ${isRuleMatched ? 'text-indigo-700 text-lg' : 'text-slate-800'
-                                                                                }`}>
+                                                                        <div className={`flex-shrink-0 w-24 p-4 text-center border-r ${isRuleMatched ? 'border-indigo-100 bg-indigo-50' : 'border-slate-100 bg-slate-50'} rounded-l-lg`}>
+                                                                            <div className="text-[10px] text-slate-500 uppercase font-semibold mb-1">Priority</div>
+                                                                            <div className={`font-mono font-bold break-all ${isRuleMatched ? 'text-indigo-700 text-lg' : 'text-slate-800'}`}>
                                                                                 {rule.priority}
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* Action Column */}
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <div className="flex items-center gap-3 mb-3">
-                                                                                <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wide border ${rule.action === 'allow'
-                                                                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                                        {/* Main Content */}
+                                                                        <div className="flex-1 p-4 overflow-hidden">
+                                                                            {/* Top Row: Action & Description */}
+                                                                            <div className="flex flex-wrap items-center gap-3 mb-3">
+                                                                                <span className={`inline-flex px-2.5 py-0.5 text-xs font-bold rounded border uppercase tracking-wide ${rule.action === 'allow'
+                                                                                    ? 'bg-green-50 text-green-700 border-green-200'
+                                                                                    : 'bg-red-50 text-red-700 border-red-200'
                                                                                     }`}>
                                                                                     {rule.action}
                                                                                 </span>
-                                                                                {rule.preview && (
-                                                                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                                                                                        Preview
+
+                                                                                {rule.description && (
+                                                                                    <span className="text-sm text-slate-600">
+                                                                                        {rule.description}
                                                                                     </span>
                                                                                 )}
+
                                                                                 {isRuleMatched && (
-                                                                                    <span className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-indigo-600 text-white animate-bounce-slow">
-                                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                                        MATCH
+                                                                                    <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-600 text-white">
+                                                                                        MATCHED
                                                                                     </span>
                                                                                 )}
                                                                             </div>
 
-                                                                            {rule.description && (
-                                                                                <p className="text-sm text-slate-700 mb-3 italic">
-                                                                                    {rule.description}
-                                                                                </p>
-                                                                            )}
-
-                                                                            <div className="mt-4">
-                                                                                <div className="flex items-center justify-between mb-1">
-                                                                                    <div className="text-xs text-slate-500 uppercase font-semibold">Match Expression</div>
+                                                                            {/* IP Pills - Clean GCP Style */}
+                                                                            {cidrs.length > 0 && (
+                                                                                <div className="flex flex-wrap gap-1.5">
+                                                                                    {cidrs.map((cidr, i) => {
+                                                                                        const isCidrMatched = testInput && (
+                                                                                            cidr.includes('/') ? isIpInCidr(testInput, cidr) : testInput === cidr
+                                                                                        );
+                                                                                        return (
+                                                                                            <span
+                                                                                                key={i}
+                                                                                                className={`inline-block px-2 py-0.5 rounded text-xs font-mono border ${isCidrMatched
+                                                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {cidr}
+                                                                                            </span>
+                                                                                        );
+                                                                                    })}
                                                                                 </div>
-                                                                                <FormatCEL expression={rule.match_expression} matched={isRuleMatched} />
-
-                                                                                {/* Explain match if in simulator */}
-                                                                                {isRuleMatched && (
-                                                                                    <div className="mt-2 text-xs text-indigo-700 font-medium flex items-center gap-1">
-                                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-                                                                                        This rule matches your test input "{testInput}"
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
