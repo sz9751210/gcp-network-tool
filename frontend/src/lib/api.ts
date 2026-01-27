@@ -126,6 +126,20 @@ export const api = {
     healthCheck: async (): Promise<{ status: string }> => {
         return fetchAPI<{ status: string }>('/health');
     },
+
+    // Get latest scan from session storage or return null
+    getLatestScan: async (): Promise<NetworkTopology | null> => {
+        const scanId = sessionStorage.getItem('lastScanId');
+        if (!scanId) return null;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/scan/${scanId}/result`);
+            if (!response.ok) return null;
+            return response.json();
+        } catch {
+            return null;
+        }
+    },
 };
 
 /**
