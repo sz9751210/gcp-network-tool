@@ -288,6 +288,10 @@ class GCPScanner:
     def _collect_public_ips(self, projects: list) -> list:
         """
         Collect all public/external IP addresses from projects.
+        Includes:
+        - VM Instances (Access Configs)
+        - Forwarding Rules (Global & Regional Load Balancers)
+        - Static Addresses (Global & Regional, Cloud NAT, Reserved)
         
         Args:
             projects: List of scanned Project objects
@@ -296,19 +300,122 @@ class GCPScanner:
             List of PublicIP objects
         """
         from models import PublicIP
-        public_ips = []
+        public_ips_map = {}  # Map ip_address -> PublicIP object to deduplicate
         
         for project in projects:
             if project.scan_status != "success":
                 continue
                 
             try:
-                compute_client = compute_v1.InstancesClient(credentials=self.projects_client._transport._credentials)
+                # 1. Scan Addresses (Global & Regional) - Most authoritative source for Static IPs
+                addresses_client = compute_v1.AddressesClient(credentials=self.projects_client._transport._credentials)
+                global_addresses_client = compute_v1.GlobalAddressesClient(credentials=self.projects_client._transport._credentials)
+
+                # Regional Addresses
+                agg_list_request = compute_v1.AggregatedListAddressesRequest(project=project.project_id)
+                for zone_name, addresses_scoped_list in addresses_client.aggregated_list(request=agg_list_request):
+                    if not addresses_scoped_list.addresses:
+                        continue
+                    
+                    region = zone_name.split("/")[-1]
+                    if region.startswith("regions/"):
+                         region = region.split("/")[-1]
+
+                    for addr in addresses_scoped_list.addresses:
+                        if addr.address_type == "EXTERNAL":
+                            # Determine usage
+                            resource_type = "Static Address"
+                            resource_name = addr.name
+                            if addr.users:
+                                # Try to identify what's using it
+                                user_link = addr.users[0]
+                                if "forwardingRules" in user_link:
+                                    resource_type = "LoadBalancer"
+                                    resource_name = user_link.split("/")[-1]
+                                elif "instances" in user_link:
+                                    resource_type = "VM"
+                                    resource_name = user_link.split("/")[-1]
+                                elif "routers" in user_link: # Cloud NAT often linked via router
+                                    resource_type = "CloudNAT"
+                                    resource_name = user_link.split("/")[-1]
+                            elif addr.status == "RESERVED":
+                                resource_type = "Unused Address"
+
+                            public_ips_map[addr.address] = PublicIP(
+                                ip_address=addr.address,
+                                resource_type=resource_type,
+                                resource_name=resource_name,
+                                project_id=project.project_id,
+                                region=region,
+                                status=addr.status, # IN_USE or RESERVED
+                                description=addr.description
+                            )
+
+                # Global Addresses
+                for addr in global_addresses_client.list(project=project.project_id):
+                     if addr.address_type == "EXTERNAL":
+                        resource_type = "Global Address"
+                        resource_name = addr.name
+                        if addr.users:
+                            user_link = addr.users[0]
+                            if "forwardingRules" in user_link:
+                                resource_type = "Global LoadBalancer"
+                                resource_name = user_link.split("/")[-1]
+                        elif addr.status == "RESERVED":
+                            resource_type = "Unused Global Address"
+                        
+                        public_ips_map[addr.address] = PublicIP(
+                            ip_address=addr.address,
+                            resource_type=resource_type,
+                            resource_name=resource_name,
+                            project_id=project.project_id,
+                            region="global",
+                            status=addr.status,
+                            description=addr.description
+                        )
+
+                # 2. Scan Forwarding Rules (Load Balancers that might use ephemeral IPs)
+                forwarding_client = compute_v1.ForwardingRulesClient(credentials=self.projects_client._transport._credentials)
+                global_forwarding_client = compute_v1.GlobalForwardingRulesClient(credentials=self.projects_client._transport._credentials)
+
+                # Regional Forwarding Rules
+                agg_fwd_request = compute_v1.AggregatedListForwardingRulesRequest(project=project.project_id)
+                for zone_name, rules_scoped_list in forwarding_client.aggregated_list(request=agg_fwd_request):
+                     if not rules_scoped_list.forwarding_rules:
+                        continue
+                     region = zone_name.split("/")[-1]
+                     if region.startswith("regions/"):
+                         region = region.split("/")[-1]
+
+                     for rule in rules_scoped_list.forwarding_rules:
+                        if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] and rule.I_p_address:
+                            # Only add if not already captured (Addresses are more authoritative)
+                            if rule.I_p_address not in public_ips_map:
+                                public_ips_map[rule.I_p_address] = PublicIP(
+                                    ip_address=rule.I_p_address,
+                                    resource_type="LoadBalancer",
+                                    resource_name=rule.name,
+                                    project_id=project.project_id,
+                                    region=region,
+                                    status="IN_USE"
+                                )
+
+                # Global Forwarding Rules
+                for rule in global_forwarding_client.list(project=project.project_id):
+                    if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] and rule.I_p_address:
+                         if rule.I_p_address not in public_ips_map:
+                                public_ips_map[rule.I_p_address] = PublicIP(
+                                    ip_address=rule.I_p_address,
+                                    resource_type="Global LoadBalancer",
+                                    resource_name=rule.name,
+                                    project_id=project.project_id,
+                                    region="global",
+                                    status="IN_USE"
+                                )
                 
-                # Get all VM instances across all zones
-                aggregated_list = compute_v1.AggregatedListInstancesRequest(
-                    project=project.project_id
-                )
+                # 3. Scan VM Instances (Catch ephemeral IPs not in Addresses)
+                compute_client = compute_v1.InstancesClient(credentials=self.projects_client._transport._credentials)
+                aggregated_list = compute_v1.AggregatedListInstancesRequest(project=project.project_id)
                 
                 for zone_name, instances_scoped_list in compute_client.aggregated_list(request=aggregated_list):
                     if not instances_scoped_list.instances:
@@ -318,25 +425,33 @@ class GCPScanner:
                     region = "-".join(zone.split("-")[:-1]) if "-" in zone else zone
                     
                     for instance in instances_scoped_list.instances:
-                        # Check network interfaces for external IPs
                         for interface in instance.network_interfaces:
                             if interface.access_configs:
                                 for access_config in interface.access_configs:
                                     if access_config.nat_i_p:
-                                        public_ips.append(PublicIP(
-                                            ip_address=access_config.nat_i_p,
-                                            resource_type="VM",
-                                            resource_name=instance.name,
-                                            project_id=project.project_id,
-                                            region=region,
-                                            zone=zone,
-                                            status="IN_USE"
-                                        ))
+                                        # Only add if not in map (Static IPs take precedence)
+                                        if access_config.nat_i_p not in public_ips_map:
+                                            public_ips_map[access_config.nat_i_p] = PublicIP(
+                                                ip_address=access_config.nat_i_p,
+                                                resource_type="VM",
+                                                resource_name=instance.name,
+                                                project_id=project.project_id,
+                                                region=region,
+                                                zone=zone,
+                                                status="IN_USE"
+                                            )
+                                        else:
+                                            # Update existing entry with better VM info if generic
+                                            existing = public_ips_map[access_config.nat_i_p]
+                                            if existing.resource_type == "Static Address" or existing.resource_type == "VM":
+                                                existing.resource_type = "VM"
+                                                existing.resource_name = instance.name
+                                                existing.zone = zone
                 
             except Exception as e:
                 logger.warning(f"Failed to collect public IPs from project {project.project_id}: {e}")
         
-        return public_ips
+        return list(public_ips_map.values())
     
     def _collect_firewall_rules(self, projects: list) -> list:
         """
