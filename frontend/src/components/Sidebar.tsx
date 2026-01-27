@@ -131,37 +131,16 @@ export default function Sidebar() {
                 })}
             </nav>
 
-            {/* Language Switcher */}
-            <div className="p-4 border-t border-slate-700/50">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-400 uppercase tracking-wider">{t('sidebar.language')}</span>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setLocale('en')}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${locale === 'en'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                            }`}
-                    >
-                        EN
-                    </button>
-                    <button
-                        onClick={() => setLocale('zh')}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${locale === 'zh'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                            }`}
-                    >
-                        中文
-                    </button>
-                </div>
-            </div>
-
             {/* Footer */}
             <div className="p-4 border-t border-slate-700/50">
-                <div className="text-xs text-slate-500 text-center">
-                    v1.0.0
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-indigo-300">GCP</span>
+                    </div>
+                    <div>
+                        <div className="text-sm font-medium text-slate-300">Network Scan</div>
+                        <div className="text-xs text-slate-500">v1.0.0</div>
+                    </div>
                 </div>
             </div>
         </aside>

@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import en from '@/locales/en.json';
-import zh from '@/locales/zh.json';
+import zhCN from '@/locales/zh-CN.json';
+import zhTW from '@/locales/zh-TW.json';
 
-type Locale = 'en' | 'zh';
+type Locale = 'en' | 'zh-CN' | 'zh-TW';
 
 type TranslationValue = string | { [key: string]: TranslationValue };
 type Translations = { [key: string]: TranslationValue };
@@ -15,7 +16,11 @@ interface LanguageContextType {
     t: (key: string) => string;
 }
 
-const translations: Record<Locale, Translations> = { en, zh };
+const translations: Record<Locale, Translations> = {
+    en,
+    'zh-CN': zhCN,
+    'zh-TW': zhTW
+};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -25,7 +30,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     // Load saved locale on mount
     useEffect(() => {
         const saved = localStorage.getItem('locale') as Locale | null;
-        if (saved && (saved === 'en' || saved === 'zh')) {
+        if (saved && (saved === 'en' || saved === 'zh-CN' || saved === 'zh-TW')) {
             setLocaleState(saved);
         }
     }, []);
@@ -47,12 +52,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 value = value[k];
             } else {
                 // Fallback to English
+                if (locale === 'en') return key;
+
                 value = translations['en'];
                 for (const fallbackKey of keys) {
                     if (typeof value === 'object' && value !== null && fallbackKey in value) {
                         value = value[fallbackKey];
                     } else {
-                        return key; // Return key if not found
+                        return key; // Return key if not found in fallback either
                     }
                 }
                 break;
