@@ -4,10 +4,12 @@ FastAPI application for scanning and analyzing GCP network topology.
 """
 import logging
 from contextlib import asynccontextmanager
-from typing import Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Optional, List
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+from credentials_manager import credentials_manager, CredentialInfo
 
 from models import (
     ScanRequest, CIDRCheckRequest, CIDRCheckResponse,
@@ -262,6 +264,68 @@ async def get_vpc_utilization(request: UtilizationRequest):
                     return calculate_ip_utilization(request.vpc_cidr, vpc.subnets)
     
     raise HTTPException(status_code=404, detail="VPC not found")
+
+
+# ============ Credentials Management Endpoints ============
+
+@app.get("/api/credentials", response_model=List[CredentialInfo])
+async def list_credentials():
+    """List all stored credentials."""
+    return credentials_manager.list_credentials()
+
+
+@app.get("/api/credentials/active", response_model=Optional[CredentialInfo])
+async def get_active_credential():
+    """Get the currently active credential."""
+    return credentials_manager.get_active_credential()
+
+
+@app.post("/api/credentials/upload", response_model=CredentialInfo)
+async def upload_credential(
+    file: UploadFile = File(...),
+    name: str = Form(...)
+):
+    """Upload a new credential file."""
+    try:
+        content = await file.read()
+        return credentials_manager.add_credential(content, name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to upload credential: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload credential")
+
+
+@app.post("/api/credentials/{cred_id}/activate", response_model=CredentialInfo)
+async def activate_credential(cred_id: str):
+    """Set a credential as the active one."""
+    try:
+        return credentials_manager.activate_credential(cred_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.delete("/api/credentials/{cred_id}")
+async def delete_credential(cred_id: str):
+    """Delete a credential."""
+    try:
+        credentials_manager.delete_credential(cred_id)
+        return {"success": True, "message": f"Credential {cred_id} deleted"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class CredentialUpdateRequest(BaseModel):
+    name: str
+
+
+@app.patch("/api/credentials/{cred_id}", response_model=CredentialInfo)
+async def update_credential(cred_id: str, request: CredentialUpdateRequest):
+    """Update a credential's display name."""
+    try:
+        return credentials_manager.update_credential_name(cred_id, request.name)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/health")

@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const { locale, setLocale, t } = useLanguage();
 
     const navItems = [
         {
-            name: 'Dashboard',
+            key: 'sidebar.dashboard',
             path: '/',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,7 +22,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'Subnet Planner',
+            key: 'sidebar.subnetPlanner',
             path: '/subnets',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -31,7 +33,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'Public IPs',
+            key: 'sidebar.publicIps',
             path: '/public-ips',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -42,7 +44,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'Firewall Rules',
+            key: 'sidebar.firewallRules',
             path: '/firewall',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,7 +53,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'Cloud Armor',
+            key: 'sidebar.cloudArmor',
             path: '/cloud-armor',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,7 +63,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'CIDR Planner',
+            key: 'sidebar.cidrPlanner',
             path: '/cidr-planner',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,7 +79,7 @@ export default function Sidebar() {
             ),
         },
         {
-            name: 'Settings',
+            key: 'sidebar.settings',
             path: '/settings',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -123,11 +125,38 @@ export default function Sidebar() {
                             <span className={isActive ? 'text-indigo-200' : 'text-slate-400'}>
                                 {item.icon}
                             </span>
-                            <span className="font-medium">{item.name}</span>
+                            <span className="font-medium">{t(item.key)}</span>
                         </Link>
                     );
                 })}
             </nav>
+
+            {/* Language Switcher */}
+            <div className="p-4 border-t border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider">{t('sidebar.language')}</span>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setLocale('en')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${locale === 'en'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                            }`}
+                    >
+                        EN
+                    </button>
+                    <button
+                        onClick={() => setLocale('zh')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${locale === 'zh'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                            }`}
+                    >
+                        中文
+                    </button>
+                </div>
+            </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-slate-700/50">

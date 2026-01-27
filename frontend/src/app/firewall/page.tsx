@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { FirewallRule } from '@/types/network';
 
 export default function FirewallPage() {
     const { topology, metadata, refreshData } = useScan();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<keyof FirewallRule>('priority');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -78,7 +80,7 @@ export default function FirewallPage() {
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">Loading firewall rules...</p>
+                    <p className="text-slate-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -88,18 +90,18 @@ export default function FirewallPage() {
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Firewall Rules</h1>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('firewall.title')}</h1>
                 <p className="text-slate-600">
                     {metadata
-                        ? `Viewing firewall rules across ${metadata.totalProjects} projects`
-                        : 'No scan data available.'}
+                        ? `${t('firewall.subtitle')} - ${metadata.totalProjects} ${t('dashboard.projects')}`
+                        : t('firewall.noData')}
                 </p>
             </div>
 
             {!topology || firewallRules.length === 0 ? (
                 <div className="card p-12 text-center">
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">No Firewall Rules Found</h3>
-                    <p className="text-slate-600">Run a scan from Settings to discover firewall rules</p>
+                    <h3 className="text-xl font-bold text-slate-700 mb-2">{t('firewall.noData')}</h3>
+                    <p className="text-slate-600">{t('firewall.noDataDesc')}</p>
                 </div>
             ) : (
                 <div className="card">
@@ -107,8 +109,8 @@ export default function FirewallPage() {
                     <div className="p-6 border-b border-slate-200 space-y-4">
                         <div className="flex flex-wrap gap-4 items-center">
                             <div className="text-sm text-slate-600">
-                                <span className="font-semibold text-indigo-600">{sortedRules.length}</span> of{' '}
-                                <span className="font-semibold">{firewallRules.length}</span> rules
+                                <span className="font-semibold text-indigo-600">{sortedRules.length}</span> / {' '}
+                                <span className="font-semibold">{firewallRules.length}</span> {t('firewall.totalRules').toLowerCase()}
                             </div>
 
                             {/* Filters */}
@@ -118,9 +120,9 @@ export default function FirewallPage() {
                                     onChange={(e) => setDirectionFilter(e.target.value)}
                                     className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
-                                    <option value="all">All Directions</option>
-                                    <option value="INGRESS">Ingress Only</option>
-                                    <option value="EGRESS">Egress Only</option>
+                                    <option value="all">{t('firewall.direction')}</option>
+                                    <option value="INGRESS">{t('firewall.ingress')}</option>
+                                    <option value="EGRESS">{t('firewall.egress')}</option>
                                 </select>
 
                                 <select
@@ -128,9 +130,9 @@ export default function FirewallPage() {
                                     onChange={(e) => setActionFilter(e.target.value)}
                                     className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
-                                    <option value="all">All Actions</option>
-                                    <option value="ALLOW">Allow Only</option>
-                                    <option value="DENY">Deny Only</option>
+                                    <option value="all">{t('firewall.action')}</option>
+                                    <option value="ALLOW">{t('firewall.allow')}</option>
+                                    <option value="DENY">{t('firewall.deny')}</option>
                                 </select>
 
                                 <input
@@ -138,7 +140,7 @@ export default function FirewallPage() {
                                     value={filterText}
                                     onChange={(e) => setFilterText(e.target.value)}
                                     className="input-field"
-                                    placeholder="Search rules, IPs..."
+                                    placeholder={t('firewall.searchPlaceholder')}
                                 />
                             </div>
                         </div>
@@ -150,20 +152,20 @@ export default function FirewallPage() {
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
                                     <th onClick={() => handleSort('priority')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
-                                        Priority {sortBy === 'priority' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                        {t('firewall.priority')} {sortBy === 'priority' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
-                                        Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                        {t('firewall.ruleName')} {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Direction</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Source/Dest</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Protocols</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.direction')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.action')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.sourceRanges')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.protocols')}</th>
                                     <th onClick={() => handleSort('vpc_network')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
-                                        VPC {sortBy === 'vpc_network' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                        {t('firewall.network')} {sortBy === 'vpc_network' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th onClick={() => handleSort('project_id')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
-                                        Project {sortBy === 'project_id' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                        {t('publicIps.project')} {sortBy === 'project_id' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                 </tr>
                             </thead>
@@ -187,7 +189,7 @@ export default function FirewallPage() {
                                                     ? 'bg-blue-100 text-blue-800'
                                                     : 'bg-purple-100 text-purple-800'
                                                     }`}>
-                                                    {rule.direction}
+                                                    {rule.direction === 'INGRESS' ? t('firewall.ingress') : t('firewall.egress')}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
@@ -195,7 +197,7 @@ export default function FirewallPage() {
                                                     ? 'bg-green-100 text-green-800'
                                                     : 'bg-red-100 text-red-800'
                                                     }`}>
-                                                    {rule.action}
+                                                    {rule.action === 'ALLOW' ? t('firewall.allow') : t('firewall.deny')}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm">

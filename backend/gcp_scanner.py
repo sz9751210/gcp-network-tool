@@ -15,6 +15,7 @@ from google.api_core import exceptions as gcp_exceptions
 from models import (
     Project, VPCNetwork, Subnet, NetworkTopology
 )
+from credentials_manager import credentials_manager
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,14 @@ class GCPScanner:
             max_workers: Maximum number of concurrent threads for scanning
         """
         self.max_workers = max_workers
+        
+        # Get active credential path
+        cred_path = credentials_manager.get_active_credential_path()
+        if cred_path:
+            import os
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
+            logger.info(f"Using credential: {cred_path}")
+        
         self.projects_client = resourcemanager_v3.ProjectsClient()
         self.folders_client = resourcemanager_v3.FoldersClient()
         

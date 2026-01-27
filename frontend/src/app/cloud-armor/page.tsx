@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { CloudArmorPolicy } from '@/types/network';
 
 export default function CloudArmorPage() {
     const { topology, metadata, refreshData } = useScan();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
     const [filterText, setFilterText] = useState('');
@@ -129,7 +131,7 @@ export default function CloudArmorPage() {
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">Loading Cloud Armor policies...</p>
+                    <p className="text-slate-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -139,18 +141,18 @@ export default function CloudArmorPage() {
         <div className="p-8 max-w-[1400px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Cloud Armor Policies</h1>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('cloudArmor.title')}</h1>
                 <p className="text-slate-600">
                     {metadata
-                        ? `Security policies across ${metadata.totalProjects} projects`
-                        : 'No scan data available.'}
+                        ? `${t('cloudArmor.subtitle')} - ${metadata.totalProjects} ${t('dashboard.projects')}`
+                        : t('cloudArmor.noData')}
                 </p>
             </div>
 
             {!topology || policies.length === 0 ? (
                 <div className="card p-12 text-center">
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">No Cloud Armor Policies Found</h3>
-                    <p className="text-slate-600">No Cloud Armor security policies were found</p>
+                    <h3 className="text-xl font-bold text-slate-700 mb-2">{t('cloudArmor.noData')}</h3>
+                    <p className="text-slate-600">{t('cloudArmor.noDataDesc')}</p>
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -165,10 +167,10 @@ export default function CloudArmorPage() {
                                     <path d="M10 2 2 12" />
                                     <path d="M22 12 14 2" />
                                 </svg>
-                                Rule Simulator
+                                {t('cloudArmor.ruleSimulator')}
                             </h3>
                             <p className="text-sm text-indigo-700 mb-4">
-                                Enter a <strong>Test IP</strong> to see which rules would apply.
+                                {t('cloudArmor.ruleSimulatorDesc')}
                             </p>
                             <div className="flex gap-4">
                                 <input
@@ -176,14 +178,14 @@ export default function CloudArmorPage() {
                                     value={testInput}
                                     onChange={(e) => setTestInput(e.target.value)}
                                     className="input-field flex-1 text-lg font-mono"
-                                    placeholder="Enter IP to simulate match..."
+                                    placeholder={t('cloudArmor.testIpPlaceholder')}
                                 />
                                 {testInput && (
                                     <button
                                         onClick={() => setTestInput('')}
                                         className="btn-secondary text-sm"
                                     >
-                                        Clear
+                                        {t('common.clear')}
                                     </button>
                                 )}
                             </div>
@@ -191,18 +193,18 @@ export default function CloudArmorPage() {
 
                         {/* Standard Filter */}
                         <div className="card p-6 flex flex-col justify-center">
-                            <label className="text-sm font-semibold text-slate-700 mb-2">Filter Policies</label>
+                            <label className="text-sm font-semibold text-slate-700 mb-2">{t('common.filter')}</label>
                             <input
                                 type="text"
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)}
                                 className="input-field"
-                                placeholder="Filter by policy name..."
+                                placeholder={t('cloudArmor.filterPlaceholder')}
                                 disabled={!!testInput}
                             />
                             {testInput && (
                                 <p className="text-xs text-orange-600 mt-2">
-                                    *Filtering disabled during simulation
+                                    *{t('cloudArmor.filterDisabled')}
                                 </p>
                             )}
                         </div>
@@ -213,11 +215,11 @@ export default function CloudArmorPage() {
                         <div>
                             {testInput ? (
                                 <span>
-                                    Found matches in <span className="font-bold text-indigo-600">{displayPolicies.length}</span> policies
+                                    {t('cloudArmor.matchesFound')} <span className="font-bold text-indigo-600">{displayPolicies.length}</span> {t('cloudArmor.policies')}
                                 </span>
                             ) : (
                                 <span>
-                                    Showing <span className="font-semibold text-indigo-600">{displayPolicies.length}</span> policies
+                                    {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{displayPolicies.length}</span> {t('cloudArmor.policies')}
                                 </span>
                             )}
                         </div>
@@ -226,7 +228,7 @@ export default function CloudArmorPage() {
                     {/* Policies List */}
                     {displayPolicies.length === 0 ? (
                         <div className="card p-12 text-center border-dashed border-2 border-slate-200 bg-slate-50">
-                            <p className="text-slate-500 font-medium">No matches found for your input.</p>
+                            <p className="text-slate-500 font-medium">{t('cloudArmor.noMatches')}</p>
                         </div>
                     ) : (
                         displayPolicies.map((policy: any) => {
@@ -247,12 +249,12 @@ export default function CloudArmorPage() {
                                                     <h3 className="text-lg font-bold text-slate-800">{policy.name}</h3>
                                                     {policy.adaptive_protection_enabled && (
                                                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-violet-100 text-violet-800">
-                                                            Adaptive Protection
+                                                            {t('cloudArmor.adaptiveProtection')}
                                                         </span>
                                                     )}
                                                     {policy.hasMatch && (
                                                         <span className="inline-flex px-2 py-1 text-xs font-bold rounded-full bg-indigo-600 text-white shadow-sm animate-pulse">
-                                                            MATCH FOUND
+                                                            {t('cloudArmor.matchFound')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -261,11 +263,11 @@ export default function CloudArmorPage() {
                                                 )}
                                                 <div className="flex items-center gap-4 text-sm">
                                                     <span className="text-slate-500">
-                                                        Project: <span className="font-medium text-slate-700">{policy.project_id}</span>
+                                                        {t('publicIps.project')}: <span className="font-medium text-slate-700">{policy.project_id}</span>
                                                     </span>
                                                     <span className="text-slate-500">
-                                                        Rules: <span className="font-medium text-green-700">{allowRules} allow</span>,
-                                                        <span className="font-medium text-red-700 ml-1">{denyRules} deny</span>
+                                                        {t('cloudArmor.rules')}: <span className="font-medium text-green-700">{allowRules} {t('cloudArmor.allow')}</span>,
+                                                        <span className="font-medium text-red-700 ml-1">{denyRules} {t('cloudArmor.deny')}</span>
                                                     </span>
                                                 </div>
                                             </div>
@@ -291,9 +293,9 @@ export default function CloudArmorPage() {
                                         <div className="border-t border-slate-200 bg-slate-50">
                                             <div className="p-6">
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Rules</h4>
+                                                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">{t('cloudArmor.rules')}</h4>
                                                     <div className="text-xs text-slate-500">
-                                                        Showing {policy.rules.length} rules
+                                                        {t('cloudArmor.showing')} {policy.rules.length} {t('cloudArmor.rules').toLowerCase()}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
@@ -314,7 +316,7 @@ export default function CloudArmorPage() {
                                                                     <div className="flex">
                                                                         {/* Priority Column */}
                                                                         <div className={`flex-shrink-0 w-24 p-4 text-center border-r ${isRuleMatched ? 'border-indigo-100 bg-indigo-50' : 'border-slate-100 bg-slate-50'} rounded-l-lg`}>
-                                                                            <div className="text-[10px] text-slate-500 uppercase font-semibold mb-1">Priority</div>
+                                                                            <div className="text-[10px] text-slate-500 uppercase font-semibold mb-1">{t('cloudArmor.priority')}</div>
                                                                             <div className={`font-mono font-bold break-all ${isRuleMatched ? 'text-indigo-700 text-lg' : 'text-slate-800'}`}>
                                                                                 {rule.priority}
                                                                             </div>
@@ -339,7 +341,7 @@ export default function CloudArmorPage() {
 
                                                                                 {isRuleMatched && (
                                                                                     <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-600 text-white">
-                                                                                        MATCHED
+                                                                                        {t('cloudArmor.matched')}
                                                                                     </span>
                                                                                 )}
                                                                             </div>

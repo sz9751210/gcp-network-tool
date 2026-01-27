@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { PublicIP } from '@/types/network';
 
 export default function PublicIPsPage() {
     const { topology, metadata, refreshData } = useScan();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<keyof PublicIP>('ip_address');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -91,7 +93,7 @@ export default function PublicIPsPage() {
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">Loading public IPs...</p>
+                    <p className="text-slate-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -101,11 +103,11 @@ export default function PublicIPsPage() {
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Public IPs</h1>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('publicIps.title')}</h1>
                 <p className="text-slate-600">
                     {metadata
-                        ? `Viewing external IP addresses across ${metadata.totalProjects} projects`
-                        : 'No scan data available. Go to Settings to start a scan.'}
+                        ? `${t('publicIps.subtitle')} - ${metadata.totalProjects} ${t('dashboard.projects')}`
+                        : t('publicIps.noData')}
                 </p>
             </div>
 
@@ -127,12 +129,8 @@ export default function PublicIPsPage() {
                         <line x1="2" y1="12" x2="22" y2="12" />
                         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">No Public IPs Found</h3>
-                    <p className="text-slate-600">
-                        {!topology
-                            ? 'Run a scan from Settings to discover public IPs'
-                            : 'No public IP addresses were found in the scanned projects'}
-                    </p>
+                    <h3 className="text-xl font-bold text-slate-700 mb-2">{t('publicIps.noData')}</h3>
+                    <p className="text-slate-600">{t('publicIps.noDataDesc')}</p>
                 </div>
             ) : (
                 <div className="card">
@@ -140,8 +138,8 @@ export default function PublicIPsPage() {
                     <div className="p-6 border-b border-slate-200 space-y-4">
                         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                             <div className="text-sm text-slate-600">
-                                Showing <span className="font-semibold text-indigo-600">{sortedIps.length}</span> of{' '}
-                                <span className="font-semibold">{publicIps.length}</span> public IPs
+                                {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{sortedIps.length}</span> / {' '}
+                                <span className="font-semibold">{publicIps.length}</span> {t('publicIps.totalIps').toLowerCase()}
                             </div>
                             <div className="flex gap-3 w-full sm:w-auto">
                                 <input
@@ -149,10 +147,10 @@ export default function PublicIPsPage() {
                                     value={filterText}
                                     onChange={(e) => setFilterText(e.target.value)}
                                     className="input-field flex-1 sm:w-64"
-                                    placeholder="Filter by IP, resource, project..."
+                                    placeholder={t('publicIps.searchPlaceholder')}
                                 />
                                 <button onClick={exportToCSV} className="btn-primary whitespace-nowrap">
-                                    Export CSV
+                                    {t('common.download')} CSV
                                 </button>
                             </div>
                         </div>
@@ -164,13 +162,13 @@ export default function PublicIPsPage() {
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
                                     {[
-                                        { key: 'ip_address', label: 'IP Address' },
-                                        { key: 'resource_type', label: 'Type' },
-                                        { key: 'resource_name', label: 'Resource' },
-                                        { key: 'project_id', label: 'Project' },
-                                        { key: 'region', label: 'Region' },
+                                        { key: 'ip_address', label: t('publicIps.ipAddress') },
+                                        { key: 'resource_type', label: t('publicIps.resourceType') },
+                                        { key: 'resource_name', label: t('publicIps.resourceName') },
+                                        { key: 'project_id', label: t('publicIps.project') },
+                                        { key: 'region', label: t('publicIps.region') },
                                         { key: 'zone', label: 'Zone' },
-                                        { key: 'status', label: 'Status' },
+                                        { key: 'status', label: t('publicIps.status') },
                                     ].map((col) => (
                                         <th
                                             key={col.key}
@@ -217,11 +215,11 @@ export default function PublicIPsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ip.status === 'IN_USE'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
                                                     }`}
                                             >
-                                                {ip.status}
+                                                {ip.status === 'IN_USE' ? t('publicIps.inUse') : t('publicIps.reserved')}
                                             </span>
                                         </td>
                                     </tr>

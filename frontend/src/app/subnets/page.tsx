@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { NetworkTopology, Subnet as SubnetType } from '@/types/network';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SubnetRow {
     projectId: string;
@@ -17,6 +18,7 @@ interface SubnetRow {
 
 export default function SubnetsPage() {
     const { topology, metadata, refreshData } = useScan();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<keyof SubnetRow>('cidr');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -121,7 +123,7 @@ export default function SubnetsPage() {
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">Loading subnet data...</p>
+                    <p className="text-slate-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -131,8 +133,8 @@ export default function SubnetsPage() {
         <div className="p-8 max-w-[1600px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Subnet Planner</h1>
-                <p className="text-slate-600">View and analyze all subnets across your GCP projects</p>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('subnets.title')}</h1>
+                <p className="text-slate-600">{t('subnets.subtitle')}</p>
             </div>
 
             {/* Controls */}
@@ -151,7 +153,7 @@ export default function SubnetsPage() {
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)}
                                 className="input-field pl-10"
-                                placeholder="Filter by project, VPC, subnet, or CIDR..."
+                                placeholder={t('subnets.searchPlaceholder')}
                             />
                         </div>
                     </div>
@@ -160,12 +162,12 @@ export default function SubnetsPage() {
                         disabled={filteredAndSortedSubnets.length === 0}
                         className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Export CSV
+                        {t('common.download')} CSV
                     </button>
                 </div>
                 <div className="mt-4 text-sm text-slate-600">
-                    Showing <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> of{' '}
-                    <span className="font-semibold">{subnets.length}</span> subnets
+                    {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
+                    <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
                 </div>
             </div>
 
@@ -176,12 +178,12 @@ export default function SubnetsPage() {
                         <thead className="bg-slate-100 border-b border-slate-200">
                             <tr>
                                 {[
-                                    { key: 'projectName', label: 'Project' },
+                                    { key: 'projectName', label: t('publicIps.project') },
                                     { key: 'vpcName', label: 'VPC' },
-                                    { key: 'subnetName', label: 'Subnet' },
-                                    { key: 'region', label: 'Region' },
-                                    { key: 'cidr', label: 'CIDR' },
-                                    { key: 'gatewayIp', label: 'Gateway' },
+                                    { key: 'subnetName', label: t('dashboard.subnets') },
+                                    { key: 'region', label: t('subnets.region') },
+                                    { key: 'cidr', label: t('subnets.cidr') },
+                                    { key: 'gatewayIp', label: t('subnets.gateway') },
                                 ].map((col) => (
                                     <th
                                         key={col.key}
@@ -224,7 +226,7 @@ export default function SubnetsPage() {
 
                 {filteredAndSortedSubnets.length === 0 && (
                     <div className="text-center py-12 text-slate-500">
-                        No subnets found. Try adjusting your filter or run a network scan.
+                        {t('subnets.noData')}
                     </div>
                 )}
             </div>

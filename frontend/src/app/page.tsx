@@ -2,10 +2,12 @@
 
 import { useEffect } from 'react';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import NetworkTree from '@/components/NetworkTree';
 
 export default function Home() {
     const { topology, metadata, refreshData } = useScan();
+    const { t } = useLanguage();
 
     useEffect(() => {
         refreshData();
@@ -15,11 +17,11 @@ export default function Home() {
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('sidebar.dashboard')}</h1>
                 <p className="text-slate-600">
                     {metadata
-                        ? `Viewing ${metadata.totalProjects} projects • Last scanned: ${new Date(metadata.timestamp).toLocaleString()}`
-                        : 'No scan data available. Go to Settings to start a scan.'}
+                        ? `${metadata.totalProjects} ${t('dashboard.projects')} • ${t('dashboard.lastScan')}: ${new Date(metadata.timestamp).toLocaleString()}`
+                        : t('dashboard.noDataDesc')}
                 </p>
             </div>
 
@@ -42,15 +44,15 @@ export default function Home() {
                             <line x1="2" y1="12" x2="22" y2="12" />
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                         </svg>
-                        <h3 className="text-xl font-bold text-slate-700 mb-2">No Network Data</h3>
+                        <h3 className="text-xl font-bold text-slate-700 mb-2">{t('dashboard.noData')}</h3>
                         <p className="text-slate-600 mb-6">
-                            Start by running a network scan in the Settings page
+                            {t('dashboard.noDataDesc')}
                         </p>
                         <a
                             href="/settings"
                             className="inline-block btn-primary"
                         >
-                            Go to Settings
+                            {t('dashboard.goToSettings')}
                         </a>
                     </div>
                 </div>
@@ -72,7 +74,7 @@ export default function Home() {
                             <path d="M3 3v18h18" />
                             <path d="m19 9-5 5-4-4-3 3" />
                         </svg>
-                        Network Hierarchy
+                        {t('dashboard.title')}
                     </h2>
                     <NetworkTree data={topology} isLoading={false} />
                 </div>

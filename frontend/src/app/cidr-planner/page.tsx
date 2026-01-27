@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useScan } from '@/contexts/ScanContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import CIDRVisualizer from '@/components/CIDRVisualizer';
 
 export default function CIDRPlannerPage() {
     const { topology } = useScan();
+    const { t } = useLanguage();
     const [cidrInput, setCidrInput] = useState('');
     const [cidrInfo, setCidrInfo] = useState<any>(null);
     const [splitPrefix, setSplitPrefix] = useState(24);
@@ -112,8 +114,8 @@ export default function CIDRPlannerPage() {
         <div className="p-8 max-w-[1400px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">CIDR Planner</h1>
-                <p className="text-slate-600">Plan, calculate, and validate CIDR ranges for your network</p>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('cidrPlanner.title')}</h1>
+                <p className="text-slate-600">{t('cidrPlanner.subtitle')}</p>
             </div>
 
             <div className="space-y-6">
@@ -126,9 +128,9 @@ export default function CIDRPlannerPage() {
                                 <path d="m15 9-6 6" />
                                 <path d="m9 9 6 6" />
                             </svg>
-                            CIDR Conflict Checker
+                            {t('cidrPlanner.conflictChecker')}
                         </h2>
-                        <p className="text-sm text-slate-600 mt-1">Check if a CIDR conflicts with existing subnets</p>
+                        <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.conflictCheckerDesc')}</p>
                     </div>
                     <div className="p-6">
                         <CIDRVisualizer />
@@ -149,9 +151,9 @@ export default function CIDRPlannerPage() {
                                 <line x1="12" y1="18" x2="12" y2="18.01" />
                                 <line x1="8" y1="18" x2="8" y2="18.01" />
                             </svg>
-                            CIDR Calculator
+                            {t('cidrPlanner.calculator')}
                         </h2>
-                        <p className="text-sm text-slate-600 mt-1">Calculate network information from CIDR notation</p>
+                        <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.calculatorDesc')}</p>
                     </div>
                     <div className="p-6 space-y-4">
                         <div className="flex gap-3">
@@ -164,7 +166,7 @@ export default function CIDRPlannerPage() {
                                 onKeyDown={(e) => e.key === 'Enter' && calculateCIDR()}
                             />
                             <button onClick={calculateCIDR} className="btn-primary">
-                                Calculate
+                                {t('cidrPlanner.calculate')}
                             </button>
                         </div>
 
@@ -172,37 +174,37 @@ export default function CIDRPlannerPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                 <div className="space-y-3">
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Network Address</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.networkAddress')}</div>
                                         <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.networkAddress}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Broadcast Address</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.broadcastAddress')}</div>
                                         <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.broadcastAddress}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">First Usable IP</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.firstUsable')}</div>
                                         <div className="text-sm font-mono font-semibold text-emerald-700">{cidrInfo.firstUsable}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Last Usable IP</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.lastUsable')}</div>
                                         <div className="text-sm font-mono font-semibold text-emerald-700">{cidrInfo.lastUsable}</div>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Netmask</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.netmask')}</div>
                                         <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.netmask}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Wildcard Mask</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.wildcardMask')}</div>
                                         <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.wildcardMask}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Hosts</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.totalHosts')}</div>
                                         <div className="text-sm font-semibold text-indigo-700">{cidrInfo.totalHosts.toLocaleString()}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Usable Hosts</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.usableHosts')}</div>
                                         <div className="text-sm font-semibold text-indigo-700">{cidrInfo.usableHosts.toLocaleString()}</div>
                                     </div>
                                 </div>
@@ -223,14 +225,14 @@ export default function CIDRPlannerPage() {
                                     <path d="M9 3v18" />
                                     <path d="M15 3v18" />
                                 </svg>
-                                Subnet Splitting Suggestions
+                                {t('cidrPlanner.subnetSplitting')}
                             </h2>
-                            <p className="text-sm text-slate-600 mt-1">Split {cidrInfo.cidr} into smaller subnets</p>
+                            <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.subnetSplittingDesc')} {cidrInfo.cidr}</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">
-                                    New Subnet Prefix Length: /{splitPrefix}
+                                    {t('cidrPlanner.newPrefix')}: /{splitPrefix}
                                 </label>
                                 <input
                                     type="range"
@@ -249,15 +251,15 @@ export default function CIDRPlannerPage() {
                             {subnetSuggestions.length > 0 && (
                                 <div className="mt-6">
                                     <div className="text-sm text-slate-600 mb-3">
-                                        Splitting into <span className="font-semibold text-indigo-600">{Math.pow(2, splitPrefix - cidrInfo.prefix)}</span> subnets
-                                        {Math.pow(2, splitPrefix - cidrInfo.prefix) > 10 && ' (showing first 10)'}
+                                        {t('cidrPlanner.splittingInto')} <span className="font-semibold text-indigo-600">{Math.pow(2, splitPrefix - cidrInfo.prefix)}</span> {t('dashboard.subnets').toLowerCase()}
+                                        {Math.pow(2, splitPrefix - cidrInfo.prefix) > 10 && ` (${t('cidrPlanner.showingFirst10')})`}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {subnetSuggestions.map((subnet, idx) => (
                                             <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 transition-colors">
                                                 <div className="font-mono text-sm font-semibold text-slate-800">{subnet.cidr}</div>
                                                 <div className="text-xs text-slate-600 mt-1">
-                                                    {subnet.usableHosts.toLocaleString()} usable hosts
+                                                    {subnet.usableHosts.toLocaleString()} {t('cidrPlanner.usableHosts').toLowerCase()}
                                                 </div>
                                             </div>
                                         ))}
