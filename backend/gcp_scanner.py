@@ -512,20 +512,13 @@ def scan_network_topology(
     Main entry point for scanning GCP network topology.
     
     Args:
-        source_type: "folder" or "organization"
-        source_id: Folder ID or Organization ID
+        source_type: "folder", "organization", "project", or "all_accessible"
+        source_id: Folder ID, Organization ID, Project ID(s), or empty for all_accessible
         include_shared_vpc: Whether to include Shared VPC relationships
         
     Returns:
         NetworkTopology containing all discovered resources
     """
     scanner = GCPScanner()
-    
-    if source_type == "folder":
-        return scanner.scan_folder(source_id, include_shared_vpc)
-    elif source_type == "organization":
-        return scanner.scan_organization(source_id, include_shared_vpc)
-    elif source_type == "project":
-        return scanner.scan_project(source_id, include_shared_vpc)
-    else:
-        raise ValueError(f"Invalid source_type: {source_type}")
+    return scanner.scan_network_topology(source_type, source_id, include_shared_vpc)
+
