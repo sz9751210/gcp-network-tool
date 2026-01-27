@@ -161,6 +161,12 @@ class GCPScanner:
             # Collect public IPs from all projects
             public_ips = self._collect_public_ips(projects)
             
+            # Collect firewall rules from all projects
+            firewall_rules = self._collect_firewall_rules(projects)
+            
+            # Collect Cloud Armor policies from all projects
+            cloud_armor_policies = self._collect_cloud_armor_policies(projects)
+            
             return NetworkTopology(
                 scan_id=scan_id,
                 source_type=source_type,
@@ -170,7 +176,9 @@ class GCPScanner:
                 total_vpcs=total_vpcs,
                 total_subnets=total_subnets,
                 failed_projects=failed_projects,
-                public_ips=public_ips
+                public_ips=public_ips,
+                firewall_rules=firewall_rules,
+                cloud_armor_policies=cloud_armor_policies
             )
             
         except Exception as e:
@@ -329,6 +337,106 @@ class GCPScanner:
                 logger.warning(f"Failed to collect public IPs from project {project.project_id}: {e}")
         
         return public_ips
+    
+    def _collect_firewall_rules(self, projects: list) -> list:
+        """
+        Collect all firewall rules from projects.
+        
+        Args:
+            projects: List of scanned Project objects
+            
+        Returns:
+            List of FirewallRule objects
+        """
+        from models import FirewallRule
+        firewall_rules = []
+        
+        for project in projects:
+            if project.scan_status != "success":
+                continue
+                
+            try:
+                firewall_client = compute_v1.FirewallsClient(credentials=self.projects_client._transport._credentials)
+                
+                for firewall in firewall_client.list(project=project.project_id):
+                    # Determine action and rules
+                    action = "ALLOW" if firewall.allowed else "DENY"
+                    allowed_rules = [{"IPProtocol": rule.I_p_protocol, "ports": list(rule.ports) if rule.ports else []} for rule in firewall.allowed] if firewall.allowed else []
+                    denied_rules = [{"IPProtocol": rule.I_p_protocol, "ports": list(rule.ports) if rule.ports else []} for rule in firewall.denied] if firewall.denied else []
+                    
+                    firewall_rules.append(FirewallRule(
+                        name=firewall.name,
+                        direction=firewall.direction if firewall.direction else "INGRESS",
+                        action=action,
+                        priority=firewall.priority if firewall.priority else 1000,
+                        source_ranges=list(firewall.source_ranges) if firewall.source_ranges else [],
+                        destination_ranges=list(firewall.destination_ranges) if firewall.destination_ranges else [],
+                        source_tags=list(firewall.source_tags) if firewall.source_tags else [],
+                        target_tags=list(firewall.target_tags) if firewall.target_tags else [],
+                        allowed=allowed_rules,
+                        denied=denied_rules,
+                        vpc_network=firewall.network.split("/")[-1] if firewall.network else "",
+                        project_id=project.project_id,
+                        disabled=firewall.disabled if hasattr(firewall, 'disabled') else False,
+                        description=firewall.description if firewall.description else None
+                    ))
+                
+            except Exception as e:
+                logger.warning(f"Failed to collect firewall rules from project {project.project_id}: {e}")
+        
+        return firewall_rules
+    
+    def _collect_cloud_armor_policies(self, projects: list) -> list:
+        """
+        Collect all Cloud Armor security policies from projects.
+        
+        Args:
+            projects: List of scanned Project objects
+            
+        Returns:
+            List of CloudArmorPolicy objects
+        """
+        from models import CloudArmorPolicy, CloudArmorRule
+        policies = []
+        
+        for project in projects:
+            if project.scan_status != "success":
+                continue
+                
+            try:
+                armor_client = compute_v1.SecurityPoliciesClient(credentials=self.projects_client._transport._credentials)
+                
+                for policy in armor_client.list(project=project.project_id):
+                    # Collect rules
+                    rules = []
+                    if policy.rules:
+                        for rule in policy.rules:
+                            rules.append(CloudArmorRule(
+                                priority=rule.priority if rule.priority else 2147483647,
+                                action=rule.action if rule.action else "allow",
+                                description=rule.description if rule.description else None,
+                                match_expression=rule.match.expr.expression if (rule.match and rule.match.expr) else None,
+                                preview=rule.preview if hasattr(rule, 'preview') else False
+                            ))
+                    
+                    # Check adaptive protection
+                    adaptive_enabled = False
+                    if hasattr(policy, 'adaptive_protection_config') and policy.adaptive_protection_config:
+                        adaptive_enabled = policy.adaptive_protection_config.layer_7_ddos_defense_config.enable if hasattr(policy.adaptive_protection_config, 'layer_7_ddos_defense_config') else False
+                    
+                    policies.append(CloudArmorPolicy(
+                        name=policy.name,
+                        description=policy.description if policy.description else None,
+                        rules=rules,
+                        adaptive_protection_enabled=adaptive_enabled,
+                        project_id=project.project_id,
+                        self_link=policy.self_link if policy.self_link else ""
+                    ))
+                
+            except Exception as e:
+                logger.warning(f"Failed to collect Cloud Armor policies from project {project.project_id}: {e}")
+        
+        return policies
 
     def _scan_projects(
         self, 

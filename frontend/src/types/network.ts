@@ -61,6 +61,40 @@ export interface PublicIP {
     zone?: string;  // For VMs
 }
 
+export interface FirewallRule {
+    name: string;
+    direction: string;  // "INGRESS" or "EGRESS"
+    action: string;  // "ALLOW" or "DENY"
+    priority: number;
+    source_ranges: string[];
+    destination_ranges: string[];
+    source_tags: string[];
+    target_tags: string[];
+    allowed: { IPProtocol: string; ports: string[] }[];
+    denied: { IPProtocol: string; ports: string[] }[];
+    vpc_network: string;
+    project_id: string;
+    disabled: boolean;
+    description?: string;
+}
+
+export interface CloudArmorRule {
+    priority: number;
+    action: string;  // "allow", "deny(403)", etc.
+    description?: string;
+    match_expression?: string;
+    preview: boolean;
+}
+
+export interface CloudArmorPolicy {
+    name: string;
+    description?: string;
+    rules: CloudArmorRule[];
+    adaptive_protection_enabled: boolean;
+    project_id: string;
+    self_link: string;
+}
+
 export interface NetworkTopology {
     scan_id: string;
     scan_timestamp: string;
@@ -72,6 +106,8 @@ export interface NetworkTopology {
     total_subnets: number;
     failed_projects: number;
     public_ips: PublicIP[];
+    firewall_rules: FirewallRule[];
+    cloud_armor_policies: CloudArmorPolicy[];
 }
 
 export interface ScanRequest {

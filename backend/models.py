@@ -51,6 +51,43 @@ class PublicIP(BaseModel):
     zone: Optional[str] = None  # For VMs
 
 
+class FirewallRule(BaseModel):
+    """Represents a VPC firewall rule."""
+    name: str
+    direction: str  # "INGRESS" or "EGRESS"
+    action: str  # "ALLOW" or "DENY"
+    priority: int
+    source_ranges: list[str] = Field(default_factory=list)
+    destination_ranges: list[str] = Field(default_factory=list)
+    source_tags: list[str] = Field(default_factory=list)
+    target_tags: list[str] = Field(default_factory=list)
+    allowed: list[dict] = Field(default_factory=list)  # [{"IPProtocol": "tcp", "ports": ["80", "443"]}]
+    denied: list[dict] = Field(default_factory=list)
+    vpc_network: str
+    project_id: str
+    disabled: bool = False
+    description: Optional[str] = None
+
+
+class CloudArmorRule(BaseModel):
+    """Represents a single rule within a Cloud Armor policy."""
+    priority: int
+    action: str  # "allow", "deny(403)", "deny(404)", "deny(502)", etc.
+    description: Optional[str] = None
+    match_expression: Optional[str] = None  # CEL expression
+    preview: bool = False
+
+
+class CloudArmorPolicy(BaseModel):
+    """Represents a Cloud Armor security policy."""
+    name: str
+    description: Optional[str] = None
+    rules: list[CloudArmorRule] = Field(default_factory=list)
+    adaptive_protection_enabled: bool = False
+    project_id: str
+    self_link: str = ""
+
+
 class Project(BaseModel):
     """Represents a GCP Project with its networks."""
     project_id: str
@@ -81,6 +118,8 @@ class NetworkTopology(BaseModel):
     total_subnets: int = 0
     failed_projects: int = 0
     public_ips: list[PublicIP] = Field(default_factory=list)
+    firewall_rules: list[FirewallRule] = Field(default_factory=list)
+    cloud_armor_policies: list[CloudArmorPolicy] = Field(default_factory=list)
 
 
 # Request/Response schemas
