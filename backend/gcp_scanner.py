@@ -158,6 +158,9 @@ class GCPScanner:
             total_subnets = sum(sum(len(v.subnets) for v in p.vpc_networks) for p in projects)
             failed_projects = sum(1 for p in projects if p.scan_status != "success")
             
+            # Collect public IPs from all projects
+            public_ips = self._collect_public_ips(projects)
+            
             return NetworkTopology(
                 scan_id=scan_id,
                 source_type=source_type,
@@ -166,7 +169,8 @@ class GCPScanner:
                 total_projects=total_projects,
                 total_vpcs=total_vpcs,
                 total_subnets=total_subnets,
-                failed_projects=failed_projects
+                failed_projects=failed_projects,
+                public_ips=public_ips
             )
             
         except Exception as e:
@@ -272,6 +276,59 @@ class GCPScanner:
             logger.error(f"Error searching for all projects: {e}")
         
         return project_ids
+    
+    def _collect_public_ips(self, projects: list) -> list:
+        """
+        Collect all public/external IP addresses from projects.
+        
+        Args:
+            projects: List of scanned Project objects
+            
+        Returns:
+            List of PublicIP objects
+        """
+        from models import PublicIP
+        public_ips = []
+        
+        for project in projects:
+            if project.scan_status != "success":
+                continue
+                
+            try:
+                compute_client = compute_v1.InstancesClient(credentials=self.projects_client._transport._credentials)
+                
+                # Get all VM instances across all zones
+                aggregated_list = compute_v1.AggregatedListInstancesRequest(
+                    project=project.project_id
+                )
+                
+                for zone_name, instances_scoped_list in compute_client.aggregated_list(request=aggregated_list):
+                    if not instances_scoped_list.instances:
+                        continue
+                        
+                    zone = zone_name.split("/")[-1]
+                    region = "-".join(zone.split("-")[:-1]) if "-" in zone else zone
+                    
+                    for instance in instances_scoped_list.instances:
+                        # Check network interfaces for external IPs
+                        for interface in instance.network_interfaces:
+                            if interface.access_configs:
+                                for access_config in interface.access_configs:
+                                    if access_config.nat_i_p:
+                                        public_ips.append(PublicIP(
+                                            ip_address=access_config.nat_i_p,
+                                            resource_type="VM",
+                                            resource_name=instance.name,
+                                            project_id=project.project_id,
+                                            region=region,
+                                            zone=zone,
+                                            status="IN_USE"
+                                        ))
+                
+            except Exception as e:
+                logger.warning(f"Failed to collect public IPs from project {project.project_id}: {e}")
+        
+        return public_ips
 
     def _scan_projects(
         self, 

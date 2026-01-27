@@ -51,6 +51,16 @@ export interface Project {
     error_message: string | null;
 }
 
+export interface PublicIP {
+    ip_address: string;
+    resource_type: string;  // "VM", "LoadBalancer", "CloudNAT"
+    resource_name: string;
+    project_id: string;
+    region: string;
+    status: string;  // "IN_USE", "RESERVED"
+    zone?: string;  // For VMs
+}
+
 export interface NetworkTopology {
     scan_id: string;
     scan_timestamp: string;
@@ -61,6 +71,7 @@ export interface NetworkTopology {
     total_vpcs: number;
     total_subnets: number;
     failed_projects: number;
+    public_ips: PublicIP[];
 }
 
 export interface ScanRequest {

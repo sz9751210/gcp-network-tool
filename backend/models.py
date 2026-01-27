@@ -40,6 +40,17 @@ class VPCNetwork(BaseModel):
     peerings: list[dict] = Field(default_factory=list)
 
 
+class PublicIP(BaseModel):
+    """Represents a public/external IP address and its associated resource."""
+    ip_address: str
+    resource_type: str  # "VM", "LoadBalancer", "CloudNAT"
+    resource_name: str
+    project_id: str
+    region: str
+    status: str = "IN_USE"  # "IN_USE", "RESERVED"
+    zone: Optional[str] = None  # For VMs
+
+
 class Project(BaseModel):
     """Represents a GCP Project with its networks."""
     project_id: str
@@ -69,6 +80,7 @@ class NetworkTopology(BaseModel):
     total_vpcs: int = 0
     total_subnets: int = 0
     failed_projects: int = 0
+    public_ips: list[PublicIP] = Field(default_factory=list)
 
 
 # Request/Response schemas
