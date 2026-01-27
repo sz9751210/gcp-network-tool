@@ -111,3 +111,7 @@ A powerful tool to validte your WAF rules:
 1. Create a new JSON file in `frontend/src/locales/` (e.g., `es.json`).
 2. Update `frontend/src/contexts/LanguageContext.tsx` to import and include the new locale.
 3. Add the language to the dropdown options in `frontend/src/components/LanguageSwitcher.tsx`.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

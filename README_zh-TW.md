@@ -110,3 +110,7 @@
 1. 在 `frontend/src/locales/` 中建立新的 JSON 檔案（例如 `ja.json`）。
 2. 更新 `frontend/src/contexts/LanguageContext.tsx` 以匯入並包含新的語系。
 3. 在 `frontend/src/components/LanguageSwitcher.tsx` 的下拉選單中新增該語言選項。
+
+## 授權 (License)
+
+本專案採用 MIT 授權條款 - 詳情請參閱 [LICENSE](LICENSE) 檔案。
