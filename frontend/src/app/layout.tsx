@@ -29,7 +29,7 @@ export default function RootLayout({
                         <ScanProvider>
                             <div className="flex h-screen overflow-hidden">
                                 <Sidebar />
-                                <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100 relative">
+                                <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-900 transition-colors duration-300 relative">
                                     <div className="absolute top-6 right-8 z-50">
                                         <LanguageSwitcher />
                                     </div>
