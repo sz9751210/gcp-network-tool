@@ -42,7 +42,7 @@ export default function SubnetsPage() {
 
         const rows: SubnetRow[] = [];
         topology.projects.forEach(project => {
-            project.vpcs.forEach(vpc => {
+            project.vpc_networks.forEach(vpc => {
                 vpc.subnets.forEach(subnet => {
                     rows.push({
                         projectName: project.project_id,
