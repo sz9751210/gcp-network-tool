@@ -14,7 +14,17 @@ interface SubnetRow {
     cidr: string;
     gatewayIp: string | null;
     privateGoogleAccess: boolean;
+    selfLink: string;
 }
+
+const calculateHosts = (cidr: string) => {
+    try {
+        const prefix = parseInt(cidr.split('/')[1], 10);
+        return Math.pow(2, 32 - prefix) - 2;
+    } catch {
+        return 0;
+    }
+};
 
 export default function SubnetsPage() {
     const { topology, metadata, refreshData } = useScan();
@@ -48,6 +58,7 @@ export default function SubnetsPage() {
                         cidr: subnet.ip_cidr_range,
                         gatewayIp: subnet.gateway_ip,
                         privateGoogleAccess: subnet.private_ip_google_access,
+                        selfLink: subnet.self_link,
                     });
                 });
             });
@@ -183,7 +194,11 @@ export default function SubnetsPage() {
                                     { key: 'subnetName', label: t('dashboard.subnets') },
                                     { key: 'region', label: t('subnets.region') },
                                     { key: 'cidr', label: t('subnets.cidr') },
+                                    { key: 'region', label: t('subnets.region') },
+                                    { key: 'cidr', label: t('subnets.cidr') },
+                                    { key: 'capacity', label: 'Capacity' },
                                     { key: 'gatewayIp', label: t('subnets.gateway') },
+                                    { key: 'actions', label: 'Actions' },
                                 ].map((col) => (
                                     <th
                                         key={col.key}
@@ -215,8 +230,34 @@ export default function SubnetsPage() {
                                     <td className="px-6 py-4 text-sm text-slate-700">{subnet.subnetName}</td>
                                     <td className="px-6 py-4 text-sm text-slate-600">{subnet.region}</td>
                                     <td className="px-6 py-4 text-sm font-mono text-indigo-600">{subnet.cidr}</td>
+                                    <td className="px-6 py-4 text-sm text-slate-600">
+                                        <div className="flex flex-col gap-1 w-24">
+                                            <div className="text-xs font-mono">{calculateHosts(subnet.cidr).toLocaleString()} IP</div>
+                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-400"
+                                                    style={{ width: `${Math.min(100, Math.max(5, (32 - parseInt(subnet.cidr.split('/')[1])) * 5))}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-sm font-mono text-slate-600">
                                         {subnet.gatewayIp || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-slate-600">
+                                        <a
+                                            href={`https://console.cloud.google.com/networking/subnetworks/details/${subnet.region}/${subnet.subnetName}?project=${subnet.projectId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                            title="Open in GCP Console"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                <polyline points="15 3 21 3 21 9"></polyline>
+                                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                                            </svg>
+                                        </a>
                                     </td>
                                 </tr>
                             ))}

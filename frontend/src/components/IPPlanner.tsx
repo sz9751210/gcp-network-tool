@@ -222,6 +222,44 @@ export default function IPPlanner() {
                             No available CIDRs found within the specified range. Try reducing the prefix size or expanding the base scope.
                         </div>
                     )}
+
+                    {/* Feature 2: Gcloud Command Generator */}
+                    {result.available_cidrs.length > 0 && (
+                        <div className="mt-8 pt-6 border-t border-slate-200">
+                            <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                                    <polyline points="4 17 10 11 4 5" />
+                                    <line x1="12" y1="19" x2="20" y2="19" />
+                                </svg>
+                                Cloud SDK Command
+                            </h4>
+                            <div className="bg-slate-900 rounded-lg p-4 relative group">
+                                <code className="text-sm text-green-400 font-mono break-all whitespace-pre-wrap">
+                                    gcloud compute networks subnets create <span className="text-yellow-400">SUBNET_NAME</span> \<br />
+                                    {'  '}--project={sourceProject} \<br />
+                                    {'  '}--region={region} \<br />
+                                    {'  '}--network=<span className="text-yellow-400">NETWORK_NAME</span> \<br />
+                                    {'  '}--range={result.available_cidrs[0]}
+                                </code>
+                                <button
+                                    className="absolute top-2 right-2 p-2 bg-slate-800 rounded text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => {
+                                        const cmd = `gcloud compute networks subnets create SUBNET_NAME --project=${sourceProject} --region=${region} --network=NETWORK_NAME --range=${result.available_cidrs[0]}`;
+                                        navigator.clipboard.writeText(cmd);
+                                    }}
+                                    title="Copy command"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">
+                                * Replace <span className="font-mono text-slate-600">SUBNET_NAME</span> and <span className="font-mono text-slate-600">NETWORK_NAME</span> with your desired values.
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

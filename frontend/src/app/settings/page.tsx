@@ -376,10 +376,32 @@ export default function SettingsPage() {
                             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('dashboard.subnets')}</div>
                             <div className="text-lg font-semibold text-sky-600">{metadata.totalSubnets}</div>
                         </div>
-                        <div className="col-span-2 md:col-span-4 pt-4 border-t border-slate-200">
+                        <div className="col-span-2 md:col-span-4 pt-4 border-t border-slate-200 flex justify-between items-center">
                             <div className="text-xs text-slate-500">
                                 {t('settings.lastScanned')}: {new Date(metadata.timestamp).toLocaleString()}
                             </div>
+                            <button
+                                onClick={() => {
+                                    if (!topology) return;
+                                    const blob = new Blob([JSON.stringify(topology, null, 2)], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `gcp-network-topology-${new Date().toISOString().split('T')[0]}.json`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                }}
+                                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                {t('common.download')} JSON
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -407,8 +429,8 @@ export default function SettingsPage() {
                                         <td className="p-4 font-mono text-sm text-slate-600">{p.project_id}</td>
                                         <td className="p-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.scan_status === 'success' ? 'bg-emerald-100 text-emerald-700' :
-                                                    p.scan_status === 'error' ? 'bg-rose-100 text-rose-700' :
-                                                        'bg-slate-100 text-slate-600'
+                                                p.scan_status === 'error' ? 'bg-rose-100 text-rose-700' :
+                                                    'bg-slate-100 text-slate-600'
                                                 }`}>
                                                 {p.scan_status}
                                             </span>

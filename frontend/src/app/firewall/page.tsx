@@ -15,6 +15,11 @@ export default function FirewallPage() {
     const [directionFilter, setDirectionFilter] = useState<string>('all');
     const [actionFilter, setActionFilter] = useState<string>('all');
 
+    const isRisky = (rule: FirewallRule) => {
+        if (rule.direction !== 'INGRESS' || rule.action !== 'ALLOW' || rule.disabled) return false;
+        return rule.source_ranges.includes('0.0.0.0/0');
+    };
+
     useEffect(() => {
         const load = async () => {
             await refreshData();
@@ -183,7 +188,21 @@ export default function FirewallPage() {
                                     return (
                                         <tr key={idx} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-700">{rule.priority}</td>
-                                            <td className="px-4 py-3 text-sm font-medium text-slate-800">{rule.name}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-slate-800">
+                                                <div className="flex items-center gap-2">
+                                                    {isRisky(rule) && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200" title="Risky: Details allows traffic from 0.0.0.0/0">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                                                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                                                <line x1="12" y1="9" x2="12" y2="13" />
+                                                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                                                            </svg>
+                                                            Risk
+                                                        </span>
+                                                    )}
+                                                    {rule.name}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.direction === 'INGRESS'
                                                     ? 'bg-blue-100 text-blue-800'

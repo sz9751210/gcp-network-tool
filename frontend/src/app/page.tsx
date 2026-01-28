@@ -13,6 +13,13 @@ export default function Home() {
         refreshData();
     }, [refreshData]);
 
+    const stats = topology ? {
+        riskyFirewalls: topology.firewall_rules.filter(r => r.direction === 'INGRESS' && r.action === 'ALLOW' && r.source_ranges.includes('0.0.0.0/0')).length,
+        unusedIps: topology.public_ips.filter(ip => ip.status !== 'IN_USE').length,
+        totalIps: topology.public_ips.length,
+        totalSubnets: topology.total_subnets
+    } : null;
+
     return (
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
@@ -57,26 +64,50 @@ export default function Home() {
                     </div>
                 </div>
             ) : (
-                <div className="card p-6">
-                    <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-indigo-600"
-                        >
-                            <path d="M3 3v18h18" />
-                            <path d="m19 9-5 5-4-4-3 3" />
-                        </svg>
-                        {t('dashboard.title')}
-                    </h2>
-                    <NetworkTree data={topology} isLoading={false} />
+                <div className="space-y-6">
+                    {/* Feature 9: Dashboard Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="card p-5 border-l-4 border-indigo-500">
+                            <div className="text-sm font-medium text-slate-500 mb-1">Total Projects</div>
+                            <div className="text-2xl font-bold text-slate-800">{metadata?.totalProjects || 0}</div>
+                        </div>
+                        <div className="card p-5 border-l-4 border-rose-500">
+                            <div className="text-sm font-medium text-slate-500 mb-1">Risky Firewalls</div>
+                            <div className="text-2xl font-bold text-slate-800">{stats?.riskyFirewalls || 0}</div>
+                            <div className="text-xs text-rose-600 mt-1">Open 0.0.0.0/0 access</div>
+                        </div>
+                        <div className="card p-5 border-l-4 border-yellow-500">
+                            <div className="text-sm font-medium text-slate-500 mb-1">Unused Public IPs</div>
+                            <div className="text-2xl font-bold text-slate-800">{stats?.unusedIps || 0}</div>
+                            <div className="text-xs text-slate-400 mt-1">out of {stats?.totalIps} total</div>
+                        </div>
+                        <div className="card p-5 border-l-4 border-sky-500">
+                            <div className="text-sm font-medium text-slate-500 mb-1">Total Subnets</div>
+                            <div className="text-2xl font-bold text-slate-800">{stats?.totalSubnets || 0}</div>
+                        </div>
+                    </div>
+
+                    <div className="card p-6">
+                        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-indigo-600"
+                            >
+                                <path d="M3 3v18h18" />
+                                <path d="m19 9-5 5-4-4-3 3" />
+                            </svg>
+                            {t('dashboard.title')}
+                        </h2>
+                        <NetworkTree data={topology} isLoading={false} />
+                    </div>
                 </div>
             )}
         </div>

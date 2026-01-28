@@ -12,6 +12,7 @@ export default function PublicIPsPage() {
     const [sortBy, setSortBy] = useState<keyof PublicIP>('ip_address');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [filterText, setFilterText] = useState('');
+    const [showUnusedOnly, setShowUnusedOnly] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -28,17 +29,24 @@ export default function PublicIPsPage() {
 
     // Filter public IPs
     const filteredIps = useMemo(() => {
-        if (!filterText) return publicIps;
-        const lower = filterText.toLowerCase();
-        return publicIps.filter(
-            (ip) =>
-                ip.ip_address.toLowerCase().includes(lower) ||
-                ip.resource_name.toLowerCase().includes(lower) ||
-                ip.project_id.toLowerCase().includes(lower) ||
-                ip.region.toLowerCase().includes(lower) ||
-                ip.resource_type.toLowerCase().includes(lower)
-        );
-    }, [publicIps, filterText]);
+        let filtered = [...publicIps];
+        if (showUnusedOnly) {
+            filtered = filtered.filter(ip => ip.status !== 'IN_USE');
+        }
+
+        if (filterText) {
+            const lower = filterText.toLowerCase();
+            filtered = filtered.filter(
+                (ip) =>
+                    ip.ip_address.toLowerCase().includes(lower) ||
+                    ip.resource_name.toLowerCase().includes(lower) ||
+                    ip.project_id.toLowerCase().includes(lower) ||
+                    ip.region.toLowerCase().includes(lower) ||
+                    ip.resource_type.toLowerCase().includes(lower)
+            );
+        }
+        return filtered;
+    }, [publicIps, filterText, showUnusedOnly]);
 
     // Sort public IPs
     const sortedIps = useMemo(() => {
@@ -153,6 +161,25 @@ export default function PublicIPsPage() {
                                     {t('common.download')} CSV
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 hover:text-slate-900 select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={showUnusedOnly}
+                                    onChange={(e) => setShowUnusedOnly(e.target.checked)}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                />
+                                <span className="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    Show Unused Only (Cost Saving)
+                                </span>
+                            </label>
                         </div>
                     </div>
 

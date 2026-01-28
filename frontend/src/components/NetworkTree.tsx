@@ -17,6 +17,7 @@ const ChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" he
 const FolderIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg>;
 const NetworkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>;
 const SubnetIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-500"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /></svg>;
+const ExternalLinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>;
 
 export default function NetworkTree({ data, isLoading }: NetworkTreeProps) {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -173,8 +174,20 @@ function ProjectRow({ project, expanded, onToggle }: {
                         <ChevronRight />
                     </div>
                     <FolderIcon />
-                    <div className="flex flex-col truncate">
-                        <span className="text-sm font-semibold text-slate-800 truncate">{project.project_name}</span>
+                    <div className="flex flex-col truncate group/link">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-800 truncate">{project.project_name}</span>
+                            <a
+                                href={`https://console.cloud.google.com/home/dashboard?project=${project.project_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-300 hover:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Open in GCP Console"
+                            >
+                                <ExternalLinkIcon />
+                            </a>
+                        </div>
                         <span className="text-[10px] text-slate-400 truncate uppercase tracking-widest">{project.project_id}</span>
                     </div>
                     {project.is_shared_vpc_host && (
@@ -233,12 +246,22 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
                 className="grid grid-cols-12 gap-4 px-6 py-2.5 hover:bg-slate-50 cursor-pointer ml-6 relative z-10"
                 onClick={() => onToggle(rowId)}
             >
-                <div className="col-span-5 flex items-center gap-3 pl-2">
+                <div className="col-span-5 flex items-center gap-3 pl-2 group/link">
                     <div className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
                         <ChevronRight />
                     </div>
                     <NetworkIcon />
                     <span className="text-sm text-slate-700 font-medium truncate">{vpc.name}</span>
+                    <a
+                        href={`https://console.cloud.google.com/networking/networks/details/${vpc.name}?project=${projectId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-300 hover:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Open in GCP Console"
+                    >
+                        <ExternalLinkIcon />
+                    </a>
                     {vpc.is_shared_vpc_host && (
                         <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-purple-100 text-purple-700 font-medium">Shared</span>
                     )}
@@ -260,7 +283,7 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
                         <div className="py-2 pl-6 text-xs text-slate-400 italic">No Subnets found</div>
                     ) : (
                         vpc.subnets.map(subnet => (
-                            <SubnetRow key={subnet.self_link} subnet={subnet} />
+                            <SubnetRow key={subnet.self_link} subnet={subnet} projectId={projectId} />
                         ))
                     )}
                 </div>
@@ -269,12 +292,22 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
     );
 }
 
-function SubnetRow({ subnet }: { subnet: Subnet }) {
+function SubnetRow({ subnet, projectId }: { subnet: Subnet, projectId: string }) {
     return (
         <div className="grid grid-cols-12 gap-4 px-6 py-2 hover:bg-sky-50 transition-colors group relative">
-            <div className="col-span-5 flex items-center gap-3 pl-2">
+            <div className="col-span-5 flex items-center gap-3 pl-2 group/link">
                 <div className="w-4 flex justify-center"><div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-sky-400"></div></div>
                 <span className="text-sm text-slate-600 truncate group-hover:text-slate-900 transition-colors">{subnet.name}</span>
+                <a
+                    href={`https://console.cloud.google.com/networking/subnetworks/details/${subnet.region}/${subnet.name}?project=${projectId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-300 hover:text-indigo-500 opacity-0 group-hover/link:opacity-100 transition-all"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Open in GCP Console"
+                >
+                    <ExternalLinkIcon />
+                </a>
             </div>
 
             <div className="col-span-3 flex flex-col justify-center text-xs">
