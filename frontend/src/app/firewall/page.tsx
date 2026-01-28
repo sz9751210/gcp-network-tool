@@ -158,7 +158,7 @@ export default function FirewallPage() {
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">{t('common.loading')}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -168,8 +168,8 @@ export default function FirewallPage() {
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('firewall.title')}</h1>
-                <p className="text-slate-600">
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">{t('firewall.title')}</h1>
+                <p className="text-slate-600 dark:text-slate-400">
                     {metadata
                         ? `${t('firewall.subtitle')} - ${metadata.totalProjects} ${t('dashboard.projects')}`
                         : t('firewall.noData')}
@@ -178,12 +178,12 @@ export default function FirewallPage() {
 
             {!topology || firewallRules.length === 0 ? (
                 <div className="card p-12 text-center">
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">{t('firewall.noData')}</h3>
-                    <p className="text-slate-600">{t('firewall.noDataDesc')}</p>
+                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">{t('firewall.noData')}</h3>
+                    <p className="text-slate-600 dark:text-slate-400">{t('firewall.noDataDesc')}</p>
                 </div>
             ) : (
-                <div className="card shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b border-slate-200">
+                <div className="card shadow-sm overflow-hidden">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
 
                             {/* Search */}
@@ -259,8 +259,8 @@ export default function FirewallPage() {
                             </div>
                         </div>
 
-                        <div className="mt-4 text-xs text-slate-500">
-                            <span className="font-semibold text-indigo-600">{sortedRules.length}</span> / {' '}
+                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedRules.length}</span> / {' '}
                             <span className="font-semibold">{firewallRules.length}</span> {t('firewall.totalRules').toLowerCase()}
                         </div>
                     </div>
@@ -268,30 +268,30 @@ export default function FirewallPage() {
                     {/* Table */}
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <th onClick={() => handleSort('priority')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
+                                    <th onClick={() => handleSort('priority')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
                                         {t('firewall.priority')} {sortBy === 'priority' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
+                                    <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
                                         {t('firewall.ruleName')} {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.direction')}</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.action')}</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.sourceRanges')}</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('firewall.protocols')}</th>
-                                    <th onClick={() => handleSort('vpc_network')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('firewall.direction')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('firewall.action')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('firewall.sourceRanges')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('firewall.protocols')}</th>
+                                    <th onClick={() => handleSort('vpc_network')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
                                         {t('firewall.network')} {sortBy === 'vpc_network' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th onClick={() => handleSort('project_id')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
+                                    <th onClick={() => handleSort('project_id')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
                                         {t('publicIps.project')} {sortBy === 'project_id' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         Details
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-slate-200">
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                 {sortedRules.map((rule, idx) => {
                                     const protocols = [...rule.allowed, ...rule.denied].map(p => {
                                         const ports = p.ports?.length ? `:${p.ports.join(',')}` : '';
@@ -303,12 +303,12 @@ export default function FirewallPage() {
                                         : rule.destination_ranges;
 
                                     return (
-                                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-700">{rule.priority}</td>
-                                            <td className="px-4 py-3 text-sm font-medium text-slate-800">
+                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-700 dark:text-slate-300">{rule.priority}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100">
                                                 <div className="flex items-center gap-2">
                                                     {isRisky(rule) && (
-                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200" title="Risky: Details allows traffic from 0.0.0.0/0">
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" title="Risky: Details allows traffic from 0.0.0.0/0">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                                                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                                                                 <line x1="12" y1="9" x2="12" y2="13" />
@@ -322,16 +322,16 @@ export default function FirewallPage() {
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.direction === 'INGRESS'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-purple-100 text-purple-800'
+                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
                                                     }`}>
                                                     {rule.direction === 'INGRESS' ? t('firewall.ingress') : t('firewall.egress')}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${rule.action === 'ALLOW'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                                     }`}>
                                                     {rule.action === 'ALLOW' ? t('firewall.allow') : t('firewall.deny')}
                                                 </span>
@@ -339,28 +339,28 @@ export default function FirewallPage() {
                                             <td className="px-4 py-3 text-sm">
                                                 <div className="max-w-xs">
                                                     {ranges.length > 0 ? (
-                                                        <div className="font-mono text-xs text-slate-600">
+                                                        <div className="font-mono text-xs text-slate-600 dark:text-slate-400">
                                                             {ranges.slice(0, 2).map((r, i) => (
                                                                 <div key={i}>{r}</div>
                                                             ))}
                                                             {ranges.length > 2 && (
-                                                                <div className="text-slate-400">+{ranges.length - 2} more</div>
+                                                                <div className="text-slate-400 dark:text-slate-500">+{ranges.length - 2} more</div>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-slate-400">Any</span>
+                                                        <span className="text-slate-400 dark:text-slate-500">Any</span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm font-mono text-slate-600">
+                                            <td className="px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-400">
                                                 {protocols || 'All'}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-slate-600">{rule.vpc_network}</td>
-                                            <td className="px-4 py-3 text-sm text-slate-600">{rule.project_id}</td>
+                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{rule.vpc_network}</td>
+                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{rule.project_id}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <button
                                                     onClick={() => setSelectedRule(rule)}
-                                                    className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
                                                 >
                                                     View
                                                 </button>
@@ -377,18 +377,18 @@ export default function FirewallPage() {
             {/* Detail Modal */}
             {selectedRule && (
                 <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setSelectedRule(null)}>
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                     <span className={`w-3 h-3 rounded-full ${selectedRule.action === 'ALLOW' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                                     {selectedRule.name}
                                 </h3>
-                                <p className="text-sm text-slate-500 mt-1 font-mono">{selectedRule.project_id} / {selectedRule.vpc_network}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-mono">{selectedRule.project_id} / {selectedRule.vpc_network}</p>
                             </div>
                             <button
                                 onClick={() => setSelectedRule(null)}
-                                className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                             </button>
@@ -396,47 +396,47 @@ export default function FirewallPage() {
                         <div className="p-6 overflow-y-auto space-y-6">
                             {/* Key Properties */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Direction</span>
-                                    <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${selectedRule.direction === 'INGRESS' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Direction</span>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${selectedRule.direction === 'INGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'}`}>
                                         {selectedRule.direction}
                                     </span>
                                 </div>
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Priority</span>
-                                    <span className="font-mono text-lg font-semibold text-slate-700">{selectedRule.priority}</span>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Priority</span>
+                                    <span className="font-mono text-lg font-semibold text-slate-700 dark:text-slate-200">{selectedRule.priority}</span>
                                 </div>
                             </div>
 
                             {/* Ranges */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="M22 12h-4" /><path d="M6 12H2" /><path d="m12 6 2-2 4 4" /><path d="m10 18-2 2-4-4" /></svg>
                                         Source Ranges
                                     </h4>
-                                    <div className="bg-slate-50 rounded-md border border-slate-200 h-40 overflow-y-auto p-2">
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600 h-40 overflow-y-auto p-2">
                                         {selectedRule.source_ranges.length > 0 ? (
                                             selectedRule.source_ranges.map((r, i) => (
-                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white rounded text-slate-600 border border-transparent hover:border-slate-100">{r}</div>
+                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white dark:hover:bg-slate-600 rounded text-slate-600 dark:text-slate-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-500">{r}</div>
                                             ))
                                         ) : (
-                                            <div className="text-xs text-slate-400 italic p-2">None</div>
+                                            <div className="text-xs text-slate-400 dark:text-slate-500 italic p-2">None</div>
                                         )}
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="m12 16-4-4 4-4" /><path d="m16 12-4 4-4-4" /></svg>
                                         Destination Ranges
                                     </h4>
-                                    <div className="bg-slate-50 rounded-md border border-slate-200 h-40 overflow-y-auto p-2">
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600 h-40 overflow-y-auto p-2">
                                         {selectedRule.destination_ranges.length > 0 ? (
                                             selectedRule.destination_ranges.map((r, i) => (
-                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white rounded text-slate-600 border border-transparent hover:border-slate-100">{r}</div>
+                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white dark:hover:bg-slate-600 rounded text-slate-600 dark:text-slate-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-500">{r}</div>
                                             ))
                                         ) : (
-                                            <div className="text-xs text-slate-400 italic p-2">None</div>
+                                            <div className="text-xs text-slate-400 dark:text-slate-500 italic p-2">None</div>
                                         )}
                                     </div>
                                 </div>
@@ -444,13 +444,13 @@ export default function FirewallPage() {
 
                             {/* Protocols & Ports */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-700 mb-3">Protocols & Ports</h4>
+                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Protocols & Ports</h4>
                                 <div className="space-y-2">
                                     {[...selectedRule.allowed, ...selectedRule.denied].map((p, i) => (
-                                        <div key={i} className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                            <span className="font-mono text-sm font-bold text-indigo-600 uppercase w-16">{p.IPProtocol}</span>
-                                            <div className="h-4 w-px bg-slate-300"></div>
-                                            <div className="flex-1 font-mono text-xs text-slate-600 break-all">
+                                        <div key={i} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                                            <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase w-16">{p.IPProtocol}</span>
+                                            <div className="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>
+                                            <div className="flex-1 font-mono text-xs text-slate-600 dark:text-slate-400 break-all">
                                                 {p.ports && p.ports.length > 0 ? p.ports.join(', ') : 'All ports'}
                                             </div>
                                         </div>
@@ -461,30 +461,30 @@ export default function FirewallPage() {
                             {/* Tags */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 mb-3">Target Tags</h4>
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Target Tags</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedRule.target_tags && selectedRule.target_tags.length > 0 ? (
                                             selectedRule.target_tags.map(tag => (
-                                                <span key={tag} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs border border-amber-200 rounded-md font-medium">
+                                                <span key={tag} className="px-2 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs border border-amber-200 dark:border-amber-800 rounded-md font-medium">
                                                     {tag}
                                                 </span>
                                             ))
                                         ) : (
-                                            <span className="text-xs text-slate-400 italic">No target tags (Applies to all instances)</span>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500 italic">No target tags (Applies to all instances)</span>
                                         )}
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 mb-3">Target Service Accounts</h4>
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Target Service Accounts</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedRule.target_service_accounts && selectedRule.target_service_accounts.length > 0 ? (
                                             selectedRule.target_service_accounts.map(sa => (
-                                                <span key={sa} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs border border-indigo-200 rounded-md font-medium">
+                                                <span key={sa} className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs border border-indigo-200 dark:border-indigo-800 rounded-md font-medium">
                                                     {sa}
                                                 </span>
                                             ))
                                         ) : (
-                                            <span className="text-xs text-slate-400 italic">No target service accounts</span>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500 italic">No target service accounts</span>
                                         )}
                                     </div>
                                 </div>
@@ -492,11 +492,11 @@ export default function FirewallPage() {
 
                             {/* Raw Logic Warning if Risky */}
                             {isRisky(selectedRule) && (
-                                <div className="mt-6 p-4 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                                <div className="mt-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg flex items-start gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 dark:text-rose-400 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                                     <div>
-                                        <h4 className="text-sm font-bold text-rose-800">Security Risk Detected</h4>
-                                        <p className="text-xs text-rose-700 mt-1">
+                                        <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400">Security Risk Detected</h4>
+                                        <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
                                             This rule allows ingress traffic from any source (0.0.0.0/0). Ensure this is intended (e.g., for public web servers).
                                         </p>
                                     </div>
@@ -504,7 +504,7 @@ export default function FirewallPage() {
                             )}
 
                         </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end">
                             <button
                                 onClick={() => setSelectedRule(null)}
                                 className="btn-secondary"

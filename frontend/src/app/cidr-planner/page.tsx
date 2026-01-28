@@ -115,23 +115,23 @@ export default function CIDRPlannerPage() {
         <div className="p-8 max-w-[1400px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('cidrPlanner.title')}</h1>
-                <p className="text-slate-600">{t('cidrPlanner.subtitle')}</p>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">{t('cidrPlanner.title')}</h1>
+                <p className="text-slate-600 dark:text-slate-400">{t('cidrPlanner.subtitle')}</p>
             </div>
 
             <div className="space-y-6">
                 {/* CIDR Conflict Checker */}
                 <div className="card">
-                    <div className="p-6 border-b border-slate-200">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 dark:text-rose-400">
                                 <circle cx="12" cy="12" r="10" />
                                 <path d="m15 9-6 6" />
                                 <path d="m9 9 6 6" />
                             </svg>
                             {t('cidrPlanner.conflictChecker')}
                         </h2>
-                        <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.conflictCheckerDesc')}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('cidrPlanner.conflictCheckerDesc')}</p>
                     </div>
                     <div className="p-6">
                         <CIDRVisualizer />
@@ -143,9 +143,9 @@ export default function CIDRPlannerPage() {
 
                 {/* CIDR Calculator */}
                 <div className="card">
-                    <div className="p-6 border-b border-slate-200">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600 dark:text-indigo-400">
                                 <rect x="4" y="2" width="16" height="20" rx="2" />
                                 <line x1="8" y1="6" x2="16" y2="6" />
                                 <line x1="16" y1="14" x2="16" y2="14.01" />
@@ -157,7 +157,7 @@ export default function CIDRPlannerPage() {
                             </svg>
                             {t('cidrPlanner.calculator')}
                         </h2>
-                        <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.calculatorDesc')}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('cidrPlanner.calculatorDesc')}</p>
                     </div>
                     <div className="p-6 space-y-4">
                         <div className="flex gap-3">
@@ -175,41 +175,41 @@ export default function CIDRPlannerPage() {
                         </div>
 
                         {cidrInfo && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
                                 <div className="space-y-3">
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.networkAddress')}</div>
-                                        <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.networkAddress}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.networkAddress')}</div>
+                                        <div className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{cidrInfo.networkAddress}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.broadcastAddress')}</div>
-                                        <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.broadcastAddress}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.broadcastAddress')}</div>
+                                        <div className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{cidrInfo.broadcastAddress}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.firstUsable')}</div>
-                                        <div className="text-sm font-mono font-semibold text-emerald-700">{cidrInfo.firstUsable}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.firstUsable')}</div>
+                                        <div className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-400">{cidrInfo.firstUsable}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.lastUsable')}</div>
-                                        <div className="text-sm font-mono font-semibold text-emerald-700">{cidrInfo.lastUsable}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.lastUsable')}</div>
+                                        <div className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-400">{cidrInfo.lastUsable}</div>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.netmask')}</div>
-                                        <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.netmask}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.netmask')}</div>
+                                        <div className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{cidrInfo.netmask}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.wildcardMask')}</div>
-                                        <div className="text-sm font-mono font-semibold text-slate-800">{cidrInfo.wildcardMask}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.wildcardMask')}</div>
+                                        <div className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{cidrInfo.wildcardMask}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.totalHosts')}</div>
-                                        <div className="text-sm font-semibold text-indigo-700">{cidrInfo.totalHosts.toLocaleString()}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.totalHosts')}</div>
+                                        <div className="text-sm font-semibold text-indigo-700 dark:text-indigo-400">{cidrInfo.totalHosts.toLocaleString()}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('cidrPlanner.usableHosts')}</div>
-                                        <div className="text-sm font-semibold text-indigo-700">{cidrInfo.usableHosts.toLocaleString()}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('cidrPlanner.usableHosts')}</div>
+                                        <div className="text-sm font-semibold text-indigo-700 dark:text-indigo-400">{cidrInfo.usableHosts.toLocaleString()}</div>
                                     </div>
                                 </div>
                             </div>
@@ -220,9 +220,9 @@ export default function CIDRPlannerPage() {
                 {/* Subnet Splitting Suggestions */}
                 {cidrInfo && (
                     <div className="card">
-                        <div className="p-6 border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600 dark:text-emerald-400">
                                     <path d="M3 3h18v18H3z" />
                                     <path d="M3 9h18" />
                                     <path d="M3 15h18" />
@@ -231,11 +231,11 @@ export default function CIDRPlannerPage() {
                                 </svg>
                                 {t('cidrPlanner.subnetSplitting')}
                             </h2>
-                            <p className="text-sm text-slate-600 mt-1">{t('cidrPlanner.subnetSplittingDesc')} {cidrInfo.cidr}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('cidrPlanner.subnetSplittingDesc')} {cidrInfo.cidr}</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-3">
                                     {t('cidrPlanner.newPrefix')}: /{splitPrefix}
                                 </label>
                                 <input
@@ -246,7 +246,7 @@ export default function CIDRPlannerPage() {
                                     onChange={(e) => setSplitPrefix(parseInt(e.target.value))}
                                     className="w-full"
                                 />
-                                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     <span>/{cidrInfo.prefix + 1}</span>
                                     <span>/30</span>
                                 </div>
@@ -254,15 +254,15 @@ export default function CIDRPlannerPage() {
 
                             {subnetSuggestions.length > 0 && (
                                 <div className="mt-6">
-                                    <div className="text-sm text-slate-600 mb-3">
-                                        {t('cidrPlanner.splittingInto')} <span className="font-semibold text-indigo-600">{Math.pow(2, splitPrefix - cidrInfo.prefix)}</span> {t('dashboard.subnets').toLowerCase()}
+                                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                        {t('cidrPlanner.splittingInto')} <span className="font-semibold text-indigo-600 dark:text-indigo-400">{Math.pow(2, splitPrefix - cidrInfo.prefix)}</span> {t('dashboard.subnets').toLowerCase()}
                                         {Math.pow(2, splitPrefix - cidrInfo.prefix) > 10 && ` (${t('cidrPlanner.showingFirst10')})`}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {subnetSuggestions.map((subnet, idx) => (
-                                            <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 transition-colors">
-                                                <div className="font-mono text-sm font-semibold text-slate-800">{subnet.cidr}</div>
-                                                <div className="text-xs text-slate-600 mt-1">
+                                            <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors">
+                                                <div className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{subnet.cidr}</div>
+                                                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                                                     {subnet.usableHosts.toLocaleString()} {t('cidrPlanner.usableHosts').toLowerCase()}
                                                 </div>
                                             </div>

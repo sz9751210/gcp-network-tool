@@ -1,46 +1,32 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { NetworkTopology, Subnet as SubnetType } from '@/types/network';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Subnet } from '@/types/network';
 
 interface SubnetRow {
-    projectId: string;
     projectName: string;
     vpcName: string;
     subnetName: string;
     region: string;
-    cidr: string;
-    gatewayIp: string | null;
-    privateGoogleAccess: boolean;
-    selfLink: string;
+    ipCidrRange: string;
 }
-
-const calculateHosts = (cidr: string) => {
-    try {
-        const prefix = parseInt(cidr.split('/')[1], 10);
-        return Math.pow(2, 32 - prefix) - 2;
-    } catch {
-        return 0;
-    }
-};
 
 export default function SubnetsPage() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
-    const [sortBy, setSortBy] = useState<keyof SubnetRow>('cidr');
+    const [sortBy, setSortBy] = useState<keyof SubnetRow>('subnetName');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [filterText, setFilterText] = useState('');
-
-    // New Filters
     const [projectFilter, setProjectFilter] = useState<string>('all');
+    const [vpcFilter, setVpcFilter] = useState<string>('all');
     const [regionFilter, setRegionFilter] = useState<string>('all');
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     useEffect(() => {
         const load = async () => {
@@ -50,107 +36,103 @@ export default function SubnetsPage() {
         load();
     }, [refreshData]);
 
-    const subnets = useMemo(() => {
-        if (!topology) return [];
+    // Transform nested structure to flat table rows
+    const subnetRows = useMemo(() => {
+        if (!topology?.projects) return [];
 
         const rows: SubnetRow[] = [];
-        topology.projects.forEach((project) => {
-            project.vpc_networks.forEach((vpc) => {
-                vpc.subnets.forEach((subnet) => {
+        topology.projects.forEach(project => {
+            project.vpcs.forEach(vpc => {
+                vpc.subnets.forEach(subnet => {
                     rows.push({
-                        projectId: project.project_id,
-                        projectName: project.project_name,
+                        projectName: project.project_id,
                         vpcName: vpc.name,
                         subnetName: subnet.name,
                         region: subnet.region,
-                        cidr: subnet.ip_cidr_range,
-                        gatewayIp: subnet.gateway_ip,
-                        privateGoogleAccess: subnet.private_ip_google_access,
-                        selfLink: subnet.self_link,
+                        ipCidrRange: subnet.ip_cidr_range,
                     });
                 });
             });
         });
-
         return rows;
     }, [topology]);
 
-    const filteredAndSortedSubnets = useMemo(() => {
-        let result = subnets.filter((subnet) => {
-            const searchText = filterText.toLowerCase();
-            const matchesSearch = (
-                subnet.projectName.toLowerCase().includes(searchText) ||
-                subnet.vpcName.toLowerCase().includes(searchText) ||
-                subnet.subnetName.toLowerCase().includes(searchText) ||
-                subnet.cidr.includes(searchText)
-            );
-
-            const matchesProject = projectFilter === 'all' || subnet.projectId === projectFilter;
-            const matchesRegion = regionFilter === 'all' || subnet.region === regionFilter;
-
-            return matchesSearch && matchesProject && matchesRegion;
+    // Filter options with counts
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        subnetRows.forEach(row => {
+            counts.set(row.projectName, (counts.get(row.projectName) || 0) + 1);
         });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [subnetRows]);
 
-        // Sort subnets with null handling
-        result.sort((a, b) => {
-            let aVal: string | boolean | null = a[sortBy];
-            let bVal: string | boolean | null = b[sortBy];
+    const vpcOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        subnetRows.forEach(row => {
+            counts.set(row.vpcName, (counts.get(row.vpcName) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [subnetRows]);
 
-            // Handle null values
-            if (aVal === null) return sortOrder === 'asc' ? 1 : -1;
-            if (bVal === null) return sortOrder === 'asc' ? -1 : 1;
+    const regionOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        subnetRows.forEach(row => {
+            counts.set(row.region, (counts.get(row.region) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [subnetRows]);
 
-            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+    // Apply filters
+    const filteredRows = useMemo(() => {
+        let filtered = [...subnetRows];
+
+        if (projectFilter !== 'all') {
+            filtered = filtered.filter(row => row.projectName === projectFilter);
+        }
+        if (vpcFilter !== 'all') {
+            filtered = filtered.filter(row => row.vpcName === vpcFilter);
+        }
+        if (regionFilter !== 'all') {
+            filtered = filtered.filter(row => row.region === regionFilter);
+        }
+
+        if (filterText) {
+            const lower = filterText.toLowerCase();
+            filtered = filtered.filter(
+                (row) =>
+                    row.subnetName.toLowerCase().includes(lower) ||
+                    row.ipCidrRange.toLowerCase().includes(lower) ||
+                    row.vpcName.toLowerCase().includes(lower)
+            );
+        }
+
+        return filtered;
+    }, [subnetRows, projectFilter, vpcFilter, regionFilter, filterText]);
+
+    // Sort rows
+    const sortedRows = useMemo(() => {
+        return [...filteredRows].sort((a, b) => {
+            const aVal = a[sortBy] ?? '';
+            const bVal = b[sortBy] ?? '';
 
             if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
             if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
             return 0;
         });
+    }, [filteredRows, sortBy, sortOrder]);
 
-        return result;
-    }, [subnets, sortBy, sortOrder, filterText, projectFilter, regionFilter]);
-
-    // Derived unique values for dropdowns
-    const projectOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        const names = new Map<string, string>();
-
-        subnets.forEach(s => {
-            counts.set(s.projectId, (counts.get(s.projectId) || 0) + 1);
-            names.set(s.projectId, s.projectName);
-        });
-
-        return Array.from(names.entries())
-            .sort((a, b) => a[1].localeCompare(b[1]))
-            .map(([id, name]) => ({
-                id,
-                name,
-                count: counts.get(id) || 0
-            }));
-    }, [subnets]);
-
-    const regionOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        subnets.forEach(s => {
-            counts.set(s.region, (counts.get(s.region) || 0) + 1);
-        });
-        return Array.from(counts.entries())
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([value, count]) => ({ value, count }));
-    }, [subnets]);
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredAndSortedSubnets.length / itemsPerPage);
-    const paginatedSubnets = filteredAndSortedSubnets.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset page when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filterText, projectFilter, regionFilter, itemsPerPage]);
+    // Pagination
+    const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
+    const paginatedRows = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedRows.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedRows, currentPage, itemsPerPage]);
 
     const handleSort = (column: keyof SubnetRow) => {
         if (sortBy === column) {
@@ -161,238 +143,181 @@ export default function SubnetsPage() {
         }
     };
 
-    const exportToCSV = () => {
-        const headers = ['Project', 'VPC', 'Subnet', 'Region', 'CIDR', 'Gateway', 'Private Google Access'];
-        const rows = filteredAndSortedSubnets.map((s) => [
-            s.projectName,
-            s.vpcName,
-            s.subnetName,
-            s.region,
-            s.cidr,
-            s.gatewayIp || '',
-            s.privateGoogleAccess ? 'Yes' : 'No',
-        ]);
-
-        const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'gcp-subnets.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-    };
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, projectFilter, vpcFilter, regionFilter, itemsPerPage]);
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <div className="text-center">
+            <div className="p-8 max-w-[1800px] mx-auto">
+                <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600">{t('common.loading')}</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t('common.loading')}</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto">
+        <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('subnets.title')}</h1>
-                <p className="text-slate-600">{t('subnets.subtitle')}</p>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">{t('subnets.title')}</h1>
+                <p className="text-slate-600 dark:text-slate-400">
+                    {metadata
+                        ? `${t('subnets.subtitle')} - ${metadata.totalProjects} ${t('dashboard.projects')}`
+                        : t('subnets.noData')}
+                </p>
             </div>
 
-            {/* Controls */}
-            <div className="card mb-6 overflow-hidden">
-                <div className="p-4 bg-slate-50 border-b border-slate-200">
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                        <div className="relative w-full md:w-80">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="m21 21-4.3-4.3" />
-                                </svg>
+            {!topology || subnetRows.length === 0 ? (
+                <div className="card p-12 text-center">
+                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">{t('subnets.noData')}</h3>
+                    <p className="text-slate-600 dark:text-slate-400">{t('subnets.noDataDesc')}</p>
+                </div>
+            ) : (
+                <div className="card shadow-sm overflow-hidden">
+                    {/* Toolbar */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+                            {/* Search */}
+                            <div className="relative w-full xl:w-64">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={filterText}
+                                    onChange={(e) => setFilterText(e.target.value)}
+                                    className="input-field pl-10"
+                                    placeholder={t('subnets.searchPlaceholder')}
+                                />
                             </div>
-                            <input
-                                type="text"
-                                value={filterText}
-                                onChange={(e) => setFilterText(e.target.value)}
-                                className="input-field pl-10"
-                                placeholder={t('subnets.searchPlaceholder')}
-                            />
-                        </div>
 
-                        <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
-                            <select
-                                value={projectFilter}
-                                onChange={(e) => setProjectFilter(e.target.value)}
-                                className="input-select md:w-56"
-                            >
-                                <option value="all">All Projects ({subnets.length})</option>
-                                {projectOptions.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} ({p.count})</option>
-                                ))}
-                            </select>
-                            <select
-                                value={regionFilter}
-                                onChange={(e) => setRegionFilter(e.target.value)}
-                                className="input-select md:w-48"
-                            >
-                                <option value="all">All Regions</option>
-                                {regionOptions.map(r => (
-                                    <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
-                                ))}
-                            </select>
-
-                            <button
-                                onClick={exportToCSV}
-                                disabled={filteredAndSortedSubnets.length === 0}
-                                className="btn-primary flex items-center gap-2 whitespace-nowrap"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                                {t('common.download')} CSV
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-                        <div>
-                            {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
-                            <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Table */}
-            <div className="card overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-slate-100 border-b border-slate-200">
-                            <tr>
-                                {[
-                                    { key: 'projectName', label: t('publicIps.project') },
-                                    { key: 'vpcName', label: 'VPC' },
-                                    { key: 'subnetName', label: t('dashboard.subnets') },
-                                    { key: 'region', label: t('subnets.region') },
-                                    { key: 'cidr', label: t('subnets.cidr') },
-
-                                    { key: 'capacity', label: 'Capacity' },
-                                    { key: 'gatewayIp', label: t('subnets.gateway') },
-                                    { key: 'actions', label: 'Actions' },
-                                ].map((col) => (
-                                    <th
-                                        key={col.key}
-                                        onClick={() => handleSort(col.key as keyof SubnetRow)}
-                                        className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            {col.label}
-                                            {sortBy === col.key && (
-                                                <span className="text-indigo-600">
-                                                    {sortOrder === 'asc' ? '↑' : '↓'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                            {paginatedSubnets.map((subnet, idx) => (
-                                <tr
-                                    key={`${subnet.projectId}-${subnet.vpcName}-${subnet.subnetName}-${idx}`}
-                                    className="hover:bg-slate-50 transition-colors"
+                            {/* Filters */}
+                            <div className="flex flex-wrap gap-2 items-center w-full xl:w-auto">
+                                <select
+                                    value={projectFilter}
+                                    onChange={(e) => setProjectFilter(e.target.value)}
+                                    className="input-select w-40"
                                 >
-                                    <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                                        {subnet.projectName}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-700">{subnet.vpcName}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-700">{subnet.subnetName}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-600">{subnet.region}</td>
-                                    <td className="px-6 py-4 text-sm font-mono text-indigo-600">{subnet.cidr}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-600">
-                                        <div className="flex flex-col gap-1 w-24">
-                                            <div className="text-xs font-mono">{calculateHosts(subnet.cidr).toLocaleString()} IP</div>
-                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-indigo-400"
-                                                    style={{ width: `${Math.min(100, Math.max(5, (32 - parseInt(subnet.cidr.split('/')[1])) * 5))}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm font-mono text-slate-600">
-                                        {subnet.gatewayIp || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-600">
-                                        <a
-                                            href={`https://console.cloud.google.com/networking/subnetworks/details/${subnet.region}/${subnet.subnetName}?project=${subnet.projectId}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-slate-400 hover:text-indigo-600 transition-colors"
-                                            title="Open in GCP Console"
+                                    <option value="all">All Projects</option>
+                                    {projectOptions.map(p => (
+                                        <option key={p.value} value={p.value}>{p.value} ({p.count})</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    value={vpcFilter}
+                                    onChange={(e) => setVpcFilter(e.target.value)}
+                                    className="input-select w-40"
+                                >
+                                    <option value="all">All VPCs</option>
+                                    {vpcOptions.map(v => (
+                                        <option key={v.value} value={v.value}>{v.value} ({v.count})</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    value={regionFilter}
+                                    onChange={(e) => setRegionFilter(e.target.value)}
+                                    className="input-select w-40"
+                                >
+                                    <option value="all">All Regions</option>
+                                    {regionOptions.map(r => (
+                                        <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                    className="input-select w-28"
+                                >
+                                    <option value={10}>10 / page</option>
+                                    <option value={25}>25 / page</option>
+                                    <option value={50}>50 / page</option>
+                                    <option value={100}>100 / page</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedRows.length}</span> / {' '}
+                            <span className="font-semibold">{subnetRows.length}</span> {t('subnets.totalSubnets').toLowerCase()}
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    {[
+                                        { key: 'projectName', label: t('publicIps.project') },
+                                        { key: 'vpcName', label: 'VPC' },
+                                        { key: 'subnetName', label: t('subnets.subnetName') },
+                                        { key: 'region', label: t('publicIps.region') },
+                                        { key: 'ipCidrRange', label: t('subnets.cidrRange') },
+                                    ].map((col) => (
+                                        <th
+                                            key={col.key}
+                                            onClick={() => handleSort(col.key as keyof SubnetRow)}
+                                            className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                                <polyline points="15 3 21 3 21 9"></polyline>
-                                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                                            </svg>
-                                        </a>
-                                    </td>
+                                            <div className="flex items-center gap-2">
+                                                {col.label}
+                                                {sortBy === col.key && (
+                                                    <span className="text-indigo-600 dark:text-indigo-400">
+                                                        {sortOrder === 'asc' ? '↑' : '↓'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {filteredAndSortedSubnets.length === 0 && (
-                    <div className="text-center py-12 text-slate-500">
-                        {t('subnets.noData')}
-                    </div>
-                )}
-            </div>
-
-            {/* Pagination Controls */}
-            {filteredAndSortedSubnets.length > 0 && (
-                <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <span>Show</span>
-                        <select
-                            value={itemsPerPage}
-                            onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                            className="input-select py-1 px-2"
-                        >
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
-                        <span>per page</span>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {paginatedRows.map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{row.projectName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300 font-medium">{row.vpcName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-slate-100">{row.subnetName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{row.region}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-indigo-700 dark:text-indigo-400">{row.ipCidrRange}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="p-2 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                        </button>
-                        <span className="text-sm text-slate-600">
-                            Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-2 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-                        </button>
-                    </div>
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <div className="text-sm text-slate-600 dark:text-slate-400">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
-
         </div>
     );
 }
