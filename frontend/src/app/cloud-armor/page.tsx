@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CloudArmorPolicy } from '@/types/network';
+import Pagination from '@/components/Pagination';
 
 export default function CloudArmorPage() {
     const { topology, metadata, refreshData } = useScan();
@@ -13,6 +14,10 @@ export default function CloudArmorPage() {
     const [filterText, setFilterText] = useState('');
     const [testInput, setTestInput] = useState('');
     const [projectFilter, setProjectFilter] = useState('all');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
         const load = async () => {
@@ -86,28 +91,37 @@ export default function CloudArmorPage() {
 
     // Filter policies
     const displayPolicies = useMemo(() => {
+        let filtered = policies;
         if (!testInput) {
-            if (!filterText && projectFilter === 'all') return policies;
-            const lower = filterText.toLowerCase();
-            return policies.filter(p =>
-                (projectFilter === 'all' || p.project_id === projectFilter) &&
-                (p.name.toLowerCase().includes(lower) ||
-                    p.project_id.toLowerCase().includes(lower) ||
-                    (p.description && p.description.toLowerCase().includes(lower)))
-            );
+            if (filterText || projectFilter !== 'all') {
+                const lower = filterText.toLowerCase();
+                filtered = policies.filter(p =>
+                    (projectFilter === 'all' || p.project_id === projectFilter) &&
+                    (p.name.toLowerCase().includes(lower) ||
+                        p.project_id.toLowerCase().includes(lower) ||
+                        (p.description && p.description.toLowerCase().includes(lower)))
+                );
+            }
+        } else {
+            // Simulation Mode
+            filtered = policies.map(policy => {
+                const matchingRules = policy.rules.filter(rule => checkRuleMatch(rule, testInput));
+                return {
+                    ...policy,
+                    hasMatch: matchingRules.length > 0,
+                    matchingRules
+                };
+            }).filter(p => p.hasMatch);
         }
-
-        // Simulation Mode
-        return policies.map(policy => {
-            const matchingRules = policy.rules.filter(rule => checkRuleMatch(rule, testInput));
-            return {
-                ...policy,
-                hasMatch: matchingRules.length > 0,
-                matchingRules
-            };
-        }).filter(p => p.hasMatch);
-
+        return filtered;
     }, [policies, filterText, testInput, projectFilter]);
+
+    // Paginated policies
+    const totalPages = Math.ceil(displayPolicies.length / itemsPerPage);
+    const paginatedPolicies = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return displayPolicies.slice(startIndex, startIndex + itemsPerPage);
+    }, [displayPolicies, currentPage, itemsPerPage]);
 
     // Unique values
     const uniqueProjects = useMemo(() => Array.from(new Set(policies.map(p => p.project_id))).sort(), [policies]);
@@ -130,6 +144,11 @@ export default function CloudArmorPage() {
         }
         setExpandedPolicies(newExpanded);
     };
+
+    // Reset pagination
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, testInput, projectFilter, itemsPerPage]);
 
     if (loading) {
         return (
@@ -236,154 +255,161 @@ export default function CloudArmorPage() {
                             <p className="text-slate-500 dark:text-slate-400 font-medium">{t('cloudArmor.noMatches')}</p>
                         </div>
                     ) : (
-                        displayPolicies.map((policy: any) => {
-                            const isExpanded = expandedPolicies.has(policy.name);
-                            const allowRules = policy.rules.filter((r: any) => r.action === 'allow').length;
-                            const denyRules = policy.rules.filter((r: any) => r.action.startsWith('deny')).length;
+                        <div className="space-y-6">
+                            {paginatedPolicies.map((policy: any) => {
+                                const isExpanded = expandedPolicies.has(policy.name);
+                                const allowRules = policy.rules.filter((r: any) => r.action === 'allow').length;
+                                const denyRules = policy.rules.filter((r: any) => r.action.startsWith('deny')).length;
 
-                            return (
-                                <div key={policy.name} className={`card overflow-hidden transition-all duration-300 ${policy.hasMatch ? 'ring-2 ring-indigo-500 shadow-md' : ''}`}>
-                                    {/* Policy Header */}
-                                    <div
-                                        onClick={() => togglePolicy(policy.name)}
-                                        className={`p-6 cursor-pointer transition-colors ${policy.hasMatch ? 'bg-indigo-50/50 dark:bg-indigo-900/20 hover:bg-indigo-50 dark:hover:bg-indigo-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{policy.name}</h3>
-                                                    {policy.adaptive_protection_enabled && (
-                                                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400">
-                                                            {t('cloudArmor.adaptiveProtection')}
-                                                        </span>
+                                return (
+                                    <div key={policy.name} className={`card overflow-hidden transition-all duration-300 ${policy.hasMatch ? 'ring-2 ring-indigo-500 shadow-md' : ''}`}>
+                                        {/* Policy Header (existing code) */}
+                                        <div
+                                            onClick={() => togglePolicy(policy.name)}
+                                            className={`p-6 cursor-pointer transition-colors ${policy.hasMatch ? 'bg-indigo-50/50 dark:bg-indigo-900/20 hover:bg-indigo-50 dark:hover:bg-indigo-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{policy.name}</h3>
+                                                        {policy.adaptive_protection_enabled && (
+                                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400">
+                                                                {t('cloudArmor.adaptiveProtection')}
+                                                            </span>
+                                                        )}
+                                                        {policy.hasMatch && (
+                                                            <span className="inline-flex px-2 py-1 text-xs font-bold rounded-full bg-indigo-600 text-white shadow-sm animate-pulse">
+                                                                {t('cloudArmor.matchFound')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {policy.description && (
+                                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{policy.description}</p>
                                                     )}
-                                                    {policy.hasMatch && (
-                                                        <span className="inline-flex px-2 py-1 text-xs font-bold rounded-full bg-indigo-600 text-white shadow-sm animate-pulse">
-                                                            {t('cloudArmor.matchFound')}
+                                                    <div className="flex items-center gap-4 text-sm">
+                                                        <span className="text-slate-500 dark:text-slate-400">
+                                                            {t('publicIps.project')}: <span className="font-medium text-slate-700 dark:text-slate-300">{policy.project_id}</span>
                                                         </span>
-                                                    )}
-                                                </div>
-                                                {policy.description && (
-                                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{policy.description}</p>
-                                                )}
-                                                <div className="flex items-center gap-4 text-sm">
-                                                    <span className="text-slate-500 dark:text-slate-400">
-                                                        {t('publicIps.project')}: <span className="font-medium text-slate-700 dark:text-slate-300">{policy.project_id}</span>
-                                                    </span>
-                                                    <span className="text-slate-500 dark:text-slate-400">
-                                                        {t('cloudArmor.rules')}: <span className="font-medium text-green-700 dark:text-green-400">{allowRules} {t('cloudArmor.allow')}</span>,
-                                                        <span className="font-medium text-red-700 dark:text-red-400 ml-1">{denyRules} {t('cloudArmor.deny')}</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="20"
-                                                height="20"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                            >
-                                                <polyline points="6 9 12 15 18 9" />
-                                            </svg>
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Rules */}
-                                    {isExpanded && policy.rules.length > 0 && (
-                                        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                                            <div className="p-6">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('cloudArmor.rules')}</h4>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {t('cloudArmor.showing')} {policy.rules.length} {t('cloudArmor.rules').toLowerCase()}
+                                                        <span className="text-slate-500 dark:text-slate-400">
+                                                            {t('cloudArmor.rules')}: <span className="font-medium text-green-700 dark:text-green-400">{allowRules} {t('cloudArmor.allow')}</span>,
+                                                            <span className="font-medium text-red-700 dark:text-red-400 ml-1">{denyRules} {t('cloudArmor.deny')}</span>
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-3">
-                                                    {policy.rules
-                                                        .sort((a: any, b: any) => a.priority - b.priority)
-                                                        .map((rule: any, idx: number) => {
-                                                            const isRuleMatched = testInput && checkRuleMatch(rule, testInput);
-                                                            const cidrs = extractCidrs(rule.match_expression);
-
-                                                            return (
-                                                                <div
-                                                                    key={idx}
-                                                                    className={`rounded-lg border transition-all duration-300 ${isRuleMatched
-                                                                        ? 'bg-white dark:bg-slate-700 border-indigo-400 ring-2 ring-indigo-200 dark:ring-indigo-800 shadow-lg'
-                                                                        : 'bg-white dark:bg-slate-700/50 border-slate-200 dark:border-slate-600'
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex">
-                                                                        {/* Priority Column */}
-                                                                        <div className={`flex-shrink-0 w-24 p-4 text-center border-r ${isRuleMatched ? 'border-indigo-100 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700'} rounded-l-lg`}>
-                                                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">{t('cloudArmor.priority')}</div>
-                                                                            <div className={`font-mono font-bold break-all ${isRuleMatched ? 'text-indigo-700 dark:text-indigo-400 text-lg' : 'text-slate-800 dark:text-slate-200'}`}>
-                                                                                {rule.priority}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Main Content */}
-                                                                        <div className="flex-1 p-4 overflow-hidden">
-                                                                            {/* Top Row: Action & Description */}
-                                                                            <div className="flex flex-wrap items-center gap-3 mb-3">
-                                                                                <span className={`inline-flex px-2.5 py-0.5 text-xs font-bold rounded border uppercase tracking-wide ${rule.action === 'allow'
-                                                                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-                                                                                    : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
-                                                                                    }`}>
-                                                                                    {rule.action}
-                                                                                </span>
-
-                                                                                {rule.description && (
-                                                                                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                                                                                        {rule.description}
-                                                                                    </span>
-                                                                                )}
-
-                                                                                {isRuleMatched && (
-                                                                                    <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-600 text-white">
-                                                                                        {t('cloudArmor.matched')}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-
-                                                                            {/* IP Pills - Clean GCP Style */}
-                                                                            {cidrs.length > 0 && (
-                                                                                <div className="flex flex-wrap gap-1.5">
-                                                                                    {cidrs.map((cidr, i) => {
-                                                                                        const isCidrMatched = testInput && (
-                                                                                            cidr.includes('/') ? isIpInCidr(testInput, cidr) : testInput === cidr
-                                                                                        );
-                                                                                        return (
-                                                                                            <span
-                                                                                                key={i}
-                                                                                                className={`inline-block px-2 py-0.5 rounded text-xs font-mono border ${isCidrMatched
-                                                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                                                                                    : 'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-500'
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {cidr}
-                                                                                            </span>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                </div>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                >
+                                                    <polyline points="6 9 12 15 18 9" />
+                                                </svg>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })
+
+                                        {/* Expanded Rules (Existing logic) */}
+                                        {isExpanded && policy.rules.length > 0 && (
+                                            <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                                <div className="p-6">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('cloudArmor.rules')}</h4>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {t('cloudArmor.showing')} {policy.rules.length} {t('cloudArmor.rules').toLowerCase()}
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {policy.rules
+                                                            .sort((a: any, b: any) => a.priority - b.priority)
+                                                            .map((rule: any, idx: number) => {
+                                                                const isRuleMatched = testInput && checkRuleMatch(rule, testInput);
+                                                                const cidrs = extractCidrs(rule.match_expression);
+
+                                                                return (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className={`rounded-lg border transition-all duration-300 ${isRuleMatched
+                                                                            ? 'bg-white dark:bg-slate-700 border-indigo-400 ring-2 ring-indigo-200 dark:ring-indigo-800 shadow-lg'
+                                                                            : 'bg-white dark:bg-slate-700/50 border-slate-200 dark:border-slate-600'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex">
+                                                                            <div className={`flex-shrink-0 w-24 p-4 text-center border-r ${isRuleMatched ? 'border-indigo-100 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700'} rounded-l-lg`}>
+                                                                                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">{t('cloudArmor.priority')}</div>
+                                                                                <div className={`font-mono font-bold break-all ${isRuleMatched ? 'text-indigo-700 dark:text-indigo-400 text-lg' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                                                    {rule.priority}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex-1 p-4 overflow-hidden">
+                                                                                <div className="flex flex-wrap items-center gap-3 mb-3">
+                                                                                    <span className={`inline-flex px-2.5 py-0.5 text-xs font-bold rounded border uppercase tracking-wide ${rule.action === 'allow'
+                                                                                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                                                                                        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+                                                                                        }`}>
+                                                                                        {rule.action}
+                                                                                    </span>
+                                                                                    {rule.description && (
+                                                                                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                                                                                            {rule.description}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {isRuleMatched && (
+                                                                                        <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-600 text-white">
+                                                                                            {t('cloudArmor.matched')}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                {cidrs.length > 0 && (
+                                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                                        {cidrs.map((cidr: string, i: number) => {
+                                                                                            const isCidrMatched = testInput && (
+                                                                                                cidr.includes('/') ? isIpInCidr(testInput, cidr) : testInput === cidr
+                                                                                            );
+                                                                                            return (
+                                                                                                <span
+                                                                                                    key={i}
+                                                                                                    className={`inline-block px-2 py-0.5 rounded text-xs font-mono border ${isCidrMatched
+                                                                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                                                        : 'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-500'
+                                                                                                        }`}
+                                                                                                >
+                                                                                                    {cidr}
+                                                                                                </span>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            {/* Pagination */}
+                            <div className="card shadow-sm">
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                    itemsPerPage={itemsPerPage}
+                                    onItemsPerPageChange={setItemsPerPage}
+                                    totalItems={policies.length}
+                                    filteredCount={displayPolicies.length}
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
             )}

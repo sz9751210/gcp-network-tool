@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Subnet } from '@/types/network';
+import Pagination from '@/components/Pagination';
 
 interface SubnetRow {
     projectName: string;
@@ -24,9 +25,9 @@ export default function SubnetsPage() {
     const [vpcFilter, setVpcFilter] = useState<string>('all');
     const [regionFilter, setRegionFilter] = useState<string>('all');
 
-    // Pagination
+    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(25);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
         const load = async () => {
@@ -127,7 +128,7 @@ export default function SubnetsPage() {
         });
     }, [filteredRows, sortBy, sortOrder]);
 
-    // Pagination
+    // Paginated rows
     const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
     const paginatedRows = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -229,23 +230,7 @@ export default function SubnetsPage() {
                                         <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
                                     ))}
                                 </select>
-
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                                    className="input-select w-28"
-                                >
-                                    <option value={10}>10 / page</option>
-                                    <option value={25}>25 / page</option>
-                                    <option value={50}>50 / page</option>
-                                    <option value={100}>100 / page</option>
-                                </select>
                             </div>
-                        </div>
-
-                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedRows.length}</span> / {' '}
-                            <span className="font-semibold">{subnetRows.length}</span> {t('subnets.totalSubnets').toLowerCase()}
                         </div>
                     </div>
 
@@ -293,29 +278,15 @@ export default function SubnetsPage() {
                     </div>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                            <div className="text-sm text-slate-600 dark:text-slate-400">
-                                Page {currentPage} of {totalPages}
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={subnetRows.length}
+                        filteredCount={sortedRows.length}
+                    />
                 </div>
             )}
         </div>

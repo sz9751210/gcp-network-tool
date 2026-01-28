@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FirewallRule } from '@/types/network';
+import Pagination from '@/components/Pagination';
 
 export default function FirewallPage() {
     const { topology, metadata, refreshData } = useScan();
@@ -18,6 +19,10 @@ export default function FirewallPage() {
     const [vpcFilter, setVpcFilter] = useState<string>('all');
     const [protocolFilter, setProtocolFilter] = useState<string>('all');
     const [selectedRule, setSelectedRule] = useState<FirewallRule | null>(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const isRisky = (rule: FirewallRule) => {
         if (rule.direction !== 'INGRESS' || rule.action !== 'ALLOW' || rule.disabled) return false;
@@ -144,6 +149,13 @@ export default function FirewallPage() {
         });
     }, [filteredRules, sortBy, sortOrder]);
 
+    // Paginated rules
+    const totalPages = Math.ceil(sortedRules.length / itemsPerPage);
+    const paginatedRules = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedRules.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedRules, currentPage, itemsPerPage]);
+
     const handleSort = (column: keyof FirewallRule) => {
         if (sortBy === column) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -152,6 +164,11 @@ export default function FirewallPage() {
             setSortOrder('asc');
         }
     };
+
+    // Reset pagination
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, directionFilter, actionFilter, projectFilter, vpcFilter, protocolFilter, itemsPerPage]);
 
     if (loading) {
         return (
@@ -258,11 +275,6 @@ export default function FirewallPage() {
                                 </select>
                             </div>
                         </div>
-
-                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedRules.length}</span> / {' '}
-                            <span className="font-semibold">{firewallRules.length}</span> {t('firewall.totalRules').toLowerCase()}
-                        </div>
                     </div>
 
                     {/* Table */}
@@ -292,7 +304,7 @@ export default function FirewallPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {sortedRules.map((rule, idx) => {
+                                {paginatedRules.map((rule, idx) => {
                                     const protocols = [...rule.allowed, ...rule.denied].map(p => {
                                         const ports = p.ports?.length ? `:${p.ports.join(',')}` : '';
                                         return `${p.IPProtocol}${ports}`;
@@ -371,10 +383,21 @@ export default function FirewallPage() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={firewallRules.length}
+                        filteredCount={sortedRules.length}
+                    />
                 </div>
             )}
 
-            {/* Detail Modal */}
+            {/* Detail Modal (Selected rule code is omitted for brevity as it remains unchanged) */}
             {selectedRule && (
                 <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setSelectedRule(null)}>
                     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>

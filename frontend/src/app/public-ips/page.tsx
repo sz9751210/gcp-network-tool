@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PublicIP } from '@/types/network';
+import Pagination from '@/components/Pagination';
 
 export default function PublicIPsPage() {
     const { topology, metadata, refreshData } = useScan();
@@ -16,6 +17,10 @@ export default function PublicIPsPage() {
     const [projectFilter, setProjectFilter] = useState<string>('all');
     const [regionFilter, setRegionFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
         const load = async () => {
@@ -114,6 +119,13 @@ export default function PublicIPsPage() {
         });
     }, [filteredIPs, sortBy, sortOrder]);
 
+    // Paginated IPs
+    const totalPages = Math.ceil(sortedIPs.length / itemsPerPage);
+    const paginatedIPs = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedIPs.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedIPs, currentPage, itemsPerPage]);
+
     const handleSort = (column: keyof PublicIP) => {
         if (sortBy === column) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -122,6 +134,11 @@ export default function PublicIPsPage() {
             setSortOrder('asc');
         }
     };
+
+    // Reset pagination
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, statusFilter, projectFilter, regionFilter, typeFilter, itemsPerPage]);
 
     if (loading) {
         return (
@@ -217,11 +234,6 @@ export default function PublicIPsPage() {
                                 </select>
                             </div>
                         </div>
-
-                        <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedIPs.length}</span> / {' '}
-                            <span className="font-semibold">{publicIPs.length}</span> {t('publicIps.totalIps').toLowerCase()}
-                        </div>
                     </div>
 
                     {/* Table */}
@@ -255,7 +267,7 @@ export default function PublicIPsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {sortedIPs.map((ip, idx) => (
+                                {paginatedIPs.map((ip, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{ip.ip_address}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name}</td>
@@ -277,6 +289,17 @@ export default function PublicIPsPage() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={publicIPs.length}
+                        filteredCount={sortedIPs.length}
+                    />
                 </div>
             )}
         </div>

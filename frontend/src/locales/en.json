@@ -17,7 +17,15 @@
         "active": "Active",
         "inactive": "Inactive",
         "yes": "Yes",
-        "no": "No"
+        "no": "No",
+        "pagination": {
+            "page": "Page",
+            "of": "of",
+            "previous": "Previous",
+            "next": "Next",
+            "itemsPerPage": "Items per page",
+            "perPage": "{count} / page"
+        }
     },
     "sidebar": {
         "dashboard": "Dashboard",

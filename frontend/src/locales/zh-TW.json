@@ -17,7 +17,15 @@
         "active": "啟用中",
         "inactive": "未啟用",
         "yes": "是",
-        "no": "否"
+        "no": "否",
+        "pagination": {
+            "page": "頁碼",
+            "of": "共",
+            "previous": "上一頁",
+            "next": "下一頁",
+            "itemsPerPage": "每頁顯示",
+            "perPage": "{count} 條 / 頁"
+        }
     },
     "sidebar": {
         "dashboard": "儀表板",

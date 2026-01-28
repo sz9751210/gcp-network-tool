@@ -17,7 +17,15 @@
         "active": "已激活",
         "inactive": "未激活",
         "yes": "是",
-        "no": "否"
+        "no": "否",
+        "pagination": {
+            "page": "页码",
+            "of": "共",
+            "previous": "上一页",
+            "next": "下一页",
+            "itemsPerPage": "每页显示",
+            "perPage": "{count} 条 / 页"
+        }
     },
     "sidebar": {
         "dashboard": "仪表盘",
