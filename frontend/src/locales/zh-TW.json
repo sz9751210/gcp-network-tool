@@ -68,6 +68,7 @@
         "latestScan": "最近掃描",
         "source": "來源",
         "lastScanned": "上次掃描時間",
+        "scannedProjects": "已掃描的專案",
         "credentials": "憑證管理",
         "credentialsDesc": "管理 GCP 服務帳戶憑證",
         "uploadCredential": "上傳憑證",

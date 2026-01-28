@@ -15,7 +15,7 @@ interface Credential {
 }
 
 export default function SettingsPage() {
-    const { metadata, isScanning, scanStatus, error, startScan } = useScan();
+    const { metadata, isScanning, scanStatus, error, startScan, topology } = useScan();
     const { t } = useLanguage();
     const [sourceType, setSourceType] = useState<'folder' | 'organization' | 'project' | 'all_accessible'>('all_accessible');
     const [sourceId, setSourceId] = useState('');
@@ -183,8 +183,8 @@ export default function SettingsPage() {
                                 <div
                                     key={cred.id}
                                     className={`p-4 rounded-lg border transition-all ${cred.is_active
-                                            ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200'
-                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                        ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200'
+                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -381,6 +381,46 @@ export default function SettingsPage() {
                                 {t('settings.lastScanned')}: {new Date(metadata.timestamp).toLocaleString()}
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Scanned Projects List */}
+            {topology && topology.projects.length > 0 && (
+                <div className="card mt-6">
+                    <div className="p-6 border-b border-slate-200">
+                        <h2 className="text-xl font-bold text-slate-800">{t('settings.scannedProjects')}</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                    <th className="p-4 font-semibold">{t('dashboard.projects')}</th>
+                                    <th className="p-4 font-semibold">ID</th>
+                                    <th className="p-4 font-semibold">{t('publicIps.status')}</th>
+                                    <th className="p-4 font-semibold">{t('dashboard.vpcs')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {topology.projects.map((p) => (
+                                    <tr key={p.project_id} className="hover:bg-slate-50">
+                                        <td className="p-4 font-medium text-slate-800">{p.project_name}</td>
+                                        <td className="p-4 font-mono text-sm text-slate-600">{p.project_id}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.scan_status === 'success' ? 'bg-emerald-100 text-emerald-700' :
+                                                    p.scan_status === 'error' ? 'bg-rose-100 text-rose-700' :
+                                                        'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                {p.scan_status}
+                                            </span>
+                                            {p.error_message && (
+                                                <div className="text-xs text-rose-600 mt-1">{p.error_message}</div>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-slate-600">{p.vpc_networks.length}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

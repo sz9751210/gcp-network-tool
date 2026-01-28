@@ -68,6 +68,7 @@
         "latestScan": "Latest Scan",
         "source": "Source",
         "lastScanned": "Last scanned",
+        "scannedProjects": "Scanned Projects",
         "credentials": "Credentials Management",
         "credentialsDesc": "Manage GCP service account credentials",
         "uploadCredential": "Upload Credential",
