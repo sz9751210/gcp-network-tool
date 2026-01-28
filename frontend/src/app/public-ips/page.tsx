@@ -66,9 +66,36 @@ export default function PublicIPsPage() {
     }, [publicIps, filterText, showUnusedOnly, projectFilter, typeFilter, regionFilter]);
 
     // Unique values for dropdowns
-    const uniqueProjects = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.project_id))).sort(), [publicIps]);
-    const uniqueTypes = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.resource_type))).sort(), [publicIps]);
-    const uniqueRegions = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.region))).sort(), [publicIps]);
+    // Unique values and counts
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        publicIps.forEach(ip => {
+            counts.set(ip.project_id, (counts.get(ip.project_id) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [publicIps]);
+
+    const typeOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        publicIps.forEach(ip => {
+            counts.set(ip.resource_type, (counts.get(ip.resource_type) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [publicIps]);
+
+    const regionOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        publicIps.forEach(ip => {
+            counts.set(ip.region, (counts.get(ip.region) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [publicIps]);
 
     // Sort public IPs
     const sortedIps = useMemo(() => {
@@ -164,74 +191,90 @@ export default function PublicIPsPage() {
                 </div>
             ) : (
                 <div className="card">
-                    {/* Toolbar */}
-                    <div className="p-6 border-b border-slate-200 space-y-4">
-                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                            <div className="text-sm text-slate-600">
-                                {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{sortedIps.length}</span> / {' '}
-                                <span className="font-semibold">{publicIps.length}</span> {t('publicIps.totalIps').toLowerCase()}
-                            </div>
-                            <div className="flex gap-3 w-full sm:w-auto">
+                    {/* Filters Bar */}
+                    <div className="p-4 bg-slate-50 border-b border-slate-200">
+                        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+
+                            {/* Search */}
+                            <div className="relative w-full md:w-64">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                </div>
                                 <input
                                     type="text"
                                     value={filterText}
                                     onChange={(e) => setFilterText(e.target.value)}
-                                    className="input-field flex-1 sm:w-64"
+                                    className="input-field pl-10"
                                     placeholder={t('publicIps.searchPlaceholder')}
                                 />
-                                <button onClick={exportToCSV} className="btn-primary whitespace-nowrap">
-                                    {t('common.download')} CSV
-                                </button>
+                            </div>
+
+                            {/* Dropdowns */}
+                            <div className="flex flex-wrap gap-2 items-center flex-1 justify-end">
+                                <div className="w-full md:w-48">
+                                    <select
+                                        value={projectFilter}
+                                        onChange={(e) => setProjectFilter(e.target.value)}
+                                        className="input-select"
+                                    >
+                                        <option value="all">All Projects ({publicIps.length})</option>
+                                        {projectOptions.map(p => <option key={p.value} value={p.value}>{p.value} ({p.count})</option>)}
+                                    </select>
+                                </div>
+                                <div className="w-full md:w-40">
+                                    <select
+                                        value={typeFilter}
+                                        onChange={(e) => setTypeFilter(e.target.value)}
+                                        className="input-select"
+                                    >
+                                        <option value="all">All Types</option>
+                                        {typeOptions.map(t => <option key={t.value} value={t.value}>{t.value} ({t.count})</option>)}
+                                    </select>
+                                </div>
+                                <div className="w-full md:w-40">
+                                    <select
+                                        value={regionFilter}
+                                        onChange={(e) => setRegionFilter(e.target.value)}
+                                        className="input-select"
+                                    >
+                                        <option value="all">All Regions</option>
+                                        {regionOptions.map(r => <option key={r.value} value={r.value}>{r.value} ({r.count})</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Filters Row */}
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <select
-                                value={projectFilter}
-                                onChange={(e) => setProjectFilter(e.target.value)}
-                                className="input-select max-w-xs"
-                            >
-                                <option value="all">All Projects</option>
-                                {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
-                            </select>
-
-                            <select
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                                className="input-select max-w-xs"
-                            >
-                                <option value="all">All Types</option>
-                                {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-
-                            <select
-                                value={regionFilter}
-                                onChange={(e) => setRegionFilter(e.target.value)}
-                                className="input-select max-w-xs"
-                            >
-                                <option value="all">All Regions</option>
-                                {uniqueRegions.map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 hover:text-slate-900 select-none">
+                        {/* Secondary Options */}
+                        <div className="flex flex-wrap gap-4 items-center justify-between mt-4 text-sm">
+                            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-md border border-slate-200 hover:border-slate-300 transition-colors select-none shadow-sm">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${showUnusedOnly ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                    {showUnusedOnly && <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="20 6 9 17 4 12" /></svg>}
+                                </div>
                                 <input
                                     type="checkbox"
                                     checked={showUnusedOnly}
                                     onChange={(e) => setShowUnusedOnly(e.target.checked)}
-                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                    className="hidden"
                                 />
-                                <span className="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500">
+                                <span className="flex items-center gap-2 font-medium text-slate-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
                                         <circle cx="12" cy="12" r="10"></circle>
                                         <line x1="12" y1="8" x2="12" y2="12"></line>
                                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                     </svg>
-                                    Show Unused Only (Cost Saving)
+                                    Only Show Unused IPs
                                 </span>
                             </label>
+
+                            <div className="flex gap-4 items-center">
+                                <span className="text-slate-500">
+                                    Showing <span className="font-bold text-slate-800">{sortedIps.length}</span> results
+                                </span>
+                                <button onClick={exportToCSV} className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                    Export CSV
+                                </button>
+                            </div>
                         </div>
                     </div>
 

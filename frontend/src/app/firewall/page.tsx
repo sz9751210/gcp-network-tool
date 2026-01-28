@@ -76,11 +76,60 @@ export default function FirewallPage() {
         return filtered;
     }, [firewallRules, directionFilter, actionFilter, filterText, projectFilter, vpcFilter, protocolFilter]);
 
-    // Unique values
-    const uniqueProjects = useMemo(() => Array.from(new Set(firewallRules.map(r => r.project_id))).sort(), [firewallRules]);
-    const uniqueVpcs = useMemo(() => Array.from(new Set(firewallRules.map(r => r.vpc_network))).sort(), [firewallRules]);
-    // Simplistic protocol extraction (TCP, UDP, ICMP are main ones)
-    const availableProtocols = ['tcp', 'udp', 'icmp', 'esp', 'ah', 'sctp', 'ipip', 'all'];
+    // Unique values and counts
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        firewallRules.forEach(r => {
+            counts.set(r.project_id, (counts.get(r.project_id) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [firewallRules]);
+
+    const vpcOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        firewallRules.forEach(r => {
+            counts.set(r.vpc_network, (counts.get(r.vpc_network) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
+    }, [firewallRules]);
+
+    // Available protocols (simplified list)
+    const availableProtocols = ['tcp', 'udp', 'icmp', 'esp', 'ah', 'sctp', 'ipip'];
+    const protocolOptions = useMemo(() => {
+        return availableProtocols.map(proto => {
+            const count = firewallRules.filter(r => {
+                const combined = [...r.allowed, ...r.denied];
+                return combined.some(p => p.IPProtocol === proto || p.IPProtocol === 'all');
+            }).length;
+            return { value: proto, count };
+        });
+    }, [firewallRules]);
+
+    const directionOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        firewallRules.forEach(r => {
+            counts.set(r.direction, (counts.get(r.direction) || 0) + 1);
+        });
+        return [
+            { value: 'INGRESS', label: t('firewall.ingress'), count: counts.get('INGRESS') || 0 },
+            { value: 'EGRESS', label: t('firewall.egress'), count: counts.get('EGRESS') || 0 }
+        ];
+    }, [firewallRules, t]);
+
+    const actionOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        firewallRules.forEach(r => {
+            counts.set(r.action, (counts.get(r.action) || 0) + 1);
+        });
+        return [
+            { value: 'ALLOW', label: 'Allow', count: counts.get('ALLOW') || 0 },
+            { value: 'DENY', label: 'Deny', count: counts.get('DENY') || 0 }
+        ];
+    }, [firewallRules]);
 
     // Sort rules
     const sortedRules = useMemo(() => {
@@ -132,69 +181,86 @@ export default function FirewallPage() {
                     <p className="text-slate-600">{t('firewall.noDataDesc')}</p>
                 </div>
             ) : (
-                <div className="card">
-                    {/* Toolbar */}
-                    <div className="p-6 border-b border-slate-200 space-y-4">
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <div className="text-sm text-slate-600">
-                                <span className="font-semibold text-indigo-600">{sortedRules.length}</span> / {' '}
-                                <span className="font-semibold">{firewallRules.length}</span> {t('firewall.totalRules').toLowerCase()}
+                <div className="card shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-200">
+                        <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+
+                            {/* Search */}
+                            <div className="relative w-full xl:w-64">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={filterText}
+                                    onChange={(e) => setFilterText(e.target.value)}
+                                    className="input-field pl-10"
+                                    placeholder={t('firewall.searchPlaceholder')}
+                                />
                             </div>
 
-                            {/* Filters */}
-                            <div className="flex gap-2 flex-wrap items-center">
+                            {/* Filters Group */}
+                            <div className="flex flex-wrap gap-2 items-center w-full xl:w-auto">
                                 <select
                                     value={directionFilter}
                                     onChange={(e) => setDirectionFilter(e.target.value)}
-                                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="input-select w-36"
                                 >
                                     <option value="all">{t('firewall.direction')}</option>
-                                    <option value="INGRESS">{t('firewall.ingress')}</option>
-                                    <option value="EGRESS">{t('firewall.egress')}</option>
+                                    {directionOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label} ({opt.count})</option>
+                                    ))}
                                 </select>
 
                                 <select
                                     value={actionFilter}
                                     onChange={(e) => setActionFilter(e.target.value)}
-                                    className="input-select"
+                                    className="input-select w-32"
                                 >
-                                    <option value="all">{t('common.filter')} Action (All)</option>
-                                    <option value="ALLOW">Allow</option>
-                                    <option value="DENY">Deny</option>
+                                    <option value="all">Action (All)</option>
+                                    {actionOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label} ({opt.count})</option>
+                                    ))}
                                 </select>
+
                                 <select
                                     value={projectFilter}
                                     onChange={(e) => setProjectFilter(e.target.value)}
-                                    className="input-select max-w-xs"
+                                    className="input-select w-40"
                                 >
                                     <option value="all">All Projects</option>
-                                    {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
+                                    {projectOptions.map(p => (
+                                        <option key={p.value} value={p.value}>{p.value} ({p.count})</option>
+                                    ))}
                                 </select>
+
                                 <select
                                     value={vpcFilter}
                                     onChange={(e) => setVpcFilter(e.target.value)}
-                                    className="input-select max-w-xs"
+                                    className="input-select w-40"
                                 >
                                     <option value="all">All VPCs</option>
-                                    {uniqueVpcs.map(v => <option key={v} value={v}>{v}</option>)}
+                                    {vpcOptions.map(v => (
+                                        <option key={v.value} value={v.value}>{v.value} ({v.count})</option>
+                                    ))}
                                 </select>
+
                                 <select
                                     value={protocolFilter}
                                     onChange={(e) => setProtocolFilter(e.target.value)}
                                     className="input-select w-32"
                                 >
                                     <option value="all">All Proto</option>
-                                    {availableProtocols.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+                                    {protocolOptions.map(p => (
+                                        <option key={p.value} value={p.value}>{p.value.toUpperCase()} ({p.count})</option>
+                                    ))}
                                 </select>
-
-                                <input
-                                    type="text"
-                                    value={filterText}
-                                    onChange={(e) => setFilterText(e.target.value)}
-                                    className="input-field"
-                                    placeholder={t('firewall.searchPlaceholder')}
-                                />
                             </div>
+                        </div>
+
+                        <div className="mt-4 text-xs text-slate-500">
+                            <span className="font-semibold text-indigo-600">{sortedRules.length}</span> / {' '}
+                            <span className="font-semibold">{firewallRules.length}</span> {t('firewall.totalRules').toLowerCase()}
                         </div>
                     </div>
 

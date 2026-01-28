@@ -112,14 +112,32 @@ export default function SubnetsPage() {
     }, [subnets, sortBy, sortOrder, filterText, projectFilter, regionFilter]);
 
     // Derived unique values for dropdowns
-    const uniqueProjects = useMemo(() => {
-        const projects = new Map<string, string>();
-        subnets.forEach(s => projects.set(s.projectId, s.projectName));
-        return Array.from(projects.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        const names = new Map<string, string>();
+
+        subnets.forEach(s => {
+            counts.set(s.projectId, (counts.get(s.projectId) || 0) + 1);
+            names.set(s.projectId, s.projectName);
+        });
+
+        return Array.from(names.entries())
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([id, name]) => ({
+                id,
+                name,
+                count: counts.get(id) || 0
+            }));
     }, [subnets]);
 
-    const uniqueRegions = useMemo(() => {
-        return Array.from(new Set(subnets.map(s => s.region))).sort();
+    const regionOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        subnets.forEach(s => {
+            counts.set(s.region, (counts.get(s.region) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, count }));
     }, [subnets]);
 
     // Pagination Logic
@@ -185,10 +203,10 @@ export default function SubnetsPage() {
             </div>
 
             {/* Controls */}
-            <div className="card mb-6 p-6">
-                <div className="flex gap-4 items-center flex-wrap">
-                    <div className="flex-1 min-w-[300px]">
-                        <div className="relative">
+            <div className="card mb-6 overflow-hidden">
+                <div className="p-4 bg-slate-50 border-b border-slate-200">
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                        <div className="relative w-full md:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8" />
@@ -203,42 +221,45 @@ export default function SubnetsPage() {
                                 placeholder={t('subnets.searchPlaceholder')}
                             />
                         </div>
-                    </div>
-                    <button
-                        onClick={exportToCSV}
-                        disabled={filteredAndSortedSubnets.length === 0}
-                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {t('common.download')} CSV
-                    </button>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-4 items-center justify-between text-sm text-slate-600">
-                    <div className="flex gap-4">
-                        <select
-                            value={projectFilter}
-                            onChange={(e) => setProjectFilter(e.target.value)}
-                            className="input-select w-48"
-                        >
-                            <option value="all">All Projects</option>
-                            {uniqueProjects.map(([id, name]) => (
-                                <option key={id} value={id}>{name}</option>
-                            ))}
-                        </select>
-                        <select
-                            value={regionFilter}
-                            onChange={(e) => setRegionFilter(e.target.value)}
-                            className="input-select w-40"
-                        >
-                            <option value="all">All Regions</option>
-                            {uniqueRegions.map(region => (
-                                <option key={region} value={region}>{region}</option>
-                            ))}
-                        </select>
+
+                        <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
+                            <select
+                                value={projectFilter}
+                                onChange={(e) => setProjectFilter(e.target.value)}
+                                className="input-select md:w-56"
+                            >
+                                <option value="all">All Projects ({subnets.length})</option>
+                                {projectOptions.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name} ({p.count})</option>
+                                ))}
+                            </select>
+                            <select
+                                value={regionFilter}
+                                onChange={(e) => setRegionFilter(e.target.value)}
+                                className="input-select md:w-48"
+                            >
+                                <option value="all">All Regions</option>
+                                {regionOptions.map(r => (
+                                    <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={exportToCSV}
+                                disabled={filteredAndSortedSubnets.length === 0}
+                                className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                {t('common.download')} CSV
+                            </button>
+                        </div>
                     </div>
 
-                    <div>
-                        {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
-                        <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
+                    <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+                        <div>
+                            {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
+                            <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
+                        </div>
                     </div>
                 </div>
             </div>
