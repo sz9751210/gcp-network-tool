@@ -46,6 +46,18 @@ export default function Sidebar() {
             ),
         },
         {
+            key: 'sidebar.internalIps',
+            path: '/internal-ips',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                </svg>
+            ),
+        },
+        {
             key: 'sidebar.firewallRules',
             path: '/firewall',
             icon: (
@@ -77,6 +89,17 @@ export default function Sidebar() {
                     <line x1="16" y1="18" x2="16" y2="18.01" />
                     <line x1="12" y1="18" x2="12" y2="18.01" />
                     <line x1="8" y1="18" x2="8" y2="18.01" />
+                </svg>
+            ),
+        },
+        {
+            key: 'sidebar.ipTools',
+            path: '/ip-tools',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
             ),
         },

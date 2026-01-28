@@ -15,12 +15,15 @@ from credentials_manager import credentials_manager, CredentialInfo
 from models import (
     ScanRequest, CIDRCheckRequest, CIDRCheckResponse,
     NetworkTopology, ScanStatusResponse,
-    IPPlanRequest, IPPlanResponse, ScanHistoryItem
+    IPPlanRequest, IPPlanResponse, ScanHistoryItem,
+    IPCheckRequest, IPCheckResponse,
+    SuffixSearchRequest, SuffixSearchResponse
 )
 from gcp_scanner import scan_network_topology
 from cidr_analyzer import (
     find_all_conflicts, suggest_available_cidrs, find_available_cidrs,
-    get_cidr_info, calculate_ip_utilization
+    calculate_ip_utilization,
+    get_ip_details, find_common_suffix_ips
 )
 
 # Configure logging
@@ -318,6 +321,63 @@ async def plan_ip(request: IPPlanRequest):
     return IPPlanResponse(
         available_cidrs=available,
         checked_scope=list(projects_to_check)
+    )
+
+
+@app.post("/api/check-ip", response_model=IPCheckResponse)
+async def check_ip_details(request: IPCheckRequest):
+    """
+    Check detailed information about an internal IP.
+    """
+    # Get the latest topology
+    latest = None
+    for scan_id, data in scan_store.items():
+        if data.get("status") == "completed":
+            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
+                latest = data
+    
+    if latest is None:
+        raise HTTPException(
+            status_code=400, 
+            detail="No scan results available. Run a scan first."
+        )
+    
+    topology = NetworkTopology(**latest["topology"])
+    
+    return get_ip_details(request.ip_address, topology)
+
+
+@app.post("/api/find-suffix-ips", response_model=SuffixSearchResponse)
+async def find_suffix_ips(request: SuffixSearchRequest):
+    """
+    Find available IPs with a specific suffix.
+    """
+    # Get the latest topology
+    latest = None
+    for scan_id, data in scan_store.items():
+        if data.get("status") == "completed":
+            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
+                latest = data
+    
+    if latest is None:
+        raise HTTPException(
+            status_code=400, 
+            detail="No scan results available. Run a scan first."
+        )
+    
+    topology = NetworkTopology(**latest["topology"])
+    
+    ips = find_common_suffix_ips(
+        suffix=request.suffix,
+        topology=topology,
+        cidr_mask=request.cidr_mask,
+        project_ids=request.project_ids,
+        vpc_names=request.vpc_names
+    )
+    
+    return SuffixSearchResponse(
+        suffix=request.suffix,
+        available_ips=ips
     )
 
 

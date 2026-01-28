@@ -72,6 +72,16 @@ export interface PublicIP {
     zone?: string;  // For VMs
 }
 
+export interface UsedInternalIP {
+    ip_address: string;
+    resource_type: string;
+    resource_name: string;
+    project_id: string;
+    vpc: string;
+    subnet: string;
+    region: string;
+}
+
 export interface FirewallRule {
     name: string;
     direction: string;  // "INGRESS" or "EGRESS"
@@ -118,6 +128,7 @@ export interface NetworkTopology {
     total_subnets: number;
     failed_projects: number;
     public_ips: PublicIP[];
+    used_internal_ips: UsedInternalIP[];
     firewall_rules: FirewallRule[];
     cloud_armor_policies: CloudArmorPolicy[];
 }

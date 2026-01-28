@@ -170,6 +170,9 @@ class GCPScanner:
             # Collect public IPs from all projects
             public_ips = self._collect_public_ips(projects)
             
+            # Collect used internal IPs from all projects
+            used_internal_ips = self._collect_internal_ips(projects)
+            
             # Collect firewall rules from all projects
             firewall_rules = self._collect_firewall_rules(projects)
             
@@ -186,6 +189,7 @@ class GCPScanner:
                 total_subnets=total_subnets,
                 failed_projects=failed_projects,
                 public_ips=public_ips,
+                used_internal_ips=used_internal_ips,
                 firewall_rules=firewall_rules,
                 cloud_armor_policies=cloud_armor_policies
             )
@@ -461,6 +465,138 @@ class GCPScanner:
                 logger.warning(f"Failed to collect public IPs from project {project.project_id}: {e}")
         
         return list(public_ips_map.values())
+    
+    def _collect_internal_ips(self, projects: list) -> list:
+        """
+        Collect all used internal IP addresses from projects.
+        Includes:
+        - VM Instances (Network Interfaces)
+        - Internal Forwarding Rules
+        - Reserved Internal Addresses
+        
+        Args:
+            projects: List of scanned Project objects
+            
+        Returns:
+            List of UsedInternalIP objects
+        """
+        from models import UsedInternalIP
+        internal_ips_map = {}  # Map ip_address -> UsedInternalIP object
+        
+        for project in projects:
+            if project.scan_status != "success":
+                continue
+                
+            try:
+                # 1. Scan Addresses (Internal)
+                addresses_client = compute_v1.AddressesClient(credentials=self.projects_client._transport._credentials)
+                
+                # Regional Addresses
+                agg_list_request = compute_v1.AggregatedListAddressesRequest(project=project.project_id)
+                for zone_name, addresses_scoped_list in addresses_client.aggregated_list(request=agg_list_request):
+                    if not addresses_scoped_list.addresses:
+                        continue
+                    
+                    region = zone_name.split("/")[-1]
+                    if region.startswith("regions/"):
+                         region = region.split("/")[-1]
+
+                    for addr in addresses_scoped_list.addresses:
+                        if addr.address_type == "INTERNAL":
+                            # Skip peering ranges or other non-endpoint purposes if needed
+                            # But generally we want to know if an IP is "taken"
+                            
+                            resource_type = "Static Address"
+                            resource_name = addr.name
+                            if addr.users:
+                                user_link = addr.users[0]
+                                if "forwardingRules" in user_link:
+                                    resource_type = "ForwardingRule"
+                                    resource_name = user_link.split("/")[-1]
+                                elif "instances" in user_link:
+                                    resource_type = "VM"
+                                    resource_name = user_link.split("/")[-1]
+                            
+                            vpc = addr.network.split("/")[-1] if addr.network else ""
+                            subnet = addr.subnetwork.split("/")[-1] if addr.subnetwork else ""
+
+                            internal_ips_map[addr.address] = UsedInternalIP(
+                                ip_address=addr.address,
+                                resource_type=resource_type,
+                                resource_name=resource_name,
+                                project_id=project.project_id,
+                                vpc=vpc,
+                                subnet=subnet,
+                                region=region
+                            )
+
+                # 2. Scan Forwarding Rules (Internal)
+                forwarding_client = compute_v1.ForwardingRulesClient(credentials=self.projects_client._transport._credentials)
+                
+                agg_fwd_request = compute_v1.AggregatedListForwardingRulesRequest(project=project.project_id)
+                for zone_name, rules_scoped_list in forwarding_client.aggregated_list(request=agg_fwd_request):
+                     if not rules_scoped_list.forwarding_rules:
+                        continue
+                     region = zone_name.split("/")[-1]
+                     if region.startswith("regions/"):
+                         region = region.split("/")[-1]
+
+                     for rule in rules_scoped_list.forwarding_rules:
+                        if rule.load_balancing_scheme in ["INTERNAL", "INTERNAL_MANAGED", "INTERNAL_SELF_MANAGED"] and rule.I_p_address:
+                            # Only add if not already captured
+                            if rule.I_p_address not in internal_ips_map:
+                                vpc = rule.network.split("/")[-1] if rule.network else ""
+                                subnet = rule.subnetwork.split("/")[-1] if rule.subnetwork else ""
+                                
+                                internal_ips_map[rule.I_p_address] = UsedInternalIP(
+                                    ip_address=rule.I_p_address,
+                                    resource_type="ForwardingRule",
+                                    resource_name=rule.name,
+                                    project_id=project.project_id,
+                                    vpc=vpc,
+                                    subnet=subnet,
+                                    region=region
+                                )
+                
+                # 3. Scan VM Instances
+                compute_client = compute_v1.InstancesClient(credentials=self.projects_client._transport._credentials)
+                aggregated_list = compute_v1.AggregatedListInstancesRequest(project=project.project_id)
+                
+                for zone_name, instances_scoped_list in compute_client.aggregated_list(request=aggregated_list):
+                    if not instances_scoped_list.instances:
+                        continue
+                        
+                    zone = zone_name.split("/")[-1]
+                    region = "-".join(zone.split("-")[:-1]) if "-" in zone else zone
+                    
+                    for instance in instances_scoped_list.instances:
+                        for interface in instance.network_interfaces:
+                            if interface.network_i_p:
+                                # Only add if not in map
+                                if interface.network_i_p not in internal_ips_map:
+                                    vpc = interface.network.split("/")[-1] if interface.network else ""
+                                    subnet = interface.subnetwork.split("/")[-1] if interface.subnetwork else ""
+                                    
+                                    internal_ips_map[interface.network_i_p] = UsedInternalIP(
+                                        ip_address=interface.network_i_p,
+                                        resource_type="VM",
+                                        resource_name=instance.name,
+                                        project_id=project.project_id,
+                                        vpc=vpc,
+                                        subnet=subnet,
+                                        region=region
+                                    )
+                                else:
+                                    # Update with better info
+                                    existing = internal_ips_map[interface.network_i_p]
+                                    if existing.resource_type == "Static Address":
+                                        existing.resource_type = "VM"
+                                        existing.resource_name = instance.name
+                
+            except Exception as e:
+                logger.warning(f"Failed to collect internal IPs from project {project.project_id}: {e}")
+        
+        return list(internal_ips_map.values())
     
     def _collect_firewall_rules(self, projects: list) -> list:
         """

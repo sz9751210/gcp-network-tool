@@ -104,6 +104,17 @@ class Project(BaseModel):
     error_message: Optional[str] = None
 
 
+class UsedInternalIP(BaseModel):
+    """Represents a used internal IP address."""
+    ip_address: str
+    resource_type: str  # "VM", "ForwardingRule", "Reservation"
+    resource_name: str
+    project_id: str
+    vpc: str
+    subnet: str
+    region: str
+
+
 class NetworkTopology(BaseModel):
     """Root model containing the full network topology."""
     scan_id: str
@@ -118,6 +129,7 @@ class NetworkTopology(BaseModel):
     total_subnets: int = 0
     failed_projects: int = 0
     public_ips: list[PublicIP] = Field(default_factory=list)
+    used_internal_ips: list[UsedInternalIP] = Field(default_factory=list)
     firewall_rules: list[FirewallRule] = Field(default_factory=list)
     cloud_armor_policies: list[CloudArmorPolicy] = Field(default_factory=list)
 
@@ -135,6 +147,36 @@ class CIDRCheckRequest(BaseModel):
     cidr: str
     vpc_self_link: Optional[str] = None  # Optional: check within specific VPC
     project_id: Optional[str] = None  # Optional: check within specific project
+
+
+class IPCheckRequest(BaseModel):
+    """Request to check details of an internal IP."""
+    ip_address: str
+
+
+class IPCheckResponse(BaseModel):
+    """Response for IP detail check."""
+    ip_address: str
+    is_used: bool
+    used_by: Optional[UsedInternalIP] = None
+    subnet: Optional[Subnet] = None
+    vpc: Optional[VPCNetwork] = None
+    project: Optional[Project] = None
+
+
+class SuffixSearchRequest(BaseModel):
+    """Request to find available IPs with a specific suffix."""
+    suffix: int = Field(..., ge=0, le=255)
+    cidr_mask: int = 24  # Usually /24 for the suffix logic
+    project_ids: Optional[list[str]] = None  # Optional: filter by project
+    vpc_names: Optional[list[str]] = None # Optional: filter by VPC name pattern
+    environment: Optional[str] = None # Optional: filter by environment (prod/dev/test etc using name match)
+
+
+class SuffixSearchResponse(BaseModel):
+    """Response for suffix search."""
+    suffix: int
+    available_ips: list[dict] = Field(default_factory=list) # {ip, subnet, vpc, project, region}
 
 
 class CIDRConflict(BaseModel):

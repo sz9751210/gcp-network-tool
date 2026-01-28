@@ -216,12 +216,6 @@ def calculate_ip_utilization(
     }
 
 
-def get_cidr_info(cidr: str) -> dict:
-    """Get detailed information about a CIDR block."""
-    network = parse_cidr(cidr)
-    if network is None:
-        return {"error": "Invalid CIDR"}
-    
     return {
         "cidr": cidr,
         "network_address": str(network.network_address),
@@ -234,3 +228,173 @@ def get_cidr_info(cidr: str) -> dict:
         "last_usable": str(network.broadcast_address - 1) if network.num_addresses > 2 else None,
         "is_private": network.is_private,
     }
+
+
+def get_ip_details(ip_address: str, topology: NetworkTopology) -> dict:
+    """
+    Find details about an IP address within the topology.
+    
+    Args:
+        ip_address: The IP address to check
+        topology: The network topology
+        
+    Returns:
+        Dict with status, used_by, subnet, vpc, project info
+    """
+    from models import UsedInternalIP, Subnet, VPCNetwork, Project
+    
+    ip = None
+    try:
+        ip = ipaddress.IPv4Address(ip_address)
+    except ValueError:
+        return {"error": "Invalid IP address"}
+    
+    result = {
+        "ip_address": ip_address,
+        "is_used": False,
+        "used_by": None,
+        "subnet": None,
+        "vpc": None,
+        "project": None
+    }
+    
+    # Check if used
+    for used_ip in topology.used_internal_ips:
+        if used_ip.ip_address == ip_address:
+            result["is_used"] = True
+            result["used_by"] = used_ip
+            # We can stop here for used_by, but we still want subnet info if possible
+            # The used_ip object has subnet info, but we might want the full Subnet object
+            break
+            
+    # Find subnet
+    for project in topology.projects:
+        for vpc in project.vpc_networks:
+            for subnet in vpc.subnets:
+                 try:
+                    net = ipaddress.IPv4Network(subnet.ip_cidr_range)
+                    if ip in net:
+                        result["subnet"] = subnet
+                        result["vpc"] = vpc
+                        result["project"] = project
+                        return result
+                 except ValueError:
+                    continue
+                    
+            # Also check secondary ranges can be done if needed, but primary is most important
+    
+    return result
+
+
+def find_common_suffix_ips(
+    suffix: int, 
+    topology: NetworkTopology,
+    cidr_mask: int = 24,
+    project_ids: Optional[list[str]] = None,
+    vpc_names: Optional[list[str]] = None
+) -> list[dict]:
+    """
+    Find available IPs ending with a specific suffix across subnets.
+    
+    Args:
+        suffix: The last octet (0-255)
+        topology: Network topology
+        cidr_mask: The mask to assume for "last octet" logic (default 24)
+        project_ids: Filter by projects
+        vpc_names: Filter by VPC names
+        
+    Returns:
+        List of dicts {ip, subnet, vpc, project, region}
+    """
+    available_ips = []
+    
+    # Create set of used IPs for fast lookup
+    used_ip_set = set(u.ip_address for u in topology.used_internal_ips)
+    
+    for project in topology.projects:
+        if project_ids and project.project_id not in project_ids:
+            continue
+            
+        for vpc in project.vpc_networks:
+            if vpc_names:
+                # Simple containment check or exact match
+                if not any(name in vpc.name for name in vpc_names):
+                    continue
+            
+            for subnet in vpc.subnets:
+                try:
+                    network = ipaddress.IPv4Network(subnet.ip_cidr_range)
+                    
+                    # We are looking for IPs where the LAST octet is 'suffix'
+                    # For a /24, this is easy. For other masks, it's relative.
+                    # But the requirement says "ending in 16" which usually implies /24 segmentation 
+                    # or just the literal last octet of the IP string.
+                    # Let's assume literal last octet.
+                    
+                    # Iterate specific IPs in this subnet that end with suffix
+                    # Optimization: instead of iterating all hosts, we calculate potential matches.
+                    
+                    # If /24, there is only 1 candidate or 0.
+                    # If /20, there are 16 candidates.
+                    
+                    # Let's simple iterate subnets, valid IPs.
+                    # Since we want "tail number", it basically means X.X.X.suffix
+                    
+                    # Logic:
+                    # 1. Start from network address.
+                    # 2. Align to the first IP ending in suffix.
+                    # 3. Step by 256.
+                    
+                    # Get network address integer
+                    net_int = int(network.network_address)
+                    
+                    # Calculate first candidate
+                    # We want the IP where ip_int % 256 == suffix
+                    
+                    # Current remainder
+                    rem = net_int % 256
+                    if rem <= suffix:
+                        offset = suffix - rem
+                    else:
+                        offset = (256 - rem) + suffix
+                        
+                    first_candidate_int = net_int + offset
+                    first_candidate = ipaddress.IPv4Address(first_candidate_int)
+                    
+                    if first_candidate not in network:
+                        # Try next one if the first aligned one is outside (unlikely if subnet > /24)
+                         pass
+                    
+                    # Iterate stepping by 256
+                    candidate_int = first_candidate_int
+                    while True:
+                        candidate = ipaddress.IPv4Address(candidate_int)
+                        if candidate not in network:
+                            break
+                            
+                        # Check availability
+                        # 1. Not Network or Broadcast
+                        if candidate == network.network_address or candidate == network.broadcast_address:
+                            pass
+                        # 2. Not Gateway (usually .1) - heuristics
+                        elif subnet.gateway_ip and str(candidate) == subnet.gateway_ip:
+                            pass
+                        # 3. Not Used
+                        elif str(candidate) in used_ip_set:
+                            pass
+                        else:
+                            available_ips.append({
+                                "ip_address": str(candidate),
+                                "subnet": subnet.name,
+                                "vpc": vpc.name,
+                                "project": project.project_id,
+                                "region": subnet.region,
+                                "cidr": subnet.ip_cidr_range
+                            })
+                            
+                        candidate_int += 256
+                        
+                except ValueError:
+                    continue
+                    
+    return available_ips
