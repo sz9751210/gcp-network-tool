@@ -14,6 +14,9 @@ export default function FirewallPage() {
     const [filterText, setFilterText] = useState('');
     const [directionFilter, setDirectionFilter] = useState<string>('all');
     const [actionFilter, setActionFilter] = useState<string>('all');
+    const [projectFilter, setProjectFilter] = useState<string>('all');
+    const [vpcFilter, setVpcFilter] = useState<string>('all');
+    const [protocolFilter, setProtocolFilter] = useState<string>('all');
 
     const isRisky = (rule: FirewallRule) => {
         if (rule.direction !== 'INGRESS' || rule.action !== 'ALLOW' || rule.disabled) return false;
@@ -45,19 +48,39 @@ export default function FirewallPage() {
             filtered = filtered.filter(r => r.action === actionFilter);
         }
 
+        if (projectFilter !== 'all') {
+            filtered = filtered.filter(rule => rule.project_id === projectFilter);
+        }
+
+        if (vpcFilter !== 'all') {
+            filtered = filtered.filter(rule => rule.vpc_network === vpcFilter);
+        }
+
+        if (protocolFilter !== 'all') {
+            filtered = filtered.filter(rule => {
+                const combined = [...rule.allowed, ...rule.denied];
+                return combined.some(p => p.IPProtocol === protocolFilter || p.IPProtocol === 'all');
+            });
+        }
+
         if (filterText) {
             const lower = filterText.toLowerCase();
-            filtered = filtered.filter(r =>
-                r.name.toLowerCase().includes(lower) ||
-                r.project_id.toLowerCase().includes(lower) ||
-                r.vpc_network.toLowerCase().includes(lower) ||
-                r.source_ranges.some(s => s.toLowerCase().includes(lower)) ||
-                r.destination_ranges.some(d => d.toLowerCase().includes(lower))
+            filtered = filtered.filter(
+                (rule) =>
+                    rule.name.toLowerCase().includes(lower) ||
+                    rule.source_ranges.some((range) => range.includes(filterText)) ||
+                    rule.destination_ranges.some((range) => range.includes(filterText))
             );
         }
 
         return filtered;
-    }, [firewallRules, directionFilter, actionFilter, filterText]);
+    }, [firewallRules, directionFilter, actionFilter, filterText, projectFilter, vpcFilter, protocolFilter]);
+
+    // Unique values
+    const uniqueProjects = useMemo(() => Array.from(new Set(firewallRules.map(r => r.project_id))).sort(), [firewallRules]);
+    const uniqueVpcs = useMemo(() => Array.from(new Set(firewallRules.map(r => r.vpc_network))).sort(), [firewallRules]);
+    // Simplistic protocol extraction (TCP, UDP, ICMP are main ones)
+    const availableProtocols = ['tcp', 'udp', 'icmp', 'esp', 'ah', 'sctp', 'ipip', 'all'];
 
     // Sort rules
     const sortedRules = useMemo(() => {
@@ -133,11 +156,35 @@ export default function FirewallPage() {
                                 <select
                                     value={actionFilter}
                                     onChange={(e) => setActionFilter(e.target.value)}
-                                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="input-select"
                                 >
-                                    <option value="all">{t('firewall.action')}</option>
-                                    <option value="ALLOW">{t('firewall.allow')}</option>
-                                    <option value="DENY">{t('firewall.deny')}</option>
+                                    <option value="all">{t('common.filter')} Action (All)</option>
+                                    <option value="ALLOW">Allow</option>
+                                    <option value="DENY">Deny</option>
+                                </select>
+                                <select
+                                    value={projectFilter}
+                                    onChange={(e) => setProjectFilter(e.target.value)}
+                                    className="input-select max-w-xs"
+                                >
+                                    <option value="all">All Projects</option>
+                                    {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                                <select
+                                    value={vpcFilter}
+                                    onChange={(e) => setVpcFilter(e.target.value)}
+                                    className="input-select max-w-xs"
+                                >
+                                    <option value="all">All VPCs</option>
+                                    {uniqueVpcs.map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                                <select
+                                    value={protocolFilter}
+                                    onChange={(e) => setProtocolFilter(e.target.value)}
+                                    className="input-select w-32"
+                                >
+                                    <option value="all">All Proto</option>
+                                    {availableProtocols.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
                                 </select>
 
                                 <input

@@ -34,6 +34,14 @@ export default function SubnetsPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [filterText, setFilterText] = useState('');
 
+    // New Filters
+    const [projectFilter, setProjectFilter] = useState<string>('all');
+    const [regionFilter, setRegionFilter] = useState<string>('all');
+
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     useEffect(() => {
         const load = async () => {
             await refreshData();
@@ -70,12 +78,17 @@ export default function SubnetsPage() {
     const filteredAndSortedSubnets = useMemo(() => {
         let result = subnets.filter((subnet) => {
             const searchText = filterText.toLowerCase();
-            return (
+            const matchesSearch = (
                 subnet.projectName.toLowerCase().includes(searchText) ||
                 subnet.vpcName.toLowerCase().includes(searchText) ||
                 subnet.subnetName.toLowerCase().includes(searchText) ||
                 subnet.cidr.includes(searchText)
             );
+
+            const matchesProject = projectFilter === 'all' || subnet.projectId === projectFilter;
+            const matchesRegion = regionFilter === 'all' || subnet.region === regionFilter;
+
+            return matchesSearch && matchesProject && matchesRegion;
         });
 
         // Sort subnets with null handling
@@ -96,7 +109,30 @@ export default function SubnetsPage() {
         });
 
         return result;
-    }, [subnets, sortBy, sortOrder, filterText]);
+    }, [subnets, sortBy, sortOrder, filterText, projectFilter, regionFilter]);
+
+    // Derived unique values for dropdowns
+    const uniqueProjects = useMemo(() => {
+        const projects = new Map<string, string>();
+        subnets.forEach(s => projects.set(s.projectId, s.projectName));
+        return Array.from(projects.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+    }, [subnets]);
+
+    const uniqueRegions = useMemo(() => {
+        return Array.from(new Set(subnets.map(s => s.region))).sort();
+    }, [subnets]);
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredAndSortedSubnets.length / itemsPerPage);
+    const paginatedSubnets = filteredAndSortedSubnets.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, projectFilter, regionFilter, itemsPerPage]);
 
     const handleSort = (column: keyof SubnetRow) => {
         if (sortBy === column) {
@@ -176,9 +212,34 @@ export default function SubnetsPage() {
                         {t('common.download')} CSV
                     </button>
                 </div>
-                <div className="mt-4 text-sm text-slate-600">
-                    {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
-                    <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
+                <div className="mt-4 flex flex-wrap gap-4 items-center justify-between text-sm text-slate-600">
+                    <div className="flex gap-4">
+                        <select
+                            value={projectFilter}
+                            onChange={(e) => setProjectFilter(e.target.value)}
+                            className="input-select w-48"
+                        >
+                            <option value="all">All Projects</option>
+                            {uniqueProjects.map(([id, name]) => (
+                                <option key={id} value={id}>{name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={regionFilter}
+                            onChange={(e) => setRegionFilter(e.target.value)}
+                            className="input-select w-40"
+                        >
+                            <option value="all">All Regions</option>
+                            {uniqueRegions.map(region => (
+                                <option key={region} value={region}>{region}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        {t('cloudArmor.showing')} <span className="font-semibold text-indigo-600">{filteredAndSortedSubnets.length}</span> / {' '}
+                        <span className="font-semibold">{subnets.length}</span> {t('dashboard.subnets').toLowerCase()}
+                    </div>
                 </div>
             </div>
 
@@ -194,8 +255,7 @@ export default function SubnetsPage() {
                                     { key: 'subnetName', label: t('dashboard.subnets') },
                                     { key: 'region', label: t('subnets.region') },
                                     { key: 'cidr', label: t('subnets.cidr') },
-                                    { key: 'region', label: t('subnets.region') },
-                                    { key: 'cidr', label: t('subnets.cidr') },
+
                                     { key: 'capacity', label: 'Capacity' },
                                     { key: 'gatewayIp', label: t('subnets.gateway') },
                                     { key: 'actions', label: 'Actions' },
@@ -218,7 +278,7 @@ export default function SubnetsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                            {filteredAndSortedSubnets.map((subnet, idx) => (
+                            {paginatedSubnets.map((subnet, idx) => (
                                 <tr
                                     key={`${subnet.projectId}-${subnet.vpcName}-${subnet.subnetName}-${idx}`}
                                     className="hover:bg-slate-50 transition-colors"
@@ -271,6 +331,47 @@ export default function SubnetsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {filteredAndSortedSubnets.length > 0 && (
+                <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <span>Show</span>
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                            className="input-select py-1 px-2"
+                        >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        <span>per page</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        </button>
+                        <span className="text-sm text-slate-600">
+                            Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

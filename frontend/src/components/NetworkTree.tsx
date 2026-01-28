@@ -22,6 +22,7 @@ const ExternalLinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12
 export default function NetworkTree({ data, isLoading }: NetworkTreeProps) {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [filter, setFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const toggleExpand = (id: string) => {
         setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
@@ -44,11 +45,19 @@ export default function NetworkTree({ data, isLoading }: NetworkTreeProps) {
     // Filter logic
     const filteredProjects = useMemo(() => {
         if (!data) return [];
-        if (!filter) return data.projects;
+        if (!filter && statusFilter === 'all') return data.projects;
 
         const lowerFilter = filter.toLowerCase();
 
         return data.projects.filter(p => {
+            // Status Filter
+            if (statusFilter === 'error') {
+                if (p.scan_status !== 'error' && p.scan_status !== 'permission_denied') return false;
+            } else if (statusFilter === 'success') {
+                if (p.scan_status !== 'success') return false;
+            }
+
+            // Text Filter
             if (p.project_name.toLowerCase().includes(lowerFilter) ||
                 p.project_id.toLowerCase().includes(lowerFilter)) {
                 return true;
@@ -62,7 +71,7 @@ export default function NetworkTree({ data, isLoading }: NetworkTreeProps) {
                 )
             );
         });
-    }, [data, filter]);
+    }, [data, filter, statusFilter]);
 
     if (isLoading) {
         return (
@@ -102,6 +111,17 @@ export default function NetworkTree({ data, isLoading }: NetworkTreeProps) {
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     />
+                </div>
+                <div className="flex gap-2 items-center w-full md:w-auto">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="input-select w-32 py-2"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                    </select>
                 </div>
                 <div className="flex items-center gap-2 text-sm w-full md:w-auto">
                     <button onClick={expandAll} className="flex-1 md:flex-none px-3 py-1.5 text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 rounded-md transition-all">

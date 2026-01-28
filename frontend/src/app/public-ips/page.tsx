@@ -14,6 +14,11 @@ export default function PublicIPsPage() {
     const [filterText, setFilterText] = useState('');
     const [showUnusedOnly, setShowUnusedOnly] = useState(false);
 
+    // Dropdown Filters
+    const [projectFilter, setProjectFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [regionFilter, setRegionFilter] = useState('all');
+
     useEffect(() => {
         const load = async () => {
             await refreshData();
@@ -34,6 +39,18 @@ export default function PublicIPsPage() {
             filtered = filtered.filter(ip => ip.status !== 'IN_USE');
         }
 
+        if (projectFilter !== 'all') {
+            filtered = filtered.filter(ip => ip.project_id === projectFilter);
+        }
+
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(ip => ip.resource_type === typeFilter);
+        }
+
+        if (regionFilter !== 'all') {
+            filtered = filtered.filter(ip => ip.region === regionFilter);
+        }
+
         if (filterText) {
             const lower = filterText.toLowerCase();
             filtered = filtered.filter(
@@ -46,7 +63,12 @@ export default function PublicIPsPage() {
             );
         }
         return filtered;
-    }, [publicIps, filterText, showUnusedOnly]);
+    }, [publicIps, filterText, showUnusedOnly, projectFilter, typeFilter, regionFilter]);
+
+    // Unique values for dropdowns
+    const uniqueProjects = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.project_id))).sort(), [publicIps]);
+    const uniqueTypes = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.resource_type))).sort(), [publicIps]);
+    const uniqueRegions = useMemo(() => Array.from(new Set(publicIps.map(ip => ip.region))).sort(), [publicIps]);
 
     // Sort public IPs
     const sortedIps = useMemo(() => {
@@ -163,6 +185,36 @@ export default function PublicIPsPage() {
                             </div>
                         </div>
 
+                        {/* Filters Row */}
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <select
+                                value={projectFilter}
+                                onChange={(e) => setProjectFilter(e.target.value)}
+                                className="input-select max-w-xs"
+                            >
+                                <option value="all">All Projects</option>
+                                {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="input-select max-w-xs"
+                            >
+                                <option value="all">All Types</option>
+                                {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+
+                            <select
+                                value={regionFilter}
+                                onChange={(e) => setRegionFilter(e.target.value)}
+                                className="input-select max-w-xs"
+                            >
+                                <option value="all">All Regions</option>
+                                {uniqueRegions.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                        </div>
+
                         <div className="flex items-center gap-2">
                             <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 hover:text-slate-900 select-none">
                                 <input
@@ -255,7 +307,8 @@ export default function PublicIPsPage() {
                         </table>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

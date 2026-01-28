@@ -12,6 +12,7 @@ export default function CloudArmorPage() {
     const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
     const [filterText, setFilterText] = useState('');
     const [testInput, setTestInput] = useState('');
+    const [projectFilter, setProjectFilter] = useState('all');
 
     useEffect(() => {
         const load = async () => {
@@ -86,12 +87,13 @@ export default function CloudArmorPage() {
     // Filter policies
     const displayPolicies = useMemo(() => {
         if (!testInput) {
-            if (!filterText) return policies;
+            if (!filterText && projectFilter === 'all') return policies;
             const lower = filterText.toLowerCase();
             return policies.filter(p =>
-                p.name.toLowerCase().includes(lower) ||
-                p.project_id.toLowerCase().includes(lower) ||
-                (p.description && p.description.toLowerCase().includes(lower))
+                (projectFilter === 'all' || p.project_id === projectFilter) &&
+                (p.name.toLowerCase().includes(lower) ||
+                    p.project_id.toLowerCase().includes(lower) ||
+                    (p.description && p.description.toLowerCase().includes(lower)))
             );
         }
 
@@ -105,7 +107,10 @@ export default function CloudArmorPage() {
             };
         }).filter(p => p.hasMatch);
 
-    }, [policies, filterText, testInput]);
+    }, [policies, filterText, testInput, projectFilter]);
+
+    // Unique values
+    const uniqueProjects = useMemo(() => Array.from(new Set(policies.map(p => p.project_id))).sort(), [policies]);
 
     // Auto-expand policies with matches
     useEffect(() => {
