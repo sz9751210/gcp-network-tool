@@ -9,6 +9,7 @@ import type {
     CIDRCheckResponse,
     CIDRInfo,
     VPCUtilization,
+    ScanHistoryItem,
 } from '@/types/network';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -75,11 +76,15 @@ export const api = {
         return fetchAPI<NetworkTopology>(`/api/scan/${scanId}/results`);
     },
 
-    /**
-     * Get the latest network topology.
-     */
     getLatestTopology: async (): Promise<NetworkTopology | null> => {
         return fetchAPI<NetworkTopology | null>('/api/networks');
+    },
+
+    /**
+     * Get scan history.
+     */
+    getScans: async (): Promise<ScanHistoryItem[]> => {
+        return fetchAPI<ScanHistoryItem[]>('/api/scans');
     },
 
     /**

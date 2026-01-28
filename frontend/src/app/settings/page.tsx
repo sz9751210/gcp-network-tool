@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+
 interface Credential {
     id: string;
     name: string;
@@ -15,7 +16,7 @@ interface Credential {
 }
 
 export default function SettingsPage() {
-    const { metadata, isScanning, scanStatus, error, startScan, topology } = useScan();
+    const { metadata, isScanning, scanStatus, error, startScan, topology, scanHistory, loadScan } = useScan();
     const { t } = useLanguage();
     const [sourceType, setSourceType] = useState<'folder' | 'organization' | 'project' | 'all_accessible'>('all_accessible');
     const [sourceId, setSourceId] = useState('');
@@ -27,6 +28,14 @@ export default function SettingsPage() {
     const [uploadName, setUploadName] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+
+
+
+    // Scan History
+    // Scan History
+    const [restoringId, setRestoringId] = useState<string | null>(null);
+
+
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -128,6 +137,79 @@ export default function SettingsPage() {
                 <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('settings.title')}</h1>
                 <p className="text-slate-600">{t('settings.subtitle')}</p>
             </div>
+
+            {/* Scan History Card */}
+            <div className="card mb-6">
+                <div className="p-6 border-b border-slate-200">
+                    <h2 className="text-xl font-bold text-slate-800">Scan History</h2>
+                    <p className="text-sm text-slate-600 mt-1">
+                        View and restore previous network scans.
+                    </p>
+                </div>
+                <div className="p-0">
+                    {scanHistory.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 italic">No scan history available.</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-xs font-semibold">
+                                    <tr>
+                                        <th className="px-6 py-3">Date</th>
+                                        <th className="px-6 py-3">Source</th>
+                                        <th className="px-6 py-3">Stats</th>
+                                        <th className="px-6 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {scanHistory.map((scan) => (
+                                        <tr key={scan.scanId} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 font-mono text-slate-600">
+                                                {new Date(scan.timestamp).toLocaleString()}
+                                                {scan.status === 'failed' && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700 font-bold">FAILED</span>}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-slate-800">{scan.sourceId}</span>
+                                                    <span className="text-xs text-slate-400 capitalize">{scan.sourceType}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-3 text-xs text-slate-500">
+                                                    <span title="Projects">{scan.totalProjects} Proj</span>
+                                                    <span title="VPCs">{scan.totalVpcs} VPC</span>
+                                                    <span title="Subnets">{scan.totalSubnets} Subnet</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (scan.status === 'completed') {
+                                                            setRestoringId(scan.scanId);
+                                                            await loadScan(scan.scanId);
+                                                            setRestoringId(null);
+                                                        }
+                                                    }}
+                                                    disabled={scan.status !== 'completed' || isScanning}
+                                                    className="btn-secondary text-xs py-1.5 px-3"
+                                                >
+                                                    {restoringId === scan.scanId ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+                                                            Loading...
+                                                        </span>
+                                                    ) : 'Restore'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+
 
             {/* Credentials Management Card */}
             <div className="card mb-6">

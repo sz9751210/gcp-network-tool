@@ -4,6 +4,7 @@ FastAPI application for scanning and analyzing GCP network topology.
 """
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +15,7 @@ from credentials_manager import credentials_manager, CredentialInfo
 from models import (
     ScanRequest, CIDRCheckRequest, CIDRCheckResponse,
     NetworkTopology, ScanStatusResponse,
-    IPPlanRequest, IPPlanResponse
+    IPPlanRequest, IPPlanResponse, ScanHistoryItem
 )
 from gcp_scanner import scan_network_topology
 from cidr_analyzer import (
@@ -160,6 +161,41 @@ async def get_scan_results(scan_id: str):
         )
     
     return NetworkTopology(**scan_data["topology"])
+
+
+@app.get("/api/scans", response_model=List[ScanHistoryItem])
+async def list_scans():
+    """List all available scans."""
+    history = []
+    for scan_id, data in scan_store.items():
+        # Only show items that have at least some basic info
+        if "topology" in data:
+            topo = data["topology"]
+            history.append(ScanHistoryItem(
+                scan_id=scan_id,
+                timestamp=topo.get("scan_timestamp", datetime.utcnow()),
+                status=data.get("status", "unknown"),
+                source_type=topo.get("source_type", "unknown"),
+                source_id=topo.get("source_id", "unknown"),
+                total_projects=topo.get("total_projects", 0),
+                total_vpcs=topo.get("total_vpcs", 0),
+                total_subnets=topo.get("total_subnets", 0)
+            ))
+        elif data.get("status") in ["running", "pending", "failed"]:
+             # Include partial scans
+             history.append(ScanHistoryItem(
+                scan_id=scan_id,
+                timestamp=datetime.utcnow(), # Approximate timestamp if not in topology
+                status=data.get("status", "unknown"),
+                source_type="unknown", # We might need to store request info separately if we want this
+                source_id="unknown",
+                total_projects=data.get("total_projects", 0),
+                total_vpcs=0,
+                total_subnets=0
+            ))
+            
+    # Sort by timestamp desc
+    return sorted(history, key=lambda x: x.timestamp, reverse=True)
 
 
 @app.get("/api/networks", response_model=Optional[NetworkTopology])

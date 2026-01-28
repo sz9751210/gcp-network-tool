@@ -15,6 +15,17 @@ export interface Subnet {
     network: string | null;
 }
 
+export interface ScanHistoryItem {
+    scanId: string;
+    timestamp: string;
+    status: string;
+    sourceType: string;
+    sourceId: string;
+    totalProjects: number;
+    totalVpcs: number;
+    totalSubnets: number;
+}
+
 export interface SecondaryIPRange {
     range_name: string;
     ip_cidr_range: string;
@@ -70,6 +81,7 @@ export interface FirewallRule {
     destination_ranges: string[];
     source_tags: string[];
     target_tags: string[];
+    target_service_accounts: string[];
     allowed: { IPProtocol: string; ports: string[] }[];
     denied: { IPProtocol: string; ports: string[] }[];
     vpc_network: string;

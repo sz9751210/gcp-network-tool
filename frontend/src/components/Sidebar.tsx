@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Sidebar() {
     const pathname = usePathname();
     const { locale, setLocale, t } = useLanguage();
+    const { theme, toggleTheme } = useTheme();
 
     const navItems = [
         {
@@ -137,10 +139,33 @@ export default function Sidebar() {
                     <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
                         <span className="text-xs font-bold text-indigo-300">GCP</span>
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <div className="text-sm font-medium text-slate-300">Network Scan</div>
-                        <div className="text-xs text-slate-500">v1.0.0</div>
+                        <div className="text-xs text-slate-500">v1.1.0</div>
                     </div>
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                    >
+                        {theme === 'light' ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="4" />
+                                <path d="M12 2v2" />
+                                <path d="M12 20v2" />
+                                <path d="m4.93 4.93 1.41 1.41" />
+                                <path d="m17.66 17.66 1.41 1.41" />
+                                <path d="M2 12h2" />
+                                <path d="M20 12h2" />
+                                <path d="m6.34 17.66-1.41 1.41" />
+                                <path d="m19.07 4.93-1.41 1.41" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
             </div>
         </aside>

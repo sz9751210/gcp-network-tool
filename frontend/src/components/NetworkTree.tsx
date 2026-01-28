@@ -6,6 +6,7 @@ import {
     Subnet
 } from '@/types/network';
 
+
 interface NetworkTreeProps {
     data: NetworkTopology | null;
     isLoading: boolean;
@@ -183,6 +184,7 @@ function ProjectRow({ project, expanded, onToggle }: {
     const isExpanded = expanded[project.project_id];
     const hasError = project.scan_status === 'error' || project.scan_status === 'permission_denied';
 
+
     return (
         <div className="group">
             <div
@@ -210,6 +212,7 @@ function ProjectRow({ project, expanded, onToggle }: {
                         </div>
                         <span className="text-[10px] text-slate-400 truncate uppercase tracking-widest">{project.project_id}</span>
                     </div>
+
                     {project.is_shared_vpc_host && (
                         <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">HOST</span>
                     )}
@@ -260,6 +263,7 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
     const rowId = `${projectId}-${vpc.name}`;
     const isExpanded = expanded[rowId];
 
+
     return (
         <div className="relative">
             <div
@@ -272,6 +276,7 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
                     </div>
                     <NetworkIcon />
                     <span className="text-sm text-slate-700 font-medium truncate">{vpc.name}</span>
+
                     <a
                         href={`https://console.cloud.google.com/networking/networks/details/${vpc.name}?project=${projectId}`}
                         target="_blank"
@@ -313,11 +318,13 @@ function VPCRow({ vpc, projectId, expanded, onToggle }: {
 }
 
 function SubnetRow({ subnet, projectId }: { subnet: Subnet, projectId: string }) {
+
     return (
         <div className="grid grid-cols-12 gap-4 px-6 py-2 hover:bg-sky-50 transition-colors group relative">
             <div className="col-span-5 flex items-center gap-3 pl-2 group/link">
                 <div className="w-4 flex justify-center"><div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-sky-400"></div></div>
                 <span className="text-sm text-slate-600 truncate group-hover:text-slate-900 transition-colors">{subnet.name}</span>
+
                 <a
                     href={`https://console.cloud.google.com/networking/subnetworks/details/${subnet.region}/${subnet.name}?project=${projectId}`}
                     target="_blank"

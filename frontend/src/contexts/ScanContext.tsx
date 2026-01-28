@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { NetworkTopology, ScanRequest } from '@/types/network';
+
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { NetworkTopology, ScanRequest, ScanHistoryItem } from '@/types/network';
 import { api, pollScanStatus } from '@/lib/api';
 
 interface ScanMetadata {
@@ -20,8 +21,11 @@ interface ScanContextType {
     isScanning: boolean;
     scanStatus: string;
     error: string;
+    scanHistory: ScanHistoryItem[];
     startScan: (request: ScanRequest) => Promise<void>;
     refreshData: () => Promise<void>;
+    loadScanHistory: () => Promise<void>;
+    loadScan: (scanId: string) => Promise<void>;
 }
 
 const ScanContext = createContext<ScanContextType | undefined>(undefined);
@@ -31,7 +35,9 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     const [metadata, setMetadata] = useState<ScanMetadata | null>(null);
     const [isScanning, setIsScanning] = useState(false);
     const [scanStatus, setScanStatus] = useState('');
+
     const [error, setError] = useState('');
+    const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
 
     const startScan = useCallback(async (request: ScanRequest) => {
         setIsScanning(true);
@@ -59,6 +65,9 @@ export function ScanProvider({ children }: { children: ReactNode }) {
                 totalSubnets: result.total_subnets,
             });
             setScanStatus('Scan completed!');
+
+            // Refresh history
+            loadScanHistory();
 
             // Save to session storage
             sessionStorage.setItem('lastScanId', scan_id);
@@ -94,6 +103,49 @@ export function ScanProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    const loadScanHistory = useCallback(async () => {
+        try {
+            const history = await api.getScans();
+            setScanHistory(history);
+        } catch (e) {
+            console.error('Failed to load scan history', e);
+        }
+    }, []);
+
+    const loadScan = useCallback(async (scanId: string) => {
+        setIsScanning(true);
+        setScanStatus('Loading scan...');
+        try {
+            const result = await api.getScanResults(scanId);
+            setTopology(result);
+            setMetadata({
+                scanId: result.scan_id,
+                timestamp: result.scan_timestamp,
+                sourceType: result.source_type,
+                sourceId: result.source_id,
+                totalProjects: result.total_projects,
+                totalVpcs: result.total_vpcs,
+                totalSubnets: result.total_subnets,
+            });
+            setScanStatus('');
+
+            // Save to session storage
+            sessionStorage.setItem('lastScanId', scanId);
+            sessionStorage.setItem('lastTopology', JSON.stringify(result));
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Failed to load scan';
+            setError(msg);
+            setScanStatus('');
+        } finally {
+            setIsScanning(false);
+        }
+    }, []);
+
+    // Load history on mount
+    useEffect(() => {
+        loadScanHistory();
+    }, [loadScanHistory]);
+
     return (
         <ScanContext.Provider
             value={{
@@ -102,8 +154,11 @@ export function ScanProvider({ children }: { children: ReactNode }) {
                 isScanning,
                 scanStatus,
                 error,
+                scanHistory,
                 startScan,
                 refreshData,
+                loadScanHistory,
+                loadScan
             }}
         >
             {children}

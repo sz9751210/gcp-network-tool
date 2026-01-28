@@ -165,6 +165,18 @@ class ScanStatusResponse(BaseModel):
     message: Optional[str] = None
 
 
+class ScanHistoryItem(BaseModel):
+    """Summary of a past scan."""
+    scan_id: str
+    timestamp: datetime
+    status: str
+    source_type: str
+    source_id: str
+    total_projects: int
+    total_vpcs: int
+    total_subnets: int
+
+
 class IPPlanRequest(BaseModel):
     """Request to plan IP ranges."""
     source_project_id: str

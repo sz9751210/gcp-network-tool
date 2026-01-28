@@ -6,6 +6,8 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { ScanProvider } from "@/contexts/ScanContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
+import { ThemeProvider } from "@/contexts/ThemeContext";
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -22,17 +24,21 @@ export default function RootLayout({
         <html lang="en">
             <body className={inter.className}>
                 <LanguageProvider>
-                    <ScanProvider>
-                        <div className="flex h-screen overflow-hidden">
-                            <Sidebar />
-                            <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100 relative">
-                                <div className="absolute top-6 right-8 z-50">
-                                    <LanguageSwitcher />
-                                </div>
-                                {children}
-                            </main>
-                        </div>
-                    </ScanProvider>
+                    <ThemeProvider>
+
+                        <ScanProvider>
+                            <div className="flex h-screen overflow-hidden">
+                                <Sidebar />
+                                <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100 relative">
+                                    <div className="absolute top-6 right-8 z-50">
+                                        <LanguageSwitcher />
+                                    </div>
+                                    {children}
+                                </main>
+                            </div>
+                        </ScanProvider>
+
+                    </ThemeProvider>
                 </LanguageProvider>
             </body>
         </html>

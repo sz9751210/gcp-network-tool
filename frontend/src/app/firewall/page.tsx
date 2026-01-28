@@ -17,6 +17,7 @@ export default function FirewallPage() {
     const [projectFilter, setProjectFilter] = useState<string>('all');
     const [vpcFilter, setVpcFilter] = useState<string>('all');
     const [protocolFilter, setProtocolFilter] = useState<string>('all');
+    const [selectedRule, setSelectedRule] = useState<FirewallRule | null>(null);
 
     const isRisky = (rule: FirewallRule) => {
         if (rule.direction !== 'INGRESS' || rule.action !== 'ALLOW' || rule.disabled) return false;
@@ -285,6 +286,9 @@ export default function FirewallPage() {
                                     <th onClick={() => handleSort('project_id')} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100">
                                         {t('publicIps.project')} {sortBy === 'project_id' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
+                                    <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        Details
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
@@ -353,11 +357,161 @@ export default function FirewallPage() {
                                             </td>
                                             <td className="px-4 py-3 text-sm text-slate-600">{rule.vpc_network}</td>
                                             <td className="px-4 py-3 text-sm text-slate-600">{rule.project_id}</td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    onClick={() => setSelectedRule(rule)}
+                                                    className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                                                >
+                                                    View
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Detail Modal */}
+            {selectedRule && (
+                <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setSelectedRule(null)}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <span className={`w-3 h-3 rounded-full ${selectedRule.action === 'ALLOW' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                    {selectedRule.name}
+                                </h3>
+                                <p className="text-sm text-slate-500 mt-1 font-mono">{selectedRule.project_id} / {selectedRule.vpc_network}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedRule(null)}
+                                className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto space-y-6">
+                            {/* Key Properties */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Direction</span>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${selectedRule.direction === 'INGRESS' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                        {selectedRule.direction}
+                                    </span>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Priority</span>
+                                    <span className="font-mono text-lg font-semibold text-slate-700">{selectedRule.priority}</span>
+                                </div>
+                            </div>
+
+                            {/* Ranges */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="M22 12h-4" /><path d="M6 12H2" /><path d="m12 6 2-2 4 4" /><path d="m10 18-2 2-4-4" /></svg>
+                                        Source Ranges
+                                    </h4>
+                                    <div className="bg-slate-50 rounded-md border border-slate-200 h-40 overflow-y-auto p-2">
+                                        {selectedRule.source_ranges.length > 0 ? (
+                                            selectedRule.source_ranges.map((r, i) => (
+                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white rounded text-slate-600 border border-transparent hover:border-slate-100">{r}</div>
+                                            ))
+                                        ) : (
+                                            <div className="text-xs text-slate-400 italic p-2">None</div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="m12 16-4-4 4-4" /><path d="m16 12-4 4-4-4" /></svg>
+                                        Destination Ranges
+                                    </h4>
+                                    <div className="bg-slate-50 rounded-md border border-slate-200 h-40 overflow-y-auto p-2">
+                                        {selectedRule.destination_ranges.length > 0 ? (
+                                            selectedRule.destination_ranges.map((r, i) => (
+                                                <div key={i} className="font-mono text-xs py-0.5 px-2 hover:bg-white rounded text-slate-600 border border-transparent hover:border-slate-100">{r}</div>
+                                            ))
+                                        ) : (
+                                            <div className="text-xs text-slate-400 italic p-2">None</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Protocols & Ports */}
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-700 mb-3">Protocols & Ports</h4>
+                                <div className="space-y-2">
+                                    {[...selectedRule.allowed, ...selectedRule.denied].map((p, i) => (
+                                        <div key={i} className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                            <span className="font-mono text-sm font-bold text-indigo-600 uppercase w-16">{p.IPProtocol}</span>
+                                            <div className="h-4 w-px bg-slate-300"></div>
+                                            <div className="flex-1 font-mono text-xs text-slate-600 break-all">
+                                                {p.ports && p.ports.length > 0 ? p.ports.join(', ') : 'All ports'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Tags */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-700 mb-3">Target Tags</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedRule.target_tags && selectedRule.target_tags.length > 0 ? (
+                                            selectedRule.target_tags.map(tag => (
+                                                <span key={tag} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs border border-amber-200 rounded-md font-medium">
+                                                    {tag}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic">No target tags (Applies to all instances)</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-700 mb-3">Target Service Accounts</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedRule.target_service_accounts && selectedRule.target_service_accounts.length > 0 ? (
+                                            selectedRule.target_service_accounts.map(sa => (
+                                                <span key={sa} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs border border-indigo-200 rounded-md font-medium">
+                                                    {sa}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic">No target service accounts</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Raw Logic Warning if Risky */}
+                            {isRisky(selectedRule) && (
+                                <div className="mt-6 p-4 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-rose-800">Security Risk Detected</h4>
+                                        <p className="text-xs text-rose-700 mt-1">
+                                            This rule allows ingress traffic from any source (0.0.0.0/0). Ensure this is intended (e.g., for public web servers).
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                            <button
+                                onClick={() => setSelectedRule(null)}
+                                className="btn-secondary"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
