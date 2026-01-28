@@ -64,7 +64,7 @@ export default function PublicIPsPage() {
     const typeOptions = useMemo(() => {
         const counts = new Map<string, number>();
         publicIPs.forEach(ip => {
-            counts.set(ip.address_type, (counts.get(ip.address_type) || 0) + 1);
+            counts.set(ip.resource_type, (counts.get(ip.resource_type) || 0) + 1);
         });
         return Array.from(counts.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
@@ -85,7 +85,7 @@ export default function PublicIPsPage() {
             filtered = filtered.filter(ip => ip.region === regionFilter);
         }
         if (typeFilter !== 'all') {
-            filtered = filtered.filter(ip => ip.address_type === typeFilter);
+            filtered = filtered.filter(ip => ip.resource_type === typeFilter);
         }
 
         if (filterText) {
@@ -93,8 +93,9 @@ export default function PublicIPsPage() {
             filtered = filtered.filter(
                 (ip) =>
                     ip.ip_address.toLowerCase().includes(lower) ||
-                    ip.name.toLowerCase().includes(lower) ||
-                    ip.attached_to?.toLowerCase().includes(lower)
+                    ip.resource_name.toLowerCase().includes(lower) ||
+                    ip.project_id.toLowerCase().includes(lower) ||
+                    ip.region.toLowerCase().includes(lower)
             );
         }
 
@@ -219,7 +220,7 @@ export default function PublicIPsPage() {
 
                         <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
                             <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedIPs.length}</span> / {' '}
-                            <span className="font-semibold">{publicIPs.length}</span> {t('publicIps.totalIPs').toLowerCase()}
+                            <span className="font-semibold">{publicIPs.length}</span> {t('publicIps.totalIps').toLowerCase()}
                         </div>
                     </div>
 
@@ -230,10 +231,9 @@ export default function PublicIPsPage() {
                                 <tr>
                                     {[
                                         { key: 'ip_address', label: t('publicIps.ipAddress') },
-                                        { key: 'name', label: t('publicIps.name') },
+                                        { key: 'resource_name', label: t('publicIps.resourceName') },
+                                        { key: 'resource_type', label: t('publicIps.resourceType') },
                                         { key: 'status', label: t('publicIps.status') },
-                                        { key: 'address_type', label: t('publicIps.type') },
-                                        { key: 'attached_to', label: t('publicIps.attachedTo') },
                                         { key: 'region', label: t('publicIps.region') },
                                         { key: 'project_id', label: t('publicIps.project') },
                                     ].map((col) => (
@@ -258,7 +258,10 @@ export default function PublicIPsPage() {
                                 {sortedIPs.map((ip, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{ip.ip_address}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                                            <span className="capitalize">{ip.resource_type.toLowerCase().replace('_', ' ')}</span>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ip.status === 'IN_USE'
                                                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
@@ -267,8 +270,6 @@ export default function PublicIPsPage() {
                                                 {ip.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.address_type}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-sm truncate">{ip.attached_to || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.region}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.project_id}</td>
                                     </tr>

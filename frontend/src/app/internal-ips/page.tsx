@@ -53,7 +53,7 @@ export default function InternalIPsPage() {
     const vpcOptions = useMemo(() => {
         const counts = new Map<string, number>();
         internalIPs.forEach(ip => {
-            counts.set(ip.vpc_network, (counts.get(ip.vpc_network) || 0) + 1);
+            counts.set(ip.vpc, (counts.get(ip.vpc) || 0) + 1);
         });
         return Array.from(counts.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
@@ -71,7 +71,7 @@ export default function InternalIPsPage() {
             filtered = filtered.filter(ip => ip.region === regionFilter);
         }
         if (vpcFilter !== 'all') {
-            filtered = filtered.filter(ip => ip.vpc_network === vpcFilter);
+            filtered = filtered.filter(ip => ip.vpc === vpcFilter);
         }
 
         if (filterText) {
@@ -79,9 +79,9 @@ export default function InternalIPsPage() {
             filtered = filtered.filter(
                 (ip) =>
                     ip.ip_address.toLowerCase().includes(lower) ||
-                    ip.instance_name?.toLowerCase().includes(lower) ||
-                    ip.vpc_network?.toLowerCase().includes(lower) ||
-                    ip.subnet_name?.toLowerCase().includes(lower)
+                    ip.resource_name?.toLowerCase().includes(lower) ||
+                    ip.vpc?.toLowerCase().includes(lower) ||
+                    ip.subnet?.toLowerCase().includes(lower)
             );
         }
 
@@ -195,7 +195,7 @@ export default function InternalIPsPage() {
 
                         <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
                             <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sortedIPs.length}</span> / {' '}
-                            <span className="font-semibold">{internalIPs.length}</span> {t('internalIps.totalIPs').toLowerCase()}
+                            <span className="font-semibold">{internalIPs.length}</span> {t('internalIps.totalIps').toLowerCase()}
                         </div>
                     </div>
 
@@ -206,10 +206,10 @@ export default function InternalIPsPage() {
                                 <tr>
                                     {[
                                         { key: 'ip_address', label: t('internalIps.ipAddress') },
-                                        { key: 'instance_name', label: t('internalIps.instanceName') },
-                                        { key: 'instance_type', label: t('internalIps.instanceType') },
-                                        { key: 'vpc_network', label: t('internalIps.vpcNetwork') },
-                                        { key: 'subnet_name', label: t('internalIps.subnetName') },
+                                        { key: 'resource_name', label: t('internalIps.resourceName') },
+                                        { key: 'resource_type', label: t('internalIps.resourceType') },
+                                        { key: 'vpc', label: t('internalIps.vpc') },
+                                        { key: 'subnet', label: t('internalIps.subnet') },
                                         { key: 'region', label: t('internalIps.region') },
                                         { key: 'project_id', label: t('publicIps.project') },
                                     ].map((col) => (
@@ -234,19 +234,19 @@ export default function InternalIPsPage() {
                                 {sortedIPs.map((ip, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{ip.ip_address}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.instance_name || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ip.instance_type === 'VM'
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ip.resource_type === 'VM'
                                                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                : ip.instance_type === 'GKE_NODE'
+                                                : ip.resource_type === 'GKE_NODE' || ip.resource_type === 'GKE'
                                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                                 }`}>
-                                                {ip.instance_type || 'Unknown'}
+                                                {ip.resource_type || 'Unknown'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.vpc_network}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-sm truncate">{ip.subnet_name || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.vpc}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-sm truncate">{ip.subnet || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.region}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.project_id}</td>
                                     </tr>
