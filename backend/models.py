@@ -3,7 +3,7 @@ Pydantic models for GCP Network Planner.
 Defines the data structures for network topology representation.
 """
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -163,3 +163,19 @@ class ScanStatusResponse(BaseModel):
     projects_scanned: int
     total_projects: int
     message: Optional[str] = None
+
+
+class IPPlanRequest(BaseModel):
+    """Request to plan IP ranges."""
+    source_project_id: str
+    source_vpc_id: Optional[str] = None  # Optional: specific VPC to plan for
+    region: str
+    peer_projects: List[str] = Field(default_factory=list)
+    cidr_mask: int = 24
+    base_cidr: str = "10.0.0.0/8"
+
+
+class IPPlanResponse(BaseModel):
+    """Response for IP planning."""
+    available_cidrs: List[str]
+    checked_scope: List[str]  # List of project IDs checked

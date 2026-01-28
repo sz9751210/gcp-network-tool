@@ -25,7 +25,7 @@
         "publicIps": "Public IPs",
         "firewallRules": "Firewall Rules",
         "cloudArmor": "Cloud Armor",
-        "cidrPlanner": "CIDR Planner",
+        "cidrPlanner": "IP Network Planner",
         "settings": "Settings",
         "language": "Language"
     },

@@ -110,36 +110,18 @@ def find_all_conflicts(
     return conflicts
 
 
-def suggest_available_cidrs(
+def find_available_cidrs(
     base_cidr: str,
-    topology: NetworkTopology,
+    existing_cidrs: list[str],
     prefix_length: int = 24,
     count: int = 5
 ) -> list[str]:
     """
-    Suggest available CIDR blocks that don't conflict with existing subnets.
-    
-    Args:
-        base_cidr: The base network to search within (e.g., "10.0.0.0/8")
-        topology: The network topology containing existing subnets
-        prefix_length: Desired prefix length for suggested CIDRs
-        count: Number of suggestions to return
-        
-    Returns:
-        List of available CIDR strings
+    Find available CIDR blocks given a list of existing CIDRs.
     """
     base_network = parse_cidr(base_cidr)
     if base_network is None:
         return []
-    
-    # Collect all existing CIDRs
-    existing_cidrs = []
-    for project in topology.projects:
-        for vpc in project.vpc_networks:
-            for subnet in vpc.subnets:
-                existing_cidrs.append(subnet.ip_cidr_range)
-                for secondary in subnet.secondary_ip_ranges:
-                    existing_cidrs.append(secondary.get("ip_cidr_range", ""))
     
     existing_networks = [parse_cidr(c) for c in existing_cidrs if parse_cidr(c)]
     
@@ -159,10 +141,39 @@ def suggest_available_cidrs(
                 if len(suggestions) >= count:
                     break
     except ValueError:
-        # prefix_length is invalid for this network
         pass
     
     return suggestions
+
+
+def suggest_available_cidrs(
+    base_cidr: str,
+    topology: NetworkTopology,
+    prefix_length: int = 24,
+    count: int = 5
+) -> list[str]:
+    """
+    Suggest available CIDR blocks that don't conflict with existing subnets.
+    
+    Args:
+        base_cidr: The base network to search within (e.g., "10.0.0.0/8")
+        topology: The network topology containing existing subnets
+        prefix_length: Desired prefix length for suggested CIDRs
+        count: Number of suggestions to return
+        
+    Returns:
+        List of available CIDR strings
+    """
+    # Collect all existing CIDRs
+    existing_cidrs = []
+    for project in topology.projects:
+        for vpc in project.vpc_networks:
+            for subnet in vpc.subnets:
+                existing_cidrs.append(subnet.ip_cidr_range)
+                for secondary in subnet.secondary_ip_ranges:
+                    existing_cidrs.append(secondary.get("ip_cidr_range", ""))
+    
+    return find_available_cidrs(base_cidr, existing_cidrs, prefix_length, count)
 
 
 def calculate_ip_utilization(

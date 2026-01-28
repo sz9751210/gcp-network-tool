@@ -13,11 +13,12 @@ from credentials_manager import credentials_manager, CredentialInfo
 
 from models import (
     ScanRequest, CIDRCheckRequest, CIDRCheckResponse,
-    NetworkTopology, ScanStatusResponse
+    NetworkTopology, ScanStatusResponse,
+    IPPlanRequest, IPPlanResponse
 )
 from gcp_scanner import scan_network_topology
 from cidr_analyzer import (
-    find_all_conflicts, suggest_available_cidrs,
+    find_all_conflicts, suggest_available_cidrs, find_available_cidrs,
     get_cidr_info, calculate_ip_utilization
 )
 
@@ -222,6 +223,65 @@ async def check_cidr_conflict(request: CIDRCheckRequest):
         has_conflict=len(conflicts) > 0,
         conflicts=conflicts,
         suggested_cidrs=suggested_cidrs
+    )
+
+
+@app.post("/api/plan-ip", response_model=IPPlanResponse)
+async def plan_ip(request: IPPlanRequest):
+    """
+    Plan IP range for a new subnet.
+    
+    Checks for available CIDR blocks that do not conflict with:
+    1. Subnets in the source project
+    2. Subnets in specified peer projects
+    """
+    # Get the latest topology
+    latest = None
+    for scan_id, data in scan_store.items():
+        if data.get("status") == "completed":
+            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
+                latest = data
+    
+    if latest is None:
+        raise HTTPException(
+            status_code=400, 
+            detail="No scan results available. Run a scan first."
+        )
+    
+    topology = NetworkTopology(**latest["topology"])
+    
+    # Collect conflict scopes
+    projects_to_check = {request.source_project_id}
+    if request.peer_projects:
+        projects_to_check.update(request.peer_projects)
+    
+    existing_cidrs = []
+    
+    # Iterate through topology to gather relevant subnets
+    for project in topology.projects:
+        if project.project_id in projects_to_check:
+            for vpc in project.vpc_networks:
+                # If specific VPC is requested for source, we might filter?
+                # But for safety, checking ALL subnets in the project is better 
+                # to avoid future conflicts if peered within same project.
+                # Logic: Gather ALL subnets from ALL checked projects.
+                
+                for subnet in vpc.subnets:
+                    existing_cidrs.append(subnet.ip_cidr_range)
+                    for secondary in subnet.secondary_ip_ranges:
+                        existing_cidrs.append(secondary.get("ip_cidr_range", ""))
+    
+    # Find available CIDRs
+    available = find_available_cidrs(
+        base_cidr=request.base_cidr,
+        existing_cidrs=existing_cidrs,
+        prefix_length=request.cidr_mask,
+        count=10
+    )
+    
+    return IPPlanResponse(
+        available_cidrs=available,
+        checked_scope=list(projects_to_check)
     )
 
 

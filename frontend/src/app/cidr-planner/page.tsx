@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import CIDRVisualizer from '@/components/CIDRVisualizer';
+import IPPlanner from '@/components/IPPlanner';
 
 export default function CIDRPlannerPage() {
     const { topology } = useScan();
@@ -136,6 +137,9 @@ export default function CIDRPlannerPage() {
                         <CIDRVisualizer />
                     </div>
                 </div>
+
+                {/* IP Planning Tool (New Feature) */}
+                <IPPlanner />
 
                 {/* CIDR Calculator */}
                 <div className="card">

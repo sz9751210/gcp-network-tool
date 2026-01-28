@@ -25,7 +25,7 @@
         "publicIps": "外部 IP (Public IP)",
         "firewallRules": "防火牆規則",
         "cloudArmor": "Cloud Armor",
-        "cidrPlanner": "CIDR 規劃工具",
+        "cidrPlanner": "IP 網路規劃工具",
         "settings": "設定",
         "language": "語言"
     },

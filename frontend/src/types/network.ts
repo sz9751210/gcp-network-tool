@@ -169,6 +169,20 @@ export interface VPCUtilization {
     subnet_count: number;
 }
 
+export interface IPPlanRequest {
+    source_project_id: string;
+    source_vpc_id?: string;
+    region: string;
+    peer_projects: string[];
+    cidr_mask: number;
+    base_cidr: string;
+}
+
+export interface IPPlanResponse {
+    available_cidrs: string[];
+    checked_scope: string[];
+}
+
 // Tree table row types for hierarchical display
 export type RowType = 'project' | 'vpc' | 'subnet';
 
