@@ -70,6 +70,7 @@ export interface PublicIP {
     region: string;
     status: string;  // "IN_USE", "RESERVED"
     description?: string;
+    labels?: Record<string, string>;
     zone?: string;  // For VMs
 }
 

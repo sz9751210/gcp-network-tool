@@ -16,6 +16,7 @@ interface LoadBalancer {
     project: string;
     source: 'Public' | 'Internal';
     description?: string;
+    labels?: Record<string, string>;
 }
 
 export default function LoadBalancersPage() {
@@ -49,28 +50,38 @@ export default function LoadBalancersPage() {
 
         const lbs: LoadBalancer[] = [];
 
-        // Helper to parse name from description
-        const getFriendlyName = (resourceName: string, description?: string): string => {
-            if (!description) return resourceName;
-
-            try {
-                // Try to find Kubernetes service name in description JSON
-                // GKE LBs often have description like: {"kubernetes.io/service-name":"namespace/service-name", ...}
-                if (description.startsWith('{') && description.includes('kubernetes.io/service-name')) {
-                    const descObj = JSON.parse(description);
-                    if (descObj['kubernetes.io/service-name']) {
-                        return descObj['kubernetes.io/service-name'];
-                    }
-                }
-            } catch (e) {
-                // Not JSON or parse error, ignore
+        // Helper to parse name from description or labels
+        const getFriendlyName = (resourceName: string, description?: string, labels?: Record<string, string>): string => {
+            // 1. Check labels for standard K8s service name
+            if (labels) {
+                // Common label keys for service names
+                const serviceName = labels['kubernetes.io/service-name'] ||
+                    labels['service-name'] ||
+                    labels['app'] ||
+                    labels['name'];
+                if (serviceName) return serviceName;
             }
 
-            // If description is short and looks like a name (no spaces, not too long), use it
-            // Otherwise stick to resource_name or use description as a hint?
-            // For now, let's treat the description as a secondary source if it's not JSON
-            if (description.length > 0 && description.length < 50 && !description.includes('{')) {
-                return description;
+            // 2. Check description
+            if (description) {
+                try {
+                    // Try to find Kubernetes service name in description JSON
+                    // GKE LBs often have description like: {"kubernetes.io/service-name":"namespace/service-name", ...}
+                    if (description.startsWith('{') && description.includes('kubernetes.io/service-name')) {
+                        const descObj = JSON.parse(description);
+                        if (descObj['kubernetes.io/service-name']) {
+                            return descObj['kubernetes.io/service-name'];
+                        }
+                    }
+                } catch (e) {
+                    // Not JSON or parse error, ignore
+                }
+
+                // If description is short and looks like a name (no spaces, not too long), use it
+                // Otherwise stick to resource_name or use description as a hint?
+                if (description.length > 0 && description.length < 50 && !description.includes('{')) {
+                    return description;
+                }
             }
 
             return resourceName;
@@ -86,14 +97,15 @@ export default function LoadBalancersPage() {
                 if (upperType.includes('LOAD_BALANCER') || upperType.includes('FORWARDING_RULE') || upperType === 'LOADBALANCER') {
                     lbs.push({
                         ip: ip.ip_address,
-                        name: getFriendlyName(ip.resource_name, ip.description),
+                        name: getFriendlyName(ip.resource_name, ip.description, ip.labels),
                         originalName: ip.resource_name,
                         type: type.replace(/_/g, ' '),
                         scope: ip.region === 'global' ? 'Global' : 'Regional',
                         network: ip.region,
                         project: ip.project_id,
                         source: 'Public',
-                        description: ip.description
+                        description: ip.description,
+                        labels: ip.labels
                     });
                 }
             });
@@ -369,6 +381,21 @@ export default function LoadBalancersPage() {
                                         {selectedLB.originalName}
                                     </dd>
                                 </div>
+
+                                {selectedLB.labels && Object.keys(selectedLB.labels).length > 0 && (
+                                    <div>
+                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Labels</dt>
+                                        <dd className="mt-1">
+                                            <div className="flex flex-wrap gap-2">
+                                                {Object.entries(selectedLB.labels).map(([k, v]) => (
+                                                    <span key={k} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        {k}: {v}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </dd>
+                                    </div>
+                                )}
 
                                 {selectedLB.description && (
                                     <div>

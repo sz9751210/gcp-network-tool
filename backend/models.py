@@ -49,6 +49,7 @@ class PublicIP(BaseModel):
     region: str
     status: str = "IN_USE"  # "IN_USE", "RESERVED"
     description: Optional[str] = None
+    labels: dict = Field(default_factory=dict)
     zone: Optional[str] = None  # For VMs
 
 

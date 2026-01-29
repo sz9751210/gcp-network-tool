@@ -402,8 +402,21 @@ class GCPScanner:
 
                      for rule in rules_scoped_list.forwarding_rules:
                         if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] and rule.I_p_address:
-                            # Only add if not already captured (Addresses are more authoritative)
-                            if rule.I_p_address not in public_ips_map:
+                            # If already exists (from Address), update with more specific info from Forwarding Rule
+                            if rule.I_p_address in public_ips_map:
+                                existing = public_ips_map[rule.I_p_address]
+                                if not existing.description and rule.description:
+                                    existing.description = rule.description
+                                if rule.labels:
+                                    existing.labels = dict(rule.labels)
+                                # If the existing one is just a Static Address, upgrading it to LoadBalancer is more descriptive
+                                if existing.resource_type == "Static Address":
+                                    existing.resource_type = "LoadBalancer"
+                                    # Don't overwrite resource_name if it was a user-defined static IP name, 
+                                    # unless it's auto-generated and the FR name is better? 
+                                    # Usually FR name is the service name in K8s, so it might be better.
+                                    # But let's stick to description/labels for display and keep the underlying resource name as the IP name if it exists.
+                            else:
                                 public_ips_map[rule.I_p_address] = PublicIP(
                                     ip_address=rule.I_p_address,
                                     resource_type="LoadBalancer",
@@ -411,13 +424,22 @@ class GCPScanner:
                                     project_id=project.project_id,
                                     region=region,
                                     status="IN_USE",
-                                    description=rule.description
+                                    description=rule.description,
+                                    labels=dict(rule.labels) if rule.labels else {}
                                 )
 
                 # Global Forwarding Rules
                 for rule in global_forwarding_client.list(project=project.project_id):
                     if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] and rule.I_p_address:
-                         if rule.I_p_address not in public_ips_map:
+                         if rule.I_p_address in public_ips_map:
+                                existing = public_ips_map[rule.I_p_address]
+                                if not existing.description and rule.description:
+                                    existing.description = rule.description
+                                if rule.labels:
+                                    existing.labels = dict(rule.labels)
+                                if existing.resource_type == "Global Address":
+                                    existing.resource_type = "Global LoadBalancer"
+                         else:
                                 public_ips_map[rule.I_p_address] = PublicIP(
                                     ip_address=rule.I_p_address,
                                     resource_type="Global LoadBalancer",
@@ -425,7 +447,8 @@ class GCPScanner:
                                     project_id=project.project_id,
                                     region="global",
                                     status="IN_USE",
-                                    description=rule.description
+                                    description=rule.description,
+                                    labels=dict(rule.labels) if rule.labels else {}
                                 )
                 
                 # 3. Scan VM Instances (Catch ephemeral IPs not in Addresses)
