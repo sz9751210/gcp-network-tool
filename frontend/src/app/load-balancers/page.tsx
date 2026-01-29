@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { LoadBalancerDetails } from '@/types/network';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
 
@@ -17,6 +18,7 @@ interface LoadBalancer {
     source: 'Public' | 'Internal';
     description?: string;
     labels?: Record<string, string>;
+    details?: LoadBalancerDetails;
 }
 
 export default function LoadBalancersPage() {
@@ -104,8 +106,10 @@ export default function LoadBalancersPage() {
                         network: ip.region,
                         project: ip.project_id,
                         source: 'Public',
+
                         description: ip.description,
-                        labels: ip.labels
+                        labels: ip.labels,
+                        details: ip.details
                     });
                 }
             });
@@ -407,6 +411,104 @@ export default function LoadBalancersPage() {
                                 )}
                             </dl>
                         </div>
+
+                        {/* Deep Details (Frontend, Routing, Backends) */}
+                        {selectedLB.details && (
+                            <div className="space-y-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+                                {/* Frontend */}
+                                {selectedLB.details.frontend && (
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Frontend</h4>
+                                        <div className="overflow-hidden bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg">
+                                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-xs">
+                                                <thead className="bg-slate-50 dark:bg-slate-800">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Protocol</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">IP:Port</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Certificate</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">SSL Policy</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                                                    <tr>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">{selectedLB.details.frontend.protocol}</td>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">{selectedLB.details.frontend.ip_port}</td>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                                            {selectedLB.details.frontend.certificate ? (
+                                                                <a href="#" className="text-blue-600 hover:underline">{selectedLB.details.frontend.certificate}</a>
+                                                            ) : '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                                            {selectedLB.details.frontend.ssl_policy ? (
+                                                                <a href="#" className="text-blue-600 hover:underline">{selectedLB.details.frontend.ssl_policy}</a>
+                                                            ) : 'Default'}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Routing Rules */}
+                                {selectedLB.details.routing_rules.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Routing Rules</h4>
+                                        <div className="overflow-hidden bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg">
+                                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-xs">
+                                                <thead className="bg-slate-50 dark:bg-slate-800">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Hosts</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Path</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Backend Service</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                                                    {selectedLB.details.routing_rules.map((rule, i) => (
+                                                        <tr key={i}>
+                                                            <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300">{rule.hosts.join(', ')}</td>
+                                                            <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300">{rule.path}</td>
+                                                            <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{rule.backend_service}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Backends */}
+                                {selectedLB.details.backends.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Backend Services</h4>
+                                        <div className="space-y-3">
+                                            {selectedLB.details.backends.map((backend, i) => (
+                                                <div key={i} className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg p-3">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">{backend.name}</span>
+                                                        <span className="text-xs text-slate-500">{backend.type}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                                        <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                                                            <span className="text-slate-500">Cloud CDN</span>
+                                                            <span className={backend.cdn_enabled ? "text-green-600 font-medium" : "text-slate-400"}>
+                                                                {backend.cdn_enabled ? 'Enabled' : 'Disabled'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                                                            <span className="text-slate-500">Security Policy</span>
+                                                            <span className="text-slate-700 dark:text-slate-300">
+                                                                {backend.security_policy || '-'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </SlideOver>

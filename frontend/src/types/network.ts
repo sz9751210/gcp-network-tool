@@ -71,7 +71,37 @@ export interface PublicIP {
     status: string;  // "IN_USE", "RESERVED"
     description?: string;
     labels?: Record<string, string>;
+    details?: LoadBalancerDetails;
     zone?: string;  // For VMs
+}
+
+export interface LBFrontend {
+    protocol: string;
+    ip_port: string;
+    certificate?: string;
+    ssl_policy?: string;
+    network_tier?: string;
+}
+
+export interface LBRoutingRule {
+    hosts: string[];
+    path: string;
+    backend_service: string;
+}
+
+export interface LBBackend {
+    name: string;
+    type: string;
+    description?: string;
+    cdn_enabled: boolean;
+    security_policy?: string;
+    capacity_scaler?: number;
+}
+
+export interface LoadBalancerDetails {
+    frontend?: LBFrontend;
+    routing_rules: LBRoutingRule[];
+    backends: LBBackend[];
 }
 
 export interface UsedInternalIP {

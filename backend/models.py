@@ -50,7 +50,42 @@ class PublicIP(BaseModel):
     status: str = "IN_USE"  # "IN_USE", "RESERVED"
     description: Optional[str] = None
     labels: dict = Field(default_factory=dict)
+    details: Optional['LoadBalancerDetails'] = None
     zone: Optional[str] = None  # For VMs
+
+
+class LBFrontend(BaseModel):
+    """Frontend configuration of a Load Balancer."""
+    protocol: str  # HTTP, HTTPS, TCP, UDP
+    ip_port: str  # e.g. "34.1.1.1:443"
+    certificate: Optional[str] = None
+    ssl_policy: Optional[str] = None
+    network_tier: Optional[str] = None
+
+
+class LBRoutingRule(BaseModel):
+    """Routing rule for a Load Balancer."""
+    hosts: List[str]
+    path: str
+    backend_service: str
+
+
+class LBBackend(BaseModel):
+    """Backend service or bucket details."""
+    name: str # e.g. "backend-service-1"
+    type: str # "Instance Group", "NEG", "Bucket"
+    description: Optional[str] = None
+    cdn_enabled: bool = False
+    security_policy: Optional[str] = None # Cloud Armor
+    capacity_scaler: Optional[float] = None
+
+
+class LoadBalancerDetails(BaseModel):
+    """Deep details for a Load Balancer."""
+    frontend: Optional[LBFrontend] = None
+    routing_rules: List[LBRoutingRule] = Field(default_factory=list)
+    backends: List[LBBackend] = Field(default_factory=list)
+
 
 
 class FirewallRule(BaseModel):

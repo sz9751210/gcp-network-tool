@@ -409,6 +409,9 @@ class GCPScanner:
                                     existing.description = rule.description
                                 if rule.labels:
                                     existing.labels = dict(rule.labels)
+                                # Fetch details if missing
+                                if not existing.details and rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"]:
+                                     existing.details = self._resolve_lb_details(rule, project.project_id)
                                 # If the existing one is just a Static Address, upgrading it to LoadBalancer is more descriptive
                                 if existing.resource_type == "Static Address":
                                     existing.resource_type = "LoadBalancer"
@@ -425,7 +428,8 @@ class GCPScanner:
                                     region=region,
                                     status="IN_USE",
                                     description=rule.description,
-                                    labels=dict(rule.labels) if rule.labels else {}
+                                    labels=dict(rule.labels) if rule.labels else {},
+                                    details=self._resolve_lb_details(rule, project.project_id) if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] else None
                                 )
 
                 # Global Forwarding Rules
@@ -437,6 +441,9 @@ class GCPScanner:
                                     existing.description = rule.description
                                 if rule.labels:
                                     existing.labels = dict(rule.labels)
+                                # Fetch details if missing
+                                if not existing.details and rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"]:
+                                     existing.details = self._resolve_lb_details(rule, project.project_id)
                                 if existing.resource_type == "Global Address":
                                     existing.resource_type = "Global LoadBalancer"
                          else:
@@ -448,7 +455,8 @@ class GCPScanner:
                                     region="global",
                                     status="IN_USE",
                                     description=rule.description,
-                                    labels=dict(rule.labels) if rule.labels else {}
+                                    labels=dict(rule.labels) if rule.labels else {},
+                                    details=self._resolve_lb_details(rule, project.project_id) if rule.load_balancing_scheme in ["EXTERNAL", "EXTERNAL_MANAGED"] else None
                                 )
                 
                 # 3. Scan VM Instances (Catch ephemeral IPs not in Addresses)
@@ -732,6 +740,139 @@ class GCPScanner:
                 logger.warning(f"Failed to collect Cloud Armor policies from project {project.project_id}: {e}")
         
         return policies
+
+    def _resolve_lb_details(self, forwarding_rule, project_id: str):
+        """
+        Deeply resolve Load Balancer details (Frontend, Routing, Backends).
+        Traverses: ForwardingRule -> TargetProxy -> UrlMap -> BackendService -> InstanceGroup/Bucket
+        """
+        from models import LoadBalancerDetails, LBFrontend, LBRoutingRule, LBBackend
+        
+        details = LoadBalancerDetails()
+        
+        try:
+            # 1. Frontend Details
+            protocol = forwarding_rule.I_p_protocol
+            port = forwarding_rule.port_range if forwarding_rule.port_range else (str(forwarding_rule.ports[0]) if forwarding_rule.ports else "All")
+            ip_port = f"{forwarding_rule.I_p_address}:{port}"
+            
+            # Identify Proxy Type and Client
+            target = forwarding_rule.target
+            proxy_name = target.split("/")[-1]
+            proxy_type = "Unknown"
+            url_map_link = None
+            cert_link = None
+            ssl_policy_link = None
+
+            if "targetHttpProxies" in target:
+                proxy_type = "HTTP"
+                client = compute_v1.TargetHttpProxiesClient(credentials=self.projects_client._transport._credentials)
+                proxy = client.get(project=project_id, target_http_proxy=proxy_name)
+                url_map_link = proxy.url_map
+            elif "targetHttpsProxies" in target:
+                proxy_type = "HTTPS"
+                client = compute_v1.TargetHttpsProxiesClient(credentials=self.projects_client._transport._credentials)
+                proxy = client.get(project=project_id, target_https_proxy=proxy_name)
+                url_map_link = proxy.url_map
+                if proxy.ssl_certificates:
+                    cert_link = proxy.ssl_certificates[0]
+                if proxy.ssl_policy:
+                    ssl_policy_link = proxy.ssl_policy
+            elif "targetTcpProxies" in target:
+                proxy_type = "TCP"
+                client = compute_v1.TargetTcpProxiesClient(credentials=self.projects_client._transport._credentials)
+                proxy = client.get(project=project_id, target_tcp_proxy=proxy_name)
+                if proxy.service: # TCP Proxy points directly to backend service usually
+                    # Handle TCP Proxy structure if needed, but keeping it simple for now
+                     pass
+            elif "targetSslProxies" in target:
+                proxy_type = "SSL"
+                client = compute_v1.TargetSslProxiesClient(credentials=self.projects_client._transport._credentials)
+                proxy = client.get(project=project_id, target_ssl_proxy=proxy_name)
+                if proxy.service:
+                    pass
+                if proxy.ssl_certificates:
+                    cert_link = proxy.ssl_certificates[0]
+            
+            details.frontend = LBFrontend(
+                protocol=proxy_type,
+                ip_port=ip_port,
+                certificate=cert_link.split("/")[-1] if cert_link else None,
+                ssl_policy=ssl_policy_link.split("/")[-1] if ssl_policy_link else None
+            )
+
+            # 2. Routing Rules (from URL Map)
+            if url_map_link:
+                url_maps_client = compute_v1.UrlMapsClient(credentials=self.projects_client._transport._credentials)
+                url_map_name = url_map_link.split("/")[-1]
+                url_map = url_maps_client.get(project=project_id, url_map=url_map_name)
+
+                # Default Service
+                if url_map.default_service:
+                    details.routing_rules.append(LBRoutingRule(
+                        hosts=["*"],
+                        path="/* (Default)",
+                        backend_service=url_map.default_service.split("/")[-1]
+                    ))
+                
+                # Host Rules
+                if url_map.host_rules:
+                    for host_rule in url_map.host_rules:
+                        path_matcher_name = host_rule.path_matcher
+                        # Find corresponding path matcher
+                        for pm in url_map.path_matchers:
+                            if pm.name == path_matcher_name:
+                                # Default for this host
+                                if pm.default_service:
+                                     details.routing_rules.append(LBRoutingRule(
+                                        hosts=list(host_rule.hosts),
+                                        path="/* (Default)",
+                                        backend_service=pm.default_service.split("/")[-1]
+                                    ))
+                                # Path rules
+                                for path_rule in pm.path_rules:
+                                    details.routing_rules.append(LBRoutingRule(
+                                        hosts=list(host_rule.hosts),
+                                        path=", ".join(path_rule.paths),
+                                        backend_service=path_rule.service.split("/")[-1]
+                                    ))
+
+            # 3. Backend Services Details
+            # Collect unique backend services from routing rules
+            backend_service_names = list(set([r.backend_service for r in details.routing_rules]))
+            
+            bs_client = compute_v1.BackendServicesClient(credentials=self.projects_client._transport._credentials)
+            bb_client = compute_v1.BackendBucketsClient(credentials=self.projects_client._transport._credentials)
+
+            for bs_name in backend_service_names:
+                try:
+                    # Try as Backend Service first (most common)
+                    bs = bs_client.get(project=project_id, backend_service=bs_name)
+                    details.backends.append(LBBackend(
+                        name=bs_name,
+                        type="Instance Group" if bs.backends else "Network Endpoint Group", # generic guess
+                        description=bs.description,
+                        cdn_enabled=bs.cdn_policy.cache_mode is not None if bs.cdn_policy else False,
+                        security_policy=bs.security_policy.split("/")[-1] if bs.security_policy else None
+                    ))
+                except:
+                    # Try as Backend Bucket
+                    try:
+                        bb = bb_client.get(project=project_id, backend_bucket=bs_name)
+                        details.backends.append(LBBackend(
+                            name=bs_name,
+                            type="Bucket",
+                            description=bb.description,
+                            cdn_enabled=bb.cdn_policy.cache_mode is not None if bb.cdn_policy else False
+                        ))
+                    except Exception as e:
+                        logger.warning(f"Could not fetch details for backend {bs_name}: {e}")
+
+        except Exception as e:
+            logger.warning(f"Error resolving deep details for LB {forwarding_rule.name}: {e}")
+        
+        return details
+
 
     def _scan_projects(
         self, 
