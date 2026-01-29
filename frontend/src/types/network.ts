@@ -69,6 +69,7 @@ export interface PublicIP {
     project_id: string;
     region: string;
     status: string;  // "IN_USE", "RESERVED"
+    description?: string;
     zone?: string;  // For VMs
 }
 

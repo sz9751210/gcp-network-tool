@@ -48,6 +48,7 @@ class PublicIP(BaseModel):
     project_id: str
     region: str
     status: str = "IN_USE"  # "IN_USE", "RESERVED"
+    description: Optional[str] = None
     zone: Optional[str] = None  # For VMs
 
 

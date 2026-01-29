@@ -410,7 +410,8 @@ class GCPScanner:
                                     resource_name=rule.name,
                                     project_id=project.project_id,
                                     region=region,
-                                    status="IN_USE"
+                                    status="IN_USE",
+                                    description=rule.description
                                 )
 
                 # Global Forwarding Rules
@@ -423,7 +424,8 @@ class GCPScanner:
                                     resource_name=rule.name,
                                     project_id=project.project_id,
                                     region="global",
-                                    status="IN_USE"
+                                    status="IN_USE",
+                                    description=rule.description
                                 )
                 
                 # 3. Scan VM Instances (Catch ephemeral IPs not in Addresses)

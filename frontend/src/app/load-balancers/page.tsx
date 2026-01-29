@@ -4,15 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Pagination from '@/components/Pagination';
+import SlideOver from '@/components/SlideOver';
 
 interface LoadBalancer {
     ip: string;
     name: string;
+    originalName: string; // The raw resource name (often an ID)
     type: string;
     scope: 'Global' | 'Regional';
     network: string; // VPC or Region
     project: string;
     source: 'Public' | 'Internal';
+    description?: string;
 }
 
 export default function LoadBalancersPage() {
@@ -30,6 +33,9 @@ export default function LoadBalancersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // Details Drawer
+    const [selectedLB, setSelectedLB] = useState<LoadBalancer | null>(null);
+
     useEffect(() => {
         const load = async () => {
             await refreshData();
@@ -43,6 +49,33 @@ export default function LoadBalancersPage() {
 
         const lbs: LoadBalancer[] = [];
 
+        // Helper to parse name from description
+        const getFriendlyName = (resourceName: string, description?: string): string => {
+            if (!description) return resourceName;
+
+            try {
+                // Try to find Kubernetes service name in description JSON
+                // GKE LBs often have description like: {"kubernetes.io/service-name":"namespace/service-name", ...}
+                if (description.startsWith('{') && description.includes('kubernetes.io/service-name')) {
+                    const descObj = JSON.parse(description);
+                    if (descObj['kubernetes.io/service-name']) {
+                        return descObj['kubernetes.io/service-name'];
+                    }
+                }
+            } catch (e) {
+                // Not JSON or parse error, ignore
+            }
+
+            // If description is short and looks like a name (no spaces, not too long), use it
+            // Otherwise stick to resource_name or use description as a hint?
+            // For now, let's treat the description as a secondary source if it's not JSON
+            if (description.length > 0 && description.length < 50 && !description.includes('{')) {
+                return description;
+            }
+
+            return resourceName;
+        };
+
         // 1. Process Public IPs
         if (topology.public_ips) {
             topology.public_ips.forEach(ip => {
@@ -53,12 +86,14 @@ export default function LoadBalancersPage() {
                 if (upperType.includes('LOAD_BALANCER') || upperType.includes('FORWARDING_RULE') || upperType === 'LOADBALANCER') {
                     lbs.push({
                         ip: ip.ip_address,
-                        name: ip.resource_name,
+                        name: getFriendlyName(ip.resource_name, ip.description),
+                        originalName: ip.resource_name,
                         type: type.replace(/_/g, ' '),
                         scope: ip.region === 'global' ? 'Global' : 'Regional',
                         network: ip.region,
                         project: ip.project_id,
-                        source: 'Public'
+                        source: 'Public',
+                        description: ip.description
                     });
                 }
             });
@@ -72,9 +107,14 @@ export default function LoadBalancersPage() {
 
                 // Check if it's a Load Balancer related resource (Internal LB usually)
                 if (upperType.includes('LOAD_BALANCER') || upperType.includes('FORWARDING_RULE') || upperType.includes('ILB')) {
+                    // Internal IPs might not have description easily available in current model if it wasn't added
+                    // But we can check if we added it to UsedInternalIP? We didn't in the plan, but let's check.
+                    // Actually, UsedInternalIP logic in scanner scans ForwardingRules too, but didn't add description there.
+                    // For now, we use what we have.
                     lbs.push({
                         ip: ip.ip_address,
-                        name: ip.resource_name,
+                        name: ip.resource_name, // Internal might not have description passed down yet
+                        originalName: ip.resource_name,
                         type: type.replace(/_/g, ' '),
                         scope: 'Regional', // Internal LBs are typically regional
                         network: `${ip.vpc} / ${ip.subnet}`,
@@ -208,22 +248,33 @@ export default function LoadBalancersPage() {
 
                     {/* Table */}
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.ipAddress')}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.name')}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.type')}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.scope')}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.network')}</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.project')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.ipAddress')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.name')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.type')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.scope')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.network')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.project')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                 {paginatedLbs.map((lb, idx) => (
-                                    <tr key={`${lb.ip}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{lb.ip}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{lb.name}</td>
+                                    <tr
+                                        key={`${lb.ip}-${idx}`}
+                                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                                        onClick={() => setSelectedLB(lb)}
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{lb.ip}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{lb.name}</span>
+                                                {lb.name !== lb.originalName && (
+                                                    <span className="text-xs text-slate-400">{lb.originalName.substring(0, 12)}...</span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="inline-flex px-2 py-1 text-xs font-bold rounded uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
                                                 {lb.type}
@@ -231,8 +282,8 @@ export default function LoadBalancersPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${lb.scope === 'Global'
-                                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                                                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
                                                 }`}>
                                                 {lb.scope === 'Global' ? t('loadBalancers.global') : t('loadBalancers.regional')}
                                             </span>
@@ -266,6 +317,72 @@ export default function LoadBalancersPage() {
                     </div>
                 </div>
             )}
+
+            {/* Details SlideOver */}
+            <SlideOver
+                isOpen={!!selectedLB}
+                onClose={() => setSelectedLB(null)}
+                title={t('loadBalancers.title')}
+            >
+                {selectedLB && (
+                    <div className="space-y-6">
+                        {/* Header Info */}
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white break-all">{selectedLB.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                <span>{selectedLB.project}</span>
+                                <span>•</span>
+                                <span className={selectedLB.source === 'Public' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600'}>
+                                    {selectedLB.source}
+                                </span>
+                            </p>
+                        </div>
+
+                        {/* Main Stats Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">IP Address</div>
+                                <div className="font-mono font-semibold text-slate-800 dark:text-slate-100">{selectedLB.ip}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Type</div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.type}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Scope</div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.scope}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Network / Region</div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.network}</div>
+                            </div>
+                        </div>
+
+                        {/* Raw Details */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Technical Details</h4>
+
+                            <dl className="space-y-4">
+                                <div>
+                                    <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Resource ID / Name</dt>
+                                    <dd className="mt-1 text-sm font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all">
+                                        {selectedLB.originalName}
+                                    </dd>
+                                </div>
+
+                                {selectedLB.description && (
+                                    <div>
+                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Description</dt>
+                                        <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded whitespace-pre-wrap font-mono text-xs">
+                                            {selectedLB.description}
+                                        </dd>
+                                    </div>
+                                )}
+                            </dl>
+                        </div>
+                    </div>
+                )}
+            </SlideOver>
         </div>
     );
 }
