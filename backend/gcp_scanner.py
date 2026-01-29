@@ -753,12 +753,23 @@ class GCPScanner:
         try:
             # 1. Frontend Details
             protocol = forwarding_rule.I_p_protocol
-            port = forwarding_rule.port_range if forwarding_rule.port_range else (str(forwarding_rule.ports[0]) if forwarding_rule.ports else "All")
+            
+            # Improve port formatting (e.g. handle 80-80)
+            port = "All"
+            if forwarding_rule.port_range:
+                parts = forwarding_rule.port_range.split('-')
+                if len(parts) == 2 and parts[0] == parts[1]:
+                    port = parts[0]
+                else:
+                    port = forwarding_rule.port_range
+            elif forwarding_rule.ports:
+                port = str(forwarding_rule.ports[0])
+                
             ip_port = f"{forwarding_rule.I_p_address}:{port}"
             
             # Identify Proxy Type and Client
             target = forwarding_rule.target
-            proxy_name = target.split("/")[-1]
+            proxy_name = target.split("/")[-1] if target else "None"
             proxy_type = "Unknown"
             url_map_link = None
             cert_link = None
@@ -794,6 +805,10 @@ class GCPScanner:
                 if proxy.ssl_certificates:
                     cert_link = proxy.ssl_certificates[0]
             
+            # Fallback for Network Load Balancers (no proxy)
+            if proxy_type == "Unknown":
+                proxy_type = forwarding_rule.I_p_protocol
+
             details.frontend = LBFrontend(
                 protocol=proxy_type,
                 ip_port=ip_port,
