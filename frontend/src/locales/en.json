@@ -32,6 +32,7 @@
         "subnetPlanner": "Subnet Planner",
         "publicIps": "Public IPs",
         "internalIps": "Internal IPs",
+        "loadBalancers": "Load Balancers",
         "firewallRules": "Firewall Rules",
         "cloudArmor": "Cloud Armor",
         "cidrPlanner": "IP Network Planner",
@@ -245,5 +246,21 @@
         "subnet": "Subnet",
         "region": "Region",
         "status": "Status"
+    },
+    "loadBalancers": {
+        "title": "Load Balancers",
+        "subtitle": "View all load balancers across your GCP infrastructure",
+        "noData": "No Load Balancer Data Available",
+        "noDataDesc": "Run a network scan from Settings to discover your load balancers",
+        "searchPlaceholder": "Search by IP, name, or project...",
+        "totalLbs": "Total Load Balancers",
+        "ipAddress": "IP Address",
+        "name": "Name",
+        "type": "Type",
+        "scope": "Scope",
+        "network": "Network / Region",
+        "project": "Project",
+        "regional": "Regional",
+        "global": "Global"
     }
 }

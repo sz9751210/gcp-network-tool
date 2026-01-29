@@ -36,6 +36,7 @@
         "cidrPlanner": "CIDR 规划器",
         "ipTools": "IP 工具",
         "internalIps": "内网 IP",
+        "loadBalancers": "负载均衡器",
         "settings": "设置",
         "language": "语言"
     },
@@ -244,5 +245,21 @@
         "subnet": "子网",
         "region": "区域",
         "status": "状态"
+    },
+    "loadBalancers": {
+        "title": "负载均衡器",
+        "subtitle": "查看 GCP 基础设施中的所有负载均衡器",
+        "noData": "暂无负载均衡器数据",
+        "noDataDesc": "前往设置页面运行网络扫描以发现负载均衡器",
+        "searchPlaceholder": "按 IP、名称或项目搜索...",
+        "totalLbs": "总负载均衡器数",
+        "ipAddress": "IP 地址",
+        "name": "名称",
+        "type": "类型",
+        "scope": "范围",
+        "network": "网络 / 区域",
+        "project": "项目",
+        "regional": "区域级",
+        "global": "全球级"
     }
 }

@@ -32,6 +32,7 @@
         "subnetPlanner": "子網路規劃",
         "publicIps": "外部 IP (Public IP)",
         "internalIps": "內部 IP (Internal IP)",
+        "loadBalancers": "負載平衡器",
         "firewallRules": "防火牆規則",
         "cloudArmor": "Cloud Armor",
         "cidrPlanner": "IP 網路規劃工具",
@@ -245,5 +246,21 @@
         "subnet": "子網路",
         "region": "區域",
         "status": "狀態"
+    },
+    "loadBalancers": {
+        "title": "負載平衡器",
+        "subtitle": "檢視 GCP 架構中的所有負載平衡器",
+        "noData": "尚無負載平衡器資料",
+        "noDataDesc": "請前往「設定」頁面執行網路掃描以探索負載平衡器",
+        "searchPlaceholder": "依 IP、名稱或專案搜尋...",
+        "totalLbs": "負載平衡器總數",
+        "ipAddress": "IP 位址",
+        "name": "名稱",
+        "type": "類型",
+        "scope": "範圍",
+        "network": "網路 / 區域",
+        "project": "專案",
+        "regional": "區域級",
+        "global": "全球級"
     }
 }
