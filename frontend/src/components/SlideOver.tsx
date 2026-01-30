@@ -5,9 +5,10 @@ interface SlideOverProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    width?: string; // e.g. "max-w-md", "max-w-2xl"
 }
 
-export default function SlideOver({ isOpen, onClose, title, children }: SlideOverProps) {
+export default function SlideOver({ isOpen, onClose, title, children, width = 'max-w-md' }: SlideOverProps) {
     // Close on Esc key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -47,7 +48,7 @@ export default function SlideOver({ isOpen, onClose, title, children }: SlideOve
 
                 <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
                     <div
-                        className={`pointer-events-auto relative w-screen max-w-md transform transition duration-500 ease-in-out sm:duration-700 ${isOpen ? 'translate-x-0' : 'translate-x-full'
+                        className={`pointer-events-auto relative w-screen ${width} transform transition duration-500 ease-in-out sm:duration-700 ${isOpen ? 'translate-x-0' : 'translate-x-full'
                             }`}
                     >
                         {/* Close button */}

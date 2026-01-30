@@ -290,6 +290,7 @@ export default function LoadBalancersPage() {
                 isOpen={!!selectedLB}
                 onClose={() => setSelectedLB(null)}
                 title={t('loadBalancers.title')}
+                width="max-w-2xl"
             >
                 {selectedLB && (
                     <div className="space-y-6">
