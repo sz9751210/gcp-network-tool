@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class AddressScanner(BaseScanner):
     """Scanner for Public and Internal IP addresses and forwarding rules."""
     
-    def scan_addresses(self, project_id: str, address_type: str, lb_scanner=None) -> List[Any]:
+    def scan_addresses(self, project_id: str, address_type: str, lb_scanner=None, subnet_map: dict = None) -> List[Any]:
         """
         Scans addresses (Forwarding Rules & Static IPs) to find LBs.
         
@@ -19,6 +19,7 @@ class AddressScanner(BaseScanner):
             project_id: The project ID.
             address_type: "EXTERNAL" or "INTERNAL".
             lb_scanner: Instance of LBScanner to resolve LB details.
+            subnet_map: Map of Subnet URL -> VPC Name.
         
         Returns:
             List of PublicIP or UsedInternalIP objects.
@@ -128,13 +129,20 @@ class AddressScanner(BaseScanner):
                     ))
                 else: 
                      # Internal
+                     vpc_name = addr.network.split("/")[-1] if addr.network else "unknown"
+                     subnet_name = addr.subnetwork.split("/")[-1] if addr.subnetwork else "unknown"
+                     
+                     # Fallback check
+                     if vpc_name == "unknown" and subnet_map and addr.subnetwork:
+                         vpc_name = subnet_map.get(addr.subnetwork, "unknown")
+
                      results.append(UsedInternalIP(
                         ip_address=addr.address,
                         resource_type=resource_type,
                         resource_name=fwd_rule.name if fwd_rule else addr.name,
                         project_id=project_id,
-                        vpc=addr.network.split("/")[-1] if addr.network else "unknown",
-                        subnet=addr.subnetwork.split("/")[-1] if addr.subnetwork else "unknown",
+                        vpc=vpc_name,
+                        subnet=subnet_name,
                         region=addr.region.split("/")[-1] if addr.region else "global",
                         description=addr.description,
                         details=lb_details
