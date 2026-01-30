@@ -422,6 +422,34 @@ async def get_vpc_utilization(request: UtilizationRequest):
     raise HTTPException(status_code=404, detail="VPC not found")
 
 
+class DomainResolveRequest(BaseModel):
+    domain: str
+
+
+class DomainResolveResponse(BaseModel):
+    domain: str
+    ips: List[str]
+    error: Optional[str] = None
+
+
+@app.post("/api/resolve-domain", response_model=DomainResolveResponse)
+async def resolve_domain(request: DomainResolveRequest):
+    """Resolve domain name to IP addresses."""
+    import socket
+    try:
+        # Use getaddrinfo to get IP addresses (AF_UNSPEC for both IPv4 and IPv6)
+        # port 80 is just dummy to satisfy the call
+        info = socket.getaddrinfo(request.domain, 80, proto=socket.IPPROTO_TCP)
+        # Extract IPs (item[4] is the address tuple, item[4][0] is the IP)
+        ips = sorted(list(set(item[4][0] for item in info)))
+        return DomainResolveResponse(domain=request.domain, ips=ips)
+    except socket.gaierror as e:
+        return DomainResolveResponse(domain=request.domain, ips=[], error=f"Resolution failed: {e}")
+    except Exception as e:
+        logger.error(f"Domain resolution error: {e}")
+        return DomainResolveResponse(domain=request.domain, ips=[], error=str(e))
+
+
 # ============ Credentials Management Endpoints ============
 
 @app.get("/api/credentials", response_model=List[CredentialInfo])

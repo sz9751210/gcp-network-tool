@@ -201,6 +201,22 @@
         "netmask": "Netmask",
         "wildcardMask": "Wildcard Mask"
     },
+    "domainSearch": {
+        "title": "Domain Search",
+        "subtitle": "Search for domain names and associated resources",
+        "searchPlaceholder": "Enter domain name (e.g. google.com)",
+        "searchButton": "Resolve",
+        "resolving": "Resolving...",
+        "results": "Resolution Results",
+        "ipAddress": "IP Address",
+        "status": "Status",
+        "resource": "Associated Resource",
+        "foundIn": "Found",
+        "external": "External",
+        "viewDetails": "View Details",
+        "noIpFound": "No IPs found for this domain",
+        "error": "Error resolving domain"
+    },
     "ipTools": {
         "title": "IP Tools",
         "subtitle": "Query IP details and find available IPs with specific suffixes",

@@ -201,6 +201,22 @@
         "netmask": "子網路遮罩",
         "wildcardMask": "萬用字元遮罩"
     },
+    "domainSearch": {
+        "title": "網域搜尋",
+        "subtitle": "搜尋網域名稱與關聯資源",
+        "searchPlaceholder": "輸入網域名稱 (例如 google.com)",
+        "searchButton": "解析",
+        "resolving": "解析中...",
+        "results": "解析結果",
+        "ipAddress": "IP 位址",
+        "status": "狀態",
+        "resource": "關聯資源",
+        "foundIn": "已找到",
+        "external": "外部",
+        "viewDetails": "查看詳情",
+        "noIpFound": "未找到此網域的 IP",
+        "error": "解析網域時發生錯誤"
+    },
     "ipTools": {
         "title": "IP 工具箱",
         "subtitle": "查詢 IP 詳細資訊與尋找特定尾數的可用 IP",
