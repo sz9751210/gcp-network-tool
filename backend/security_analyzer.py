@@ -137,7 +137,8 @@ def _analyze_public_ips(public_ips: List[PublicIP]) -> List[SecurityIssue]:
 
 def _analyze_certificates(public_ips: List[PublicIP], internal_ips: List[UsedInternalIP]) -> List[SecurityIssue]:
     issues = []
-    now = datetime.utcnow()
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
     
     # Gather all certs to avoid duplicates? (Certs might be reused across LBs)
     # But reporting per-LB is actionable.
