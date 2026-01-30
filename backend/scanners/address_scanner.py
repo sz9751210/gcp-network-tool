@@ -58,6 +58,11 @@ class AddressScanner(BaseScanner):
                 elif address_type == "INTERNAL" and a.address_type != "EXTERNAL":
                     target_addr.append(a)
             
+            # 0. Prefetch Resources
+            lb_context = None
+            if lb_scanner and hasattr(lb_scanner, 'prefetch_resources'):
+                lb_context = lb_scanner.prefetch_resources(project_id)
+
             # 1. Get Forwarding Rules (LBs)
             fwd_rules = []
             try:
@@ -89,7 +94,7 @@ class AddressScanner(BaseScanner):
                 
                 lb_details = None
                 if fwd_rule and lb_scanner:
-                    lb_details = lb_scanner.resolve_lb_details(fwd_rule, project_id)
+                    lb_details = lb_scanner.resolve_lb_details(fwd_rule, project_id, context=lb_context)
                 
                 # Try to determine resource type if not LB
                 resource_type = "Unknown"
@@ -145,7 +150,7 @@ class AddressScanner(BaseScanner):
                     if (address_type == "EXTERNAL" and is_external) or (address_type == "INTERNAL" and not is_external):
                          lb_details = None
                          if lb_scanner:
-                             lb_details = lb_scanner.resolve_lb_details(fr, project_id)
+                             lb_details = lb_scanner.resolve_lb_details(fr, project_id, context=lb_context)
 
                          if address_type == "EXTERNAL":
                              results.append(PublicIP(
