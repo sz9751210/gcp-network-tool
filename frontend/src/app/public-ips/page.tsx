@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PublicIP } from '@/types/network';
@@ -9,10 +10,11 @@ import Pagination from '@/components/Pagination';
 export default function PublicIPsPage() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<keyof PublicIP>('ip_address');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [filterText, setFilterText] = useState('');
+    const [filterText, setFilterText] = useState(searchParams.get('q') || '');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [projectFilter, setProjectFilter] = useState<string>('all');
     const [regionFilter, setRegionFilter] = useState<string>('all');
@@ -273,10 +275,10 @@ export default function PublicIPsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex px-2 py-1 text-xs font-bold rounded uppercase tracking-wider ${ip.resource_type?.toUpperCase() === 'VM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                    ip.resource_type?.toUpperCase().includes('LOAD_BALANCER') || ip.resource_type?.toUpperCase().includes('FORWARDING_RULE') ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                                        ip.resource_type?.toUpperCase() === 'CLOUD_NAT' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                            ip.resource_type?.toUpperCase().includes('VPN') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                                                'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                                                ip.resource_type?.toUpperCase().includes('LOAD_BALANCER') || ip.resource_type?.toUpperCase().includes('FORWARDING_RULE') ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                    ip.resource_type?.toUpperCase() === 'CLOUD_NAT' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                        ip.resource_type?.toUpperCase().includes('VPN') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                                            'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
                                                 }`}>
                                                 {ip.resource_type?.replace(/_/g, ' ')}
                                             </span>

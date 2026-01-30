@@ -383,10 +383,46 @@ export default function LoadBalancersPage() {
                                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
                                                     <tr>
                                                         <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">{selectedLB.details.frontend.protocol}</td>
-                                                        <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">{selectedLB.details.frontend.ip_port}</td>
+                                                        <td className="px-3 py-2 text-slate-700 dark:text-slate-300 font-mono">
+                                                            {selectedLB.details.frontend.ip_port.split(',').map((ipPort, idx) => {
+                                                                const ip = ipPort.trim().split(':')[0]; // Extract IP if port is attached in string, though data usually is just IP or comma separated
+                                                                // The raw data from scanner might include port in global LB? 
+                                                                // Looking at models.py/gcp_scanner.py: "ip_port" is "34.1.1.1:443" or "34.1.1.1, 35.1.1.1" etc?
+                                                                // Actually scanner says: ip_port = f"{forwarding_rule.I_p_address}:{port}"
+                                                                // But if there are multiple IPs? 
+                                                                // The scanner code: `ips = bs.associated_ips || []` then `const ipDisplay = ips.length > 0 ? ips[0]...`
+                                                                // But details.frontend.ip_port comes from `_resolve_lb_details`.
+                                                                // In `_resolve_lb_details`: `ip_port = f"{forwarding_rule.I_p_address}:{port}"`.
+                                                                // Wait, if it's a list? The user screenshot shows comma separated list: "34.8.15.247, 34.149.230.149, ..."
+                                                                // That suggests `ip_port` field contains multiple IPs. 
+                                                                // Let's assume it's comma separated.
+
+                                                                // Clean up potential port for link (we just want IP for search)
+                                                                // If string is "1.2.3.4:80", search q=1.2.3.4.
+                                                                // If string is "1.2.3.4", search q=1.2.3.4.
+
+                                                                const cleanIp = ip.split(':')[0];
+                                                                const targetPath = selectedLB.source === 'Public' ? '/public-ips' : '/internal-ips';
+
+                                                                return (
+                                                                    <div key={idx} className={idx > 0 ? "mt-1" : ""}>
+                                                                        <Link
+                                                                            href={`${targetPath}?q=${cleanIp}`}
+                                                                            className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                                                                        >
+                                                                            {ipPort.trim()}
+                                                                        </Link>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </td>
                                                         <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                                             {selectedLB.details.frontend.certificate ? (
-                                                                <a href="#" className="text-blue-600 hover:underline">{selectedLB.details.frontend.certificate}</a>
+                                                                <div className="flex flex-col gap-1">
+                                                                    {selectedLB.details.frontend.certificate.split(',').map((cert, i) => (
+                                                                        <span key={i} className="text-blue-600 hover:underline cursor-pointer">{cert.trim()}</span>
+                                                                    ))}
+                                                                </div>
                                                             ) : '-'}
                                                         </td>
                                                         <td className="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-300">
