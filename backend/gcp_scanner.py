@@ -792,18 +792,20 @@ class GCPScanner:
                     self._process_backend_service(bs, project.project_id, "global", service_to_ips, services)
 
                 # 2. Regional Backend Services
+                # 2. Regional Backend Services
                 region_bs_client = compute_v1.RegionBackendServicesClient(credentials=self.projects_client._transport._credentials)
-                agg_list = compute_v1.AggregatedListBackendServicesRequest(project=project.project_id)
-                for zone_name, bs_scoped_list in region_bs_client.aggregated_list(request=agg_list):
-                    if not bs_scoped_list.backend_services:
-                        continue
-                    
-                    region = zone_name.split("/")[-1]
-                    if region.startswith("regions/"):
-                         region = region.split("/")[-1]
-                         
-                    for bs in bs_scoped_list.backend_services:
-                        self._process_backend_service(bs, project.project_id, region, service_to_ips, services)
+                
+                # We need to iterate over regions because RegionBackendServicesClient might not support aggregated_list in all versions
+                # Get regions from the project (we could use scanner._list_regions but let's just list them here)
+                regions_client = compute_v1.RegionsClient(credentials=self.projects_client._transport._credentials)
+                for region_obj in regions_client.list(project=project.project_id):
+                    region_name = region_obj.name
+                    try:
+                         for bs in region_bs_client.list(project=project.project_id, region=region_name):
+                             self._process_backend_service(bs, project.project_id, region_name, service_to_ips, services)
+                    except Exception as e:
+                        # Log debug to avoid spam if region has no services or API not enabled
+                        logger.debug(f"Error listing backend services in {region_name}: {e}")
                         
             except Exception as e:
                 logger.warning(f"Failed to collect backend services from project {project.project_id}: {e}")
@@ -827,7 +829,7 @@ class GCPScanner:
                     type="Instance Group" if "instanceGroups" in (backend.group or "") else "NEG",
                     description=backend.description,
                     capacity_scaler=backend.capacity_scaler,
-                    security_policy=None # Not directly on backend usually, but on BS
+                    security_policy=bs.security_policy.split("/")[-1] if bs.security_policy else (bs.edge_security_policy.split("/")[-1] if bs.edge_security_policy else None)
                 ))
                 
         services_list.append(BackendService(
@@ -980,7 +982,7 @@ class GCPScanner:
                         type="Instance Group" if bs.backends else "Network Endpoint Group", # generic guess
                         description=bs.description,
                         cdn_enabled=bs.cdn_policy.cache_mode is not None if bs.cdn_policy else False,
-                        security_policy=bs.security_policy.split("/")[-1] if bs.security_policy else None
+                        security_policy=bs.security_policy.split("/")[-1] if bs.security_policy else (bs.edge_security_policy.split("/")[-1] if bs.edge_security_policy else None)
                     ))
                 except:
                     # Try as Backend Bucket

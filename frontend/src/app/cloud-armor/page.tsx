@@ -132,14 +132,32 @@ export default function CloudArmorPage() {
     // Unique values
     const uniqueProjects = useMemo(() => Array.from(new Set(policies.map(p => p.project_id))).sort(), [policies]);
 
-    // Auto-expand policies with matches
+    // Auto-expand policies with matches or exact filter match
     useEffect(() => {
+        const newExpanded = new Set<string>();
+
+        // 1. Simulator matches
         if (testInput && displayPolicies.length > 0) {
-            const newExpanded = new Set<string>();
             displayPolicies.forEach((p: any) => p.hasMatch && newExpanded.add(p.name));
-            setExpandedPolicies(newExpanded);
         }
-    }, [testInput, displayPolicies]);
+
+        // 2. Exact Filter match (e.g. from URL deep link)
+        if (filterText && !testInput) {
+            displayPolicies.forEach(p => {
+                if (p.name.toLowerCase() === filterText.toLowerCase()) {
+                    newExpanded.add(p.name);
+                }
+            });
+        }
+
+        if (newExpanded.size > 0) {
+            setExpandedPolicies(prev => {
+                const combined = new Set(prev);
+                newExpanded.forEach(p => combined.add(p));
+                return combined;
+            });
+        }
+    }, [testInput, displayPolicies, filterText]);
 
     const togglePolicy = (policyName: string) => {
         const newExpanded = new Set(expandedPolicies);
