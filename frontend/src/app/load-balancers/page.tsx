@@ -49,100 +49,50 @@ export default function LoadBalancersPage() {
     }, [refreshData]);
 
     const loadBalancers = useMemo(() => {
-        if (!topology) return [];
+        if (!topology || !topology.backend_services) return [];
 
-        const lbs: LoadBalancer[] = [];
+        return topology.backend_services.map(bs => {
+            const ips = bs.associated_ips || [];
+            const ipDisplay = ips.length > 0 ? ips[0] + (ips.length > 1 ? ` (+${ips.length - 1})` : '') : 'No IP';
 
-        // Helper to parse name from description or labels
-        const getFriendlyName = (resourceName: string, description?: string, labels?: Record<string, string>): string => {
-            // 1. Check labels for standard K8s service name
-            if (labels) {
-                // Common label keys for service names
-                const serviceName = labels['kubernetes.io/service-name'] ||
-                    labels['service-name'] ||
-                    labels['app'] ||
-                    labels['name'];
-                if (serviceName) return serviceName;
+            // Determine Scope
+            const scope: 'Global' | 'Regional' = bs.region ? 'Regional' : 'Global';
+            const network = bs.region || 'Global';
+
+            // Determine Source (Public/Internal) based on Scheme
+            let source: 'Public' | 'Internal' = 'Internal';
+            const scheme = bs.load_balancing_scheme || '';
+            if (scheme.includes('EXTERNAL')) {
+                source = 'Public';
             }
 
-            // 2. Check description
-            if (description) {
-                try {
-                    // Try to find Kubernetes service name in description JSON
-                    // GKE LBs often have description like: {"kubernetes.io/service-name":"namespace/service-name", ...}
-                    if (description.startsWith('{') && description.includes('kubernetes.io/service-name')) {
-                        const descObj = JSON.parse(description);
-                        if (descObj['kubernetes.io/service-name']) {
-                            return descObj['kubernetes.io/service-name'];
-                        }
-                    }
-                } catch (e) {
-                    // Not JSON or parse error, ignore
-                }
+            // Construct Details object for the Side Drawer
+            const details: LoadBalancerDetails = {
+                frontend: {
+                    protocol: bs.protocol,
+                    ip_port: ips.join(', '),
+                    network_tier: undefined,
+                    certificate: undefined,
+                    ssl_policy: undefined
+                },
+                routing_rules: [], // Not applicable for Backend Service view (it IS the target)
+                backends: bs.backends
+            };
 
-                // If description is short and looks like a name (no spaces, not too long), use it
-                // Otherwise stick to resource_name or use description as a hint?
-                if (description.length > 0 && description.length < 50 && !description.includes('{')) {
-                    return description;
-                }
-            }
-
-            return resourceName;
-        };
-
-        // 1. Process Public IPs
-        if (topology.public_ips) {
-            topology.public_ips.forEach(ip => {
-                const type = ip.resource_type || '';
-                const upperType = type.toUpperCase();
-
-                // Check if it's a Load Balancer related resource
-                if (upperType.includes('LOAD_BALANCER') || upperType.includes('FORWARDING_RULE') || upperType === 'LOADBALANCER') {
-                    lbs.push({
-                        ip: ip.ip_address,
-                        name: getFriendlyName(ip.resource_name, ip.description, ip.labels),
-                        originalName: ip.resource_name,
-                        type: type.replace(/_/g, ' '),
-                        scope: ip.region === 'global' ? 'Global' : 'Regional',
-                        network: ip.region,
-                        project: ip.project_id,
-                        source: 'Public',
-
-                        description: ip.description,
-                        labels: ip.labels,
-                        details: ip.details
-                    });
-                }
-            });
-        }
-
-        // 2. Process Internal IPs
-        if (topology.used_internal_ips) {
-            topology.used_internal_ips.forEach(ip => {
-                const type = ip.resource_type || '';
-                const upperType = type.toUpperCase();
-
-                // Check if it's a Load Balancer related resource (Internal LB usually)
-                if (upperType.includes('LOAD_BALANCER') || upperType.includes('FORWARDING_RULE') || upperType.includes('ILB')) {
-                    // Internal IPs might not have description easily available in current model if it wasn't added
-                    // But we can check if we added it to UsedInternalIP? We didn't in the plan, but let's check.
-                    // Actually, UsedInternalIP logic in scanner scans ForwardingRules too, but didn't add description there.
-                    // For now, we use what we have.
-                    lbs.push({
-                        ip: ip.ip_address,
-                        name: ip.resource_name, // Internal might not have description passed down yet
-                        originalName: ip.resource_name,
-                        type: type.replace(/_/g, ' '),
-                        scope: 'Regional', // Internal LBs are typically regional
-                        network: `${ip.vpc} / ${ip.subnet}`,
-                        project: ip.project_id,
-                        source: 'Internal'
-                    });
-                }
-            });
-        }
-
-        return lbs;
+            return {
+                ip: ipDisplay,
+                name: bs.name,
+                originalName: bs.name,
+                type: bs.protocol,
+                scope: scope,
+                network: network,
+                project: bs.project_id,
+                source: source,
+                description: bs.description,
+                labels: {}, // Backend Services don't always have labels mapped in our scanner yet, but existing UI supports it
+                details: details
+            };
+        });
     }, [topology]);
 
     // Apply filters

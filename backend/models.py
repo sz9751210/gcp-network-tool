@@ -125,6 +125,21 @@ class CloudArmorPolicy(BaseModel):
     self_link: str = ""
 
 
+class BackendService(BaseModel):
+    """Represents a GCP Backend Service."""
+    name: str
+    protocol: str # HTTP, HTTPS, TCP, UDP, SSL
+    session_affinity: Optional[str] = None
+    associated_ips: list[str] = Field(default_factory=list) # List of IP addresses pointing to this service
+    project_id: str
+    region: Optional[str] = None # None for Global
+    load_balancing_scheme: Optional[str] = None # e.g. EXTERNAL, INTERNAL_MANAGED
+    description: Optional[str] = None
+    backends: list[LBBackend] = Field(default_factory=list)
+    health_checks: list[str] = Field(default_factory=list)
+    self_link: str = ""
+
+
 class Project(BaseModel):
     """Represents a GCP Project with its networks."""
     project_id: str
@@ -139,6 +154,7 @@ class Project(BaseModel):
     # Scan metadata
     scan_status: str = "pending"  # pending, success, error, permission_denied
     error_message: Optional[str] = None
+    backend_services: list['BackendService'] = Field(default_factory=list)
 
 
 class UsedInternalIP(BaseModel):
@@ -150,6 +166,9 @@ class UsedInternalIP(BaseModel):
     vpc: str
     subnet: str
     region: str
+    description: Optional[str] = None
+    labels: dict = Field(default_factory=dict)
+    details: Optional['LoadBalancerDetails'] = None
 
 
 class NetworkTopology(BaseModel):
@@ -169,6 +188,7 @@ class NetworkTopology(BaseModel):
     used_internal_ips: list[UsedInternalIP] = Field(default_factory=list)
     firewall_rules: list[FirewallRule] = Field(default_factory=list)
     cloud_armor_policies: list[CloudArmorPolicy] = Field(default_factory=list)
+    backend_services: list['BackendService'] = Field(default_factory=list)
 
 
 # Request/Response schemas

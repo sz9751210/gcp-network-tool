@@ -112,6 +112,9 @@ export interface UsedInternalIP {
     vpc: string;
     subnet: string;
     region: string;
+    description?: string;
+    labels?: Record<string, string>;
+    details?: LoadBalancerDetails;
 }
 
 export interface FirewallRule {
@@ -149,6 +152,20 @@ export interface CloudArmorPolicy {
     self_link: string;
 }
 
+export interface BackendService {
+    name: string;
+    protocol: string;
+    session_affinity?: string;
+    associated_ips: string[];
+    project_id: string;
+    region?: string | null;
+    load_balancing_scheme?: string | null;
+    description?: string;
+    backends: LBBackend[];
+    health_checks: string[];
+    self_link: string;
+}
+
 export interface NetworkTopology {
     scan_id: string;
     scan_timestamp: string;
@@ -163,6 +180,7 @@ export interface NetworkTopology {
     used_internal_ips: UsedInternalIP[];
     firewall_rules: FirewallRule[];
     cloud_armor_policies: CloudArmorPolicy[];
+    backend_services: BackendService[];
 }
 
 export interface ScanRequest {

@@ -13,7 +13,7 @@ from google.cloud import resourcemanager_v3
 from google.api_core import exceptions as gcp_exceptions
 
 from models import (
-    Project, VPCNetwork, Subnet, NetworkTopology
+    Project, VPCNetwork, Subnet, NetworkTopology, BackendService
 )
 from credentials_manager import credentials_manager
 
@@ -178,6 +178,28 @@ class GCPScanner:
             
             # Collect Cloud Armor policies from all projects
             cloud_armor_policies = self._collect_cloud_armor_policies(projects)
+
+            # Build map of Backend Service -> IPs for association
+            # Key: f"{project_id}|{region}|{service_name}"
+            service_to_ips = {}
+            for ip in public_ips + used_internal_ips:
+                if ip.details and ip.details.routing_rules:
+                    for rule in ip.details.routing_rules:
+                        bs_name = rule.backend_service.split("/")[-1]
+                        # For now, we assume standard matching. 
+                        # Note: Cross-project referencing (Shared VPC) might make project_id tricky, 
+                        # but usually the backend service is in the same project as the forwarding rule 
+                        # OR if it is PSC it is different. Assuming same project for standard LBs.
+                        # Region: if global LB, region is global.
+                        
+                        key = f"{ip.project_id}|{ip.region}|{bs_name}"
+                        if key not in service_to_ips:
+                            service_to_ips[key] = []
+                        if ip.ip_address not in service_to_ips[key]:
+                            service_to_ips[key].append(ip.ip_address)
+
+            # Collect Backend Services
+            backend_services = self._collect_backend_services(projects, service_to_ips)
             
             return NetworkTopology(
                 scan_id=scan_id,
@@ -191,7 +213,8 @@ class GCPScanner:
                 public_ips=public_ips,
                 used_internal_ips=used_internal_ips,
                 firewall_rules=firewall_rules,
-                cloud_armor_policies=cloud_armor_policies
+                cloud_armor_policies=cloud_armor_policies,
+                backend_services=backend_services
             )
             
         except Exception as e:
@@ -583,12 +606,15 @@ class GCPScanner:
                                 
                                 internal_ips_map[rule.I_p_address] = UsedInternalIP(
                                     ip_address=rule.I_p_address,
-                                    resource_type="ForwardingRule",
+                                    resource_type="Forwarding_Rule",
                                     resource_name=rule.name,
                                     project_id=project.project_id,
                                     vpc=vpc,
                                     subnet=subnet,
-                                    region=region
+                                    region=region,
+                                    description=rule.description,
+                                    labels=dict(rule.labels) if rule.labels else {},
+                                    details=self._resolve_lb_details(rule, project.project_id)
                                 )
                 
                 # 3. Scan VM Instances
@@ -741,6 +767,83 @@ class GCPScanner:
         
         return policies
 
+    def _collect_backend_services(self, projects: list, service_to_ips: dict) -> list:
+        """
+        Collect all Backend Services from projects.
+        
+        Args:
+            projects: List of scanned Project objects
+            service_to_ips: Map of { "project_id|region|service_name": [ip_list] }
+            
+        Returns:
+            List of BackendService objects
+        """
+        from models import BackendService, LBBackend as ModelLBBackend
+        services = []
+        
+        for project in projects:
+            if project.scan_status != "success":
+                continue
+                
+            try:
+                # 1. Global Backend Services
+                bs_client = compute_v1.BackendServicesClient(credentials=self.projects_client._transport._credentials)
+                for bs in bs_client.list(project=project.project_id):
+                    self._process_backend_service(bs, project.project_id, "global", service_to_ips, services)
+
+                # 2. Regional Backend Services
+                region_bs_client = compute_v1.RegionBackendServicesClient(credentials=self.projects_client._transport._credentials)
+                agg_list = compute_v1.AggregatedListBackendServicesRequest(project=project.project_id)
+                for zone_name, bs_scoped_list in region_bs_client.aggregated_list(request=agg_list):
+                    if not bs_scoped_list.backend_services:
+                        continue
+                    
+                    region = zone_name.split("/")[-1]
+                    if region.startswith("regions/"):
+                         region = region.split("/")[-1]
+                         
+                    for bs in bs_scoped_list.backend_services:
+                        self._process_backend_service(bs, project.project_id, region, service_to_ips, services)
+                        
+            except Exception as e:
+                logger.warning(f"Failed to collect backend services from project {project.project_id}: {e}")
+        
+        return services
+
+    def _process_backend_service(self, bs, project_id, region, service_to_ips, services_list):
+        """Helper to process a single backend service object."""
+        from models import BackendService, LBBackend as ModelLBBackend
+        
+        # Look up associated IPs
+        key = f"{project_id}|{region}|{bs.name}"
+        associated_ips = service_to_ips.get(key, [])
+        
+        # Convert backends
+        backends_list = []
+        if bs.backends:
+            for backend in bs.backends:
+                backends_list.append(ModelLBBackend(
+                    name=backend.group.split("/")[-1] if backend.group else "Unknown",
+                    type="Instance Group" if "instanceGroups" in (backend.group or "") else "NEG",
+                    description=backend.description,
+                    capacity_scaler=backend.capacity_scaler,
+                    security_policy=None # Not directly on backend usually, but on BS
+                ))
+                
+        services_list.append(BackendService(
+            name=bs.name,
+            protocol=bs.protocol,
+            session_affinity=bs.session_affinity,
+            associated_ips=associated_ips,
+            project_id=project_id,
+            region=region if region != "global" else None,
+            load_balancing_scheme=bs.load_balancing_scheme,
+            description=bs.description,
+            backends=backends_list,
+            health_checks=[hc.split("/")[-1] for hc in bs.health_checks] if bs.health_checks else [],
+            self_link=bs.self_link
+        ))
+
     def _resolve_lb_details(self, forwarding_rule, project_id: str):
         """
         Deeply resolve Load Balancer details (Frontend, Routing, Backends).
@@ -805,9 +908,18 @@ class GCPScanner:
                 if proxy.ssl_certificates:
                     cert_link = proxy.ssl_certificates[0]
             
-            # Fallback for Network Load Balancers (no proxy)
+            # Fallback for Network Load Balancers (no proxy) or Internal TCP/UDP LB
             if proxy_type == "Unknown":
                 proxy_type = forwarding_rule.I_p_protocol
+                
+                # Internal TCP/UDP LB (Passthrough) uses backend_service directly
+                if forwarding_rule.backend_service:
+                    bs_name = forwarding_rule.backend_service.split("/")[-1]
+                    details.routing_rules.append(LBRoutingRule(
+                        hosts=["*"],
+                        path="/* (Default)",
+                        backend_service=bs_name
+                    ))
 
             details.frontend = LBFrontend(
                 protocol=proxy_type,
