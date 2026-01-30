@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import Link from 'next/link';
 import { LoadBalancerDetails } from '@/types/network';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
@@ -453,7 +454,7 @@ export default function LoadBalancersPage() {
                                 {/* Routing Rules */}
                                 {selectedLB.details.routing_rules.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Routing Rules</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Routing Rules (Forwarding Rules)</h4>
                                         <div className="overflow-hidden bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg">
                                             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-xs">
                                                 <thead className="bg-slate-50 dark:bg-slate-800">
@@ -480,7 +481,7 @@ export default function LoadBalancersPage() {
                                 {/* Backends */}
                                 {selectedLB.details.backends.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Backend Services</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Backends</h4>
                                         <div className="space-y-3">
                                             {selectedLB.details.backends.map((backend, i) => (
                                                 <div key={i} className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg p-3">
@@ -498,7 +499,14 @@ export default function LoadBalancersPage() {
                                                         <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                                                             <span className="text-slate-500">Security Policy</span>
                                                             <span className="text-slate-700 dark:text-slate-300">
-                                                                {backend.security_policy || '-'}
+                                                                {backend.security_policy ? (
+                                                                    <Link
+                                                                        href={`/cloud-armor?q=${backend.security_policy}`}
+                                                                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                                                                    >
+                                                                        {backend.security_policy}
+                                                                    </Link>
+                                                                ) : '-'}
                                                             </span>
                                                         </div>
                                                     </div>

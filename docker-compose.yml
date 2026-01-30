@@ -25,7 +25,7 @@ services:
     image: gcp-network-planner-frontend
     container_name: gcp-network-frontend
     ports:
-      - "3000:3000"
+      - "3002:3000"
     volumes:
       - ./frontend:/app
       # - /app/node_modules

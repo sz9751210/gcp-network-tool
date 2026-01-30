@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CloudArmorPolicy } from '@/types/network';
@@ -9,9 +10,14 @@ import Pagination from '@/components/Pagination';
 export default function CloudArmorPage() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
+
     const [loading, setLoading] = useState(true);
     const [expandedPolicies, setExpandedPolicies] = useState<Set<string>>(new Set());
-    const [filterText, setFilterText] = useState('');
+
+    // Initialize filter from URL query param 'q'
+    const [filterText, setFilterText] = useState(searchParams.get('q') || '');
+
     const [testInput, setTestInput] = useState('');
     const [projectFilter, setProjectFilter] = useState('all');
 

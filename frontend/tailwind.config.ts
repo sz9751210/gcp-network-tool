@@ -30,6 +30,8 @@ const config: Config = {
             'fade-in': 'fade-in 0.3s ease-out',
         }
     },
-    plugins: [],
+    plugins: [
+        require('@tailwindcss/typography'),
+    ],
 };
 export default config;
