@@ -71,14 +71,23 @@ class ScanManager:
             # DateTimes might be strings or objects. JSON default serializer needed?
             # main.py uses default Pydantic serialization which handles datetime -> string (isoformat).
             
+            # Serialize to ensure consistent types (datetime -> string)
             def json_serial(obj):
                 """JSON serializer for objects not serializable by default json code"""
                 if isinstance(obj, datetime):
                     return obj.isoformat()
                 raise TypeError (f"Type {type(obj)} not serializable")
 
+            # Update memory with serialized data to match file content behavior
+            # This ensures subsequent reads get strings for dates, matching load_scans behavior
+            serialized_str = json.dumps(data, indent=2, default=json_serial)
+            data_normalized = json.loads(serialized_str)
+            
+            self.scans[scan_id] = data_normalized
+            
+            filepath = os.path.join(self.storage_dir, f"{scan_id}.json")
             with open(filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=json_serial)
+                f.write(serialized_str)
                 
             logger.debug(f"Saved scan {scan_id} to {filepath}")
             
