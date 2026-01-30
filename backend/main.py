@@ -25,6 +25,7 @@ from cidr_analyzer import (
     calculate_ip_utilization,
     get_ip_details, find_common_suffix_ips
 )
+from security_analyzer import analyze_security, SecurityReport
 
 # Configure logging
 logging.basicConfig(
@@ -33,14 +34,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# In-memory store for scan results (replace with Redis/DB in production)
-scan_store: dict[str, dict] = {}
+from scan_manager import scan_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     logger.info("Starting GCP Network Planner API")
+    scan_manager.load_scans()
     yield
     logger.info("Shutting down GCP Network Planner API")
 
@@ -65,7 +66,11 @@ app.add_middleware(
 def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared_vpc: bool):
     """Background task for running network scan."""
     try:
-        scan_store[scan_id]["status"] = "running"
+        # Update running status
+        current_data = scan_manager.get_scan(scan_id)
+        if current_data:
+            current_data["status"] = "running"
+            scan_manager.save_scan(scan_id, current_data)
         
         topology = scan_network_topology(
             source_type=source_type,
@@ -73,23 +78,27 @@ def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared
             include_shared_vpc=include_shared_vpc
         )
         
-        scan_store[scan_id] = {
+        # Prepare result
+        result = {
             "status": "completed",
             "topology": topology.model_dump(),
             "progress": 1.0,
             "projects_scanned": topology.total_projects,
             "total_projects": topology.total_projects,
+            "scan_id": scan_id
         }
+        scan_manager.save_scan(scan_id, result)
         
         logger.info(f"Scan {scan_id} completed: {topology.total_projects} projects, {topology.total_vpcs} VPCs")
         
     except Exception as e:
         logger.error(f"Scan {scan_id} failed: {e}")
-        scan_store[scan_id] = {
+        scan_manager.save_scan(scan_id, {
+            "scan_id": scan_id,
             "status": "failed",
             "error": str(e),
             "progress": 0,
-        }
+        })
 
 
 @app.post("/api/scan", response_model=ScanStatusResponse)
@@ -103,12 +112,14 @@ async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
     scan_id = str(uuid.uuid4())
     
     # Initialize scan status
-    scan_store[scan_id] = {
+    scan_data = {
+        "scan_id": scan_id,
         "status": "pending",
         "progress": 0,
         "projects_scanned": 0,
         "total_projects": 0,
     }
+    scan_manager.save_scan(scan_id, scan_data)
     
     # Start background scan
     background_tasks.add_task(
@@ -134,10 +145,9 @@ async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
 @app.get("/api/scan/{scan_id}/status", response_model=ScanStatusResponse)
 async def get_scan_status(scan_id: str):
     """Get the status of a running or completed scan."""
-    if scan_id not in scan_store:
+    scan_data = scan_manager.get_scan(scan_id)
+    if not scan_data:
         raise HTTPException(status_code=404, detail="Scan not found")
-    
-    scan_data = scan_store[scan_id]
     
     return ScanStatusResponse(
         scan_id=scan_id,
@@ -152,10 +162,9 @@ async def get_scan_status(scan_id: str):
 @app.get("/api/scan/{scan_id}/results", response_model=NetworkTopology)
 async def get_scan_results(scan_id: str):
     """Get the results of a completed scan."""
-    if scan_id not in scan_store:
+    scan_data = scan_manager.get_scan(scan_id)
+    if not scan_data:
         raise HTTPException(status_code=404, detail="Scan not found")
-    
-    scan_data = scan_store[scan_id]
     
     if scan_data.get("status") != "completed":
         raise HTTPException(
@@ -170,7 +179,8 @@ async def get_scan_results(scan_id: str):
 async def list_scans():
     """List all available scans."""
     history = []
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         # Only show items that have at least some basic info
         if "topology" in data:
             topo = data["topology"]
@@ -206,7 +216,8 @@ async def get_latest_topology():
     """Get the most recent scan results."""
     # Find the latest completed scan
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
                 latest = data
@@ -226,7 +237,8 @@ async def check_cidr_conflict(request: CIDRCheckRequest):
     """
     # Get the latest topology
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
                 latest = data
@@ -276,7 +288,8 @@ async def plan_ip(request: IPPlanRequest):
     """
     # Get the latest topology
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
                 latest = data
@@ -331,7 +344,8 @@ async def check_ip_details(request: IPCheckRequest):
     """
     # Get the latest topology
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
                 latest = data
@@ -354,7 +368,8 @@ async def find_suffix_ips(request: SuffixSearchRequest):
     """
     # Get the latest topology
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
                 latest = data
@@ -402,7 +417,8 @@ async def get_vpc_utilization(request: UtilizationRequest):
     """Get IP utilization stats for a VPC."""
     # Get the latest topology
     latest = None
-    for scan_id, data in scan_store.items():
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
         if data.get("status") == "completed":
             if latest is None:
                 latest = data
@@ -448,6 +464,24 @@ async def resolve_domain(request: DomainResolveRequest):
     except Exception as e:
         logger.error(f"Domain resolution error: {e}")
         return DomainResolveResponse(domain=request.domain, ips=[], error=str(e))
+
+
+@app.get("/api/audit/latest", response_model=SecurityReport)
+async def get_security_audit():
+    """Get security audit report for the latest scan."""
+    # Get the latest topology
+    latest = None
+    scans = scan_manager.get_all_scans()
+    for scan_id, data in scans.items():
+        if data.get("status") == "completed":
+            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
+                latest = data
+    
+    if latest is None:
+        raise HTTPException(status_code=404, detail="No scan results available")
+    
+    topology = NetworkTopology(**latest["topology"])
+    return analyze_security(topology)
 
 
 # ============ Credentials Management Endpoints ============

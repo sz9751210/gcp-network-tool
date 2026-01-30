@@ -73,7 +73,8 @@ export default function LoadBalancersPage() {
                     ip_port: ips.join(', '),
                     network_tier: undefined,
                     certificate: undefined,
-                    ssl_policy: undefined
+                    ssl_policy: undefined,
+                    certificate_details: []
                 },
                 routing_rules: [], // Not applicable for Backend Service view (it IS the target)
                 backends: bs.backends

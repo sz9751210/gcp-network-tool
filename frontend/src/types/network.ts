@@ -75,12 +75,20 @@ export interface PublicIP {
     zone?: string;  // For VMs
 }
 
+export interface CertificateInfo {
+    name: string;
+    expiry: string | null;
+    dns_names: string[];
+    sha1_fingerprint: string | null;
+}
+
 export interface LBFrontend {
     protocol: string;
     ip_port: string;
     certificate?: string;
     ssl_policy?: string;
     network_tier?: string;
+    certificate_details: CertificateInfo[];
 }
 
 export interface LBRoutingRule {
@@ -254,6 +262,31 @@ export interface IPPlanRequest {
 export interface IPPlanResponse {
     available_cidrs: string[];
     checked_scope: string[];
+}
+
+export interface SecurityIssue {
+    id: string;
+    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    category: 'FIREWALL' | 'COST' | 'SECURITY' | 'COMPLIANCE';
+    title: string;
+    description: string;
+    resource_name: string;
+    project_id: string;
+    metadata: Record<string, any>;
+    remediation: string;
+}
+
+export interface SecurityReport {
+    issues: SecurityIssue[];
+    generated_at: string;
+    summary: {
+        critical: number;
+        high: number;
+        medium: number;
+        low: number;
+        total: number;
+        by_category: Record<string, number>;
+    };
 }
 
 // Tree table row types for hierarchical display

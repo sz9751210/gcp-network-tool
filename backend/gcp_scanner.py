@@ -892,6 +892,25 @@ class GCPScanner:
                 url_map_link = proxy.url_map
                 if proxy.ssl_certificates:
                     cert_link = proxy.ssl_certificates[0]
+                    # Fetch detailed cert info
+                    try:
+                        cert_client = compute_v1.SslCertificatesClient(credentials=self.projects_client._transport._credentials)
+                        from models import CertificateInfo
+                        
+                        for cert_url in proxy.ssl_certificates:
+                            cert_name = cert_url.split("/")[-1]
+                            try:
+                                cert = cert_client.get(project=project_id, ssl_certificate=cert_name)
+                                details.frontend.certificate_details.append(CertificateInfo(
+                                    name=cert.name,
+                                    expiry=cert.expire_time, 
+                                    dns_names=list(cert.subject_alternative_names) if cert.subject_alternative_names else []
+                                ))
+                            except Exception as e:
+                                logger.debug(f"Error fetching certificate {cert_name}: {e}")
+
+                    except Exception as e:
+                        logger.debug(f"Failed to init cert client: {e}")
                 if proxy.ssl_policy:
                     ssl_policy_link = proxy.ssl_policy
             elif "targetTcpProxies" in target:
@@ -909,6 +928,25 @@ class GCPScanner:
                     pass
                 if proxy.ssl_certificates:
                     cert_link = proxy.ssl_certificates[0]
+                    # Fetch detailed cert info
+                    try:
+                        cert_client = compute_v1.SslCertificatesClient(credentials=self.projects_client._transport._credentials)
+                        from models import CertificateInfo
+                        
+                        for cert_url in proxy.ssl_certificates:
+                            cert_name = cert_url.split("/")[-1]
+                            try:
+                                cert = cert_client.get(project=project_id, ssl_certificate=cert_name)
+                                details.frontend.certificate_details.append(CertificateInfo(
+                                    name=cert.name,
+                                    expiry=cert.expire_time, 
+                                    dns_names=list(cert.subject_alternative_names) if cert.subject_alternative_names else []
+                                ))
+                            except Exception as e:
+                                logger.debug(f"Error fetching certificate {cert_name}: {e}")
+
+                    except Exception as e:
+                        logger.debug(f"Failed to init cert client: {e}")
             
             # Fallback for Network Load Balancers (no proxy) or Internal TCP/UDP LB
             if proxy_type == "Unknown":

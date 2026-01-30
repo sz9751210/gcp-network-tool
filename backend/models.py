@@ -54,13 +54,23 @@ class PublicIP(BaseModel):
     zone: Optional[str] = None  # For VMs
 
 
+class CertificateInfo(BaseModel):
+    """SSL Certificate Details."""
+    name: str
+    expiry: Optional[datetime] = None
+    dns_names: List[str] = Field(default_factory=list)
+    sha1_fingerprint: Optional[str] = None
+
+
 class LBFrontend(BaseModel):
     """Frontend configuration of a Load Balancer."""
     protocol: str  # HTTP, HTTPS, TCP, UDP
     ip_port: str  # e.g. "34.1.1.1:443"
     certificate: Optional[str] = None
     ssl_policy: Optional[str] = None
+
     network_tier: Optional[str] = None
+    certificate_details: List[CertificateInfo] = Field(default_factory=list)
 
 
 class LBRoutingRule(BaseModel):
