@@ -17,6 +17,7 @@ from scanners.project_scanner import ProjectScanner
 from scanners.network_scanner import NetworkScanner
 from scanners.lb_scanner import LBScanner
 from scanners.firewall_scanner import FirewallScanner
+from scanners.address_scanner import AddressScanner
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class GCPScanner:
         self.network_scanner = NetworkScanner(max_workers)
         self.lb_scanner = LBScanner(max_workers)
         self.firewall_scanner = FirewallScanner(max_workers)
+        self.address_scanner = AddressScanner(max_workers)
         
     def scan_network_topology(
         self,
@@ -176,8 +178,8 @@ class GCPScanner:
             # I'll implement helper methods `_scan_public_ips` and `_scan_internal_ips` inside this class 
             # leveraging the `lb_scanner` for details resolution.
             
-            public_ips = self._scan_addresses(project_id, "EXTERNAL")
-            internal_ips = self._scan_addresses(project_id, "INTERNAL")
+            public_ips = self.address_scanner.scan_addresses(project_id, "EXTERNAL", self.lb_scanner)
+            internal_ips = self.address_scanner.scan_addresses(project_id, "INTERNAL", self.lb_scanner)
             
             # 4. Backend Services
             # `collect_backend_services` in `LBScanner`
@@ -243,101 +245,5 @@ class GCPScanner:
                 'public_ips': [], 'internal_ips': [], 'firewalls': [], 'policies': [], 'backend_services': []
             }
 
-    def _scan_addresses(self, project_id: str, address_type: str) -> List[Any]:
-        """
-        Scans addresses (Forwarding Rules & Static IPs) to find LBs.
-        This duplicates some original logic to bridge the gap.
-        """
-        results = []
-        try:
-            addresses_client = compute_v1.AddressesClient() # Need credentials! 
-            # I should use self.network_scanner.credentials
-            addresses_client = compute_v1.AddressesClient(credentials=self.network_scanner.credentials)
-            
-            global_addresses = []
-            # List global
-            try:
-                for addr in compute_v1.GlobalAddressesClient(credentials=self.network_scanner.credentials).list(project=project_id):
-                    global_addresses.append(addr)
-            except: pass
-            
-            # List regional
-            regional_addresses = []
-            try:
-                 for r, addr_list in addresses_client.aggregated_list(project=project_id):
-                     if addr_list.addresses:
-                         regional_addresses.extend(addr_list.addresses)
-            except: pass
-            
-            all_addr = global_addresses + regional_addresses
-            
-            # Filter by type
-            target_addr = [a for a in all_addr if a.address_type == address_type or (address_type=="INTERNAL" and a.address_type != "EXTERNAL")]
-            
-            # Note: Forwarding Rules are separate from Addresses! 
-            # The original scanner scanned Forwarding Rules to find LBs, and Addresses to find Static IPs.
-            # This is complex. 
-            # For the sake of "Refactoring", I should have moved this to `LBScanner` or `NetworkScanner`.
-            # Since I cannot easily edit `NetworkScanner` in this turn efficiently without context switching,
-            # I will implement a localized version here that acts as the "Glue" code using `LBScanner` for details.
-            
-            # 1. Get Forwarding Rules (LBs)
-            fwd_client = compute_v1.ForwardingRulesClient(credentials=self.network_scanner.credentials)
-            fwd_rules = []
-            try:
-                for r, list_obj in fwd_client.aggregated_list(project=project_id):
-                    if list_obj.forwarding_rules:
-                        fwd_rules.extend(list_obj.forwarding_rules)
-            except: pass
-            
-            # Map IP to FwdRule
-            ip_to_fwd = {fr.I_p_address: fr for fr in fwd_rules}
-            
-            for addr in target_addr:
-                # Basic info
-                is_reserved = (addr.status == "RESERVED")
-                is_in_use = (addr.status == "IN_USE")
-                
-                # Check for LB
-                fwd_rule = ip_to_fwd.get(addr.address)
-                
-                lb_details = None
-                if fwd_rule:
-                    lb_details = self.lb_scanner.resolve_lb_details(fwd_rule, project_id)
-                
-                if address_type == "EXTERNAL":
-                    results.append(PublicIP(
-                        ip_address=addr.address,
-                        resource_type="LoadBalancer" if fwd_rule else ("VM" if is_in_use else "Unused"),
-                        resource_name=fwd_rule.name if fwd_rule else addr.name,
-                        project_id=project_id,
-                        region=addr.region.split("/")[-1] if addr.region else "global",
-                        status="IN_USE" if is_in_use else "RESERVED",
-                        description=addr.description,
-                        details=lb_details
-                    ))
-                else: 
-                     # Internal
-                     results.append(UsedInternalIP(
-                        ip_address=addr.address,
-                        resource_type="LoadBalancer" if fwd_rule else "Unknown",
-                        resource_name=fwd_rule.name if fwd_rule else addr.name,
-                        project_id=project_id,
-                        vpc=addr.network.split("/")[-1] if addr.network else "unknown",
-                        subnet=addr.subnetwork.split("/")[-1] if addr.subnetwork else "unknown",
-                        region=addr.region.split("/")[-1] if addr.region else "global",
-                        description=addr.description,
-                        details=lb_details
-                     ))
 
-            # Also add Forwarding Rules that don't have a static IP object (ephemeral IPs)?
-            # Original scanner logic:
-            # It iterated Forwarding Rules AND Addresses.
-            # This is detailed logic.
-            # For this Refactor, I will assume the above covers the main cases to demonstrate modularity.
-            
-        except Exception as e:
-            logger.warning(f"Error scanning addresses: {e}")
-            
-        return results
 
