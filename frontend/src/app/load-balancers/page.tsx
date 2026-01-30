@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { LoadBalancerDetails } from '@/types/network';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import Badge from '@/components/Badge';
 
 interface LoadBalancer {
     ip: string;
@@ -244,17 +245,14 @@ export default function LoadBalancersPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{lb.ip}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="inline-flex px-2 py-1 text-xs font-bold rounded uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                            <Badge variant="indigo">
                                                 {lb.type}
-                                            </span>
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${lb.scope === 'Global'
-                                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                }`}>
+                                            <Badge variant={lb.scope === 'Global' ? 'purple' : 'emerald'} pill>
                                                 {lb.scope === 'Global' ? t('loadBalancers.global') : t('loadBalancers.regional')}
-                                            </span>
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{lb.network}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{lb.project}</td>
@@ -345,9 +343,9 @@ export default function LoadBalancersPage() {
                                         <dd className="mt-1">
                                             <div className="flex flex-wrap gap-2">
                                                 {Object.entries(selectedLB.labels).map(([k, v]) => (
-                                                    <span key={k} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                    <Badge key={k} variant="blue" pill className="normal-case">
                                                         {k}: {v}
-                                                    </span>
+                                                    </Badge>
                                                 ))}
                                             </div>
                                         </dd>

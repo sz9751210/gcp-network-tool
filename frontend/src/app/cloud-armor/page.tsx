@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CloudArmorPolicy } from '@/types/network';
 import Pagination from '@/components/Pagination';
 
-export default function CloudArmorPage() {
+function CloudArmorContent() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
     const searchParams = useSearchParams();
@@ -438,5 +438,13 @@ export default function CloudArmorPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function CloudArmorPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+            <CloudArmorContent />
+        </Suspense>
     );
 }

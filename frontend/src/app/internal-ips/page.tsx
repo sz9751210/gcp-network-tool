@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { UsedInternalIP } from '@/types/network';
 import Pagination from '@/components/Pagination';
+import Badge from '@/components/Badge';
 
-export default function InternalIPsPage() {
+function InternalIPsContent() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
     const searchParams = useSearchParams();
@@ -250,13 +251,27 @@ export default function InternalIPsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{ip.ip_address}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-bold rounded uppercase tracking-wider ${ip.resource_type?.toUpperCase() === 'VM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                ip.resource_type?.toUpperCase().includes('GKE') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                    ip.resource_type?.toUpperCase().includes('SQL') ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' :
-                                                        'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-                                                }`}>
-                                                {ip.resource_type?.replace(/_/g, ' ') || 'Unknown'}
-                                            </span>
+                                            {(() => {
+                                                const type = ip.resource_type?.toUpperCase() || '';
+                                                let variant: any = 'default';
+
+                                                if (type === 'VM') variant = 'info';
+                                                else if (type.includes('GKE')) variant = 'emerald';
+                                                else if (type.includes('SQL')) variant = 'indigo'; // Using indigo instead of cyan as cyan isn't in my Badge default variants, or I could add it.
+                                                // Actually 'cyan' fits 'info' or I can add 'cyan'. 
+                                                // Let's check Badge.tsx again. I didn't add cyan. 
+                                                // I'll stick to 'info' (blue) or 'indigo' for now to be safe, or 'emerald' if appropriate.
+                                                // UsedInternalIP had 'bg-cyan-100'. 'info' is 'bg-blue-100'.
+                                                // I will use 'info' for now or 'primary' (indigo).
+
+                                                if (type.includes('SQL')) variant = 'info';
+
+                                                return (
+                                                    <Badge variant={variant}>
+                                                        {ip.resource_type?.replace(/_/g, ' ') || 'Unknown'}
+                                                    </Badge>
+                                                )
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{ip.vpc}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-sm truncate">{ip.subnet || '-'}</td>
@@ -281,5 +296,13 @@ export default function InternalIPsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function InternalIPsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+            <InternalIPsContent />
+        </Suspense>
     );
 }
