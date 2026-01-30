@@ -56,7 +56,9 @@ class GCPScanner:
         if source_type == "folder":
             project_ids = self.project_scanner.list_projects_in_folder(source_id)
         elif source_type == "organization":
-             project_ids = self.project_scanner.list_projects_in_organization(source_id)
+            project_ids = self.project_scanner.list_projects_in_organization(source_id)
+        elif source_type == "all_accessible":
+            project_ids = self.project_scanner.list_all_accessible_projects()
         elif source_type == "project":
             if "," in source_id:
                 project_ids = [p.strip() for p in source_id.split(",")]

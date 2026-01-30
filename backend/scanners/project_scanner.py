@@ -62,6 +62,19 @@ class ProjectScanner(BaseScanner):
              
         return project_ids
 
+    def list_all_accessible_projects(self) -> List[str]:
+        """List all active projects accessible to the credential."""
+        project_ids = []
+        try:
+            # Query for all active projects
+            req = resourcemanager_v3.SearchProjectsRequest(query="state:ACTIVE")
+            for project in self.projects_client.search_projects(request=req):
+                project_ids.append(project.project_id)
+        except Exception as e:
+            logger.error(f"Error searching all projects: {e}")
+            
+        return project_ids
+
     def get_project_details(self, project_id: str) -> Optional[dict]:
         """Get project display name and number."""
         try:

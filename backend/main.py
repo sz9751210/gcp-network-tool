@@ -19,7 +19,7 @@ from models import (
     IPCheckRequest, IPCheckResponse,
     SuffixSearchRequest, SuffixSearchResponse
 )
-from gcp_scanner import scan_network_topology
+from gcp_scanner import GCPScanner
 from cidr_analyzer import (
     find_all_conflicts, suggest_available_cidrs, find_available_cidrs,
     calculate_ip_utilization,
@@ -72,7 +72,8 @@ def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared
             current_data["status"] = "running"
             scan_manager.save_scan(scan_id, current_data)
         
-        topology = scan_network_topology(
+        scanner = GCPScanner()
+        topology = scanner.scan_network_topology(
             source_type=source_type,
             source_id=source_id,
             include_shared_vpc=include_shared_vpc
