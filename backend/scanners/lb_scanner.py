@@ -5,7 +5,7 @@ from google.cloud import compute_v1
 
 from models import (
     LoadBalancerDetails, LBFrontend, LBRoutingRule, LBBackend, BackendService,
-    CertificateInfo
+    CertificateInfo, Project
 )
 from .base import BaseScanner
 
