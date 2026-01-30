@@ -37,6 +37,8 @@
         "cloudArmor": "Cloud Armor",
         "cidrPlanner": "IP Network Planner",
         "ipTools": "IP Tools",
+        "domainSearch": "Domain Search",
+        "securityAudit": "Security Audit",
         "settings": "Settings",
         "language": "Language"
     },

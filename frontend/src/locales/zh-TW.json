@@ -37,6 +37,8 @@
         "cloudArmor": "Cloud Armor",
         "cidrPlanner": "IP 網路規劃工具",
         "ipTools": "IP 工具箱",
+        "domainSearch": "網域搜尋",
+        "securityAudit": "安全稽核",
         "settings": "設定",
         "language": "語言"
     },

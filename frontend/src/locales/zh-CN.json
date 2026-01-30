@@ -35,6 +35,8 @@
         "cloudArmor": "Cloud Armor",
         "cidrPlanner": "CIDR 规划器",
         "ipTools": "IP 工具",
+        "domainSearch": "域名搜索",
+        "securityAudit": "安全审计",
         "internalIps": "内网 IP",
         "loadBalancers": "负载均衡器",
         "settings": "设置",
