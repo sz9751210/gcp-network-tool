@@ -17,12 +17,14 @@ class LBScanner(BaseScanner):
     class ProjectLBContext:
         """Holds prefetched resources to avoid N+1 API calls."""
         def __init__(self):
+            # Maps for lookups
             self.target_http_proxies = {}
             self.target_https_proxies = {}
             self.target_tcp_proxies = {}
             self.target_ssl_proxies = {}
             self.url_maps = {}
             self.backend_services = {} # Name -> Object
+            self.backend_buckets = {} # Name -> Object
             self.ssl_certificates = {}
 
     def prefetch_resources(self, project_id: str) -> 'ProjectLBContext':
@@ -31,44 +33,59 @@ class LBScanner(BaseScanner):
         try:
             # 1. Proxies
             try:
+                # HTTP - Global & Regional
                 client = compute_v1.TargetHttpProxiesClient(credentials=self.credentials)
-                for r in client.list(project=project_id):
-                    context.target_http_proxies[r.name] = r
+                for r, list_obj in client.aggregated_list(project=project_id):
+                    if list_obj.target_http_proxies:
+                        for item in list_obj.target_http_proxies:
+                            context.target_http_proxies[item.name] = item
             except Exception: pass
             
             try:
+                # HTTPS - Global & Regional
                 client = compute_v1.TargetHttpsProxiesClient(credentials=self.credentials)
-                for r in client.list(project=project_id):
-                    context.target_https_proxies[r.name] = r
+                for r, list_obj in client.aggregated_list(project=project_id):
+                    if list_obj.target_https_proxies:
+                        for item in list_obj.target_https_proxies:
+                            context.target_https_proxies[item.name] = item
             except Exception: pass
 
             try:
+                # TCP - Global & Regional
                 client = compute_v1.TargetTcpProxiesClient(credentials=self.credentials)
-                for r in client.list(project=project_id):
-                    context.target_tcp_proxies[r.name] = r
+                for r, list_obj in client.aggregated_list(project=project_id):
+                    if list_obj.target_tcp_proxies:
+                        for item in list_obj.target_tcp_proxies:
+                            context.target_tcp_proxies[item.name] = item
             except Exception: pass
 
             try:
+                # SSL - Global & Regional
                 client = compute_v1.TargetSslProxiesClient(credentials=self.credentials)
+                 # SslProxies usually only Global, check aggregated
                 for r in client.list(project=project_id):
                     context.target_ssl_proxies[r.name] = r
             except Exception: pass
 
-            # 2. URL Maps
+            # 2. URL Maps - Global & Regional
             try:
                 client = compute_v1.UrlMapsClient(credentials=self.credentials)
-                for r in client.list(project=project_id):
-                    context.url_maps[r.name] = r
+                for r, list_obj in client.aggregated_list(project=project_id):
+                    if list_obj.url_maps:
+                         for item in list_obj.url_maps:
+                             context.url_maps[item.name] = item
             except Exception: pass
 
-            # 3. Certificates
+            # 3. Certificates - Global & Regional
             try:
                 client = compute_v1.SslCertificatesClient(credentials=self.credentials)
-                for r in client.list(project=project_id):
-                    context.ssl_certificates[r.name] = r
+                for r, list_obj in client.aggregated_list(project=project_id):
+                    if list_obj.ssl_certificates:
+                        for item in list_obj.ssl_certificates:
+                            context.ssl_certificates[item.name] = item
             except Exception: pass
 
-            # 4. Backend Services (Aggregated)
+            # 4. Backend Services (Aggregated includes Global & Regional)
             try:
                 client = compute_v1.BackendServicesClient(credentials=self.credentials)
                 for r, list_obj in client.aggregated_list(project=project_id):
@@ -77,6 +94,13 @@ class LBScanner(BaseScanner):
                              context.backend_services[bs.name] = bs
             except Exception: pass
             
+            # 5. Backend Buckets (Global only usually)
+            try:
+                client = compute_v1.BackendBucketsClient(credentials=self.credentials)
+                for bb in client.list(project=project_id):
+                    context.backend_buckets[bb.name] = bb
+            except Exception: pass
+
         except Exception as e:
             logger.warning(f"Error prefetching resources for {project_id}: {e}")
         
@@ -250,9 +274,14 @@ class LBScanner(BaseScanner):
                         bs = bs_client.get(project=project_id, backend_service=bs_name)
                         self._append_backend_details(details, bs)
                     except:
-                        # Backend Bucket (Context doesn't cover buckets yet, optimizing services mostly)
+                        # Backend Bucket
                         try:
-                            bb = bb_client.get(project=project_id, backend_bucket=bs_name)
+                            bb = None
+                            if context and bs_name in context.backend_buckets:
+                                bb = context.backend_buckets[bs_name]
+                            else:
+                                bb = bb_client.get(project=project_id, backend_bucket=bs_name)
+                            
                             details.backends.append(LBBackend(
                                 name=bs_name,
                                 type="Bucket",
@@ -306,7 +335,7 @@ class LBScanner(BaseScanner):
                     dns_names=list(cert.subject_alternative_names) if cert.subject_alternative_names else []
                 ))
 
-    def collect_backend_services(self, project: Project, service_to_ips: Dict[str, List[str]] = None) -> List[BackendService]:
+    def collect_backend_services(self, project: Project, service_to_ips: Dict[str, List[str]] = None, context: Optional['ProjectLBContext'] = None) -> List[BackendService]:
         """Collect all Backend Services from a project."""
         services = []
         project_id = project.project_id
@@ -314,26 +343,43 @@ class LBScanner(BaseScanner):
         # Use empty map for now if not provided
         service_to_ips = service_to_ips or {} 
         
-        try:
-            # 1. Global
-            bs_client = compute_v1.BackendServicesClient(credentials=self.credentials)
-            for bs in bs_client.list(project=project_id):
-                self._process_backend_service(bs, project_id, "global", service_to_ips, services)
+        if context and context.backend_services:
+            # Use prefetched services (which includes both global and regional from aggregated list)
+            try:
+                for bs in context.backend_services.values():
+                     # Determine region from self_link if possible, or assume global if not
+                    region = "global"
+                    if "regions/" in bs.self_link:
+                         # .../regions/REGION_NAME/backendServices/...
+                         try:
+                             region = bs.self_link.split("regions/")[1].split("/")[0]
+                         except: pass
 
-            # 2. Regional
-            regions_client = compute_v1.RegionsClient(credentials=self.credentials)
-            region_bs_client = compute_v1.RegionBackendServicesClient(credentials=self.credentials)
-            
-            for region_obj in regions_client.list(project=project_id):
-                region_name = region_obj.name
-                try:
-                     for bs in region_bs_client.list(project=project_id, region=region_name):
-                         self._process_backend_service(bs, project_id, region_name, service_to_ips, services)
-                except Exception:
-                    pass
-                    
-        except Exception as e:
-            logger.warning(f"Failed to collect backend services from project {project_id}: {e}")
+                    self._process_backend_service(bs, project_id, region, service_to_ips, services)
+            except Exception as e:
+                logger.warning(f"Error processing context backend services for {project_id}: {e}")
+        else:
+            # Fallback to API calls
+            try:
+                # 1. Global
+                bs_client = compute_v1.BackendServicesClient(credentials=self.credentials)
+                for bs in bs_client.list(project=project_id):
+                    self._process_backend_service(bs, project_id, "global", service_to_ips, services)
+
+                # 2. Regional
+                regions_client = compute_v1.RegionsClient(credentials=self.credentials)
+                region_bs_client = compute_v1.RegionBackendServicesClient(credentials=self.credentials)
+                
+                for region_obj in regions_client.list(project=project_id):
+                    region_name = region_obj.name
+                    try:
+                         for bs in region_bs_client.list(project=project_id, region=region_name):
+                             self._process_backend_service(bs, project_id, region_name, service_to_ips, services)
+                    except Exception:
+                        pass
+                        
+            except Exception as e:
+                logger.warning(f"Failed to collect backend services from project {project_id}: {e}")
             
         return services
 

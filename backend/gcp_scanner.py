@@ -173,6 +173,9 @@ class GCPScanner:
                     for subnet in vpc.subnets:
                         subnet_map[subnet.self_link] = vpc.name
 
+            # 0. PREFETCH LB RESOURCES ONCE
+            lb_context = self.lb_scanner.prefetch_resources(project_id)
+
             # We need to scan addresses to find LBs (Forwarding Rules).
             # Address scanning logic (Public & Internal) needs to be implemented.
             # I missed creating an `AddressScanner` or putting it in `NetworkScanner` or `LBScanner`.
@@ -187,8 +190,8 @@ class GCPScanner:
             # I'll implement helper methods `_scan_public_ips` and `_scan_internal_ips` inside this class 
             # leveraging the `lb_scanner` for details resolution.
             
-            public_ips = self.address_scanner.scan_addresses(project_id, "EXTERNAL", self.lb_scanner)
-            internal_ips = self.address_scanner.scan_addresses(project_id, "INTERNAL", self.lb_scanner, subnet_map=subnet_map)
+            public_ips = self.address_scanner.scan_addresses(project_id, "EXTERNAL", self.lb_scanner, lb_context=lb_context)
+            internal_ips = self.address_scanner.scan_addresses(project_id, "INTERNAL", self.lb_scanner, subnet_map=subnet_map, lb_context=lb_context)
             
             # 4. Backend Services
             # Build map of Service -> IPs based on the resolved LB details from previous step
@@ -213,7 +216,8 @@ class GCPScanner:
                     project_number=details['project_number'], vpc_networks=[], 
                     is_shared_vpc_host=False, shared_vpc_host_project=None, scan_status="pending"
                 ),
-                service_to_ips=service_to_ips_map
+                service_to_ips=service_to_ips_map,
+                context=lb_context
             )
 
             # Metadata

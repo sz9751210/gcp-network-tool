@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class AddressScanner(BaseScanner):
     """Scanner for Public and Internal IP addresses and forwarding rules."""
     
-    def scan_addresses(self, project_id: str, address_type: str, lb_scanner=None, subnet_map: dict = None) -> List[Any]:
+    def scan_addresses(self, project_id: str, address_type: str, lb_scanner=None, subnet_map: dict = None, lb_context: Any = None) -> List[Any]:
         """
         Scans addresses (Forwarding Rules & Static IPs) to find LBs.
         
@@ -20,6 +20,7 @@ class AddressScanner(BaseScanner):
             address_type: "EXTERNAL" or "INTERNAL".
             lb_scanner: Instance of LBScanner to resolve LB details.
             subnet_map: Map of Subnet URL -> VPC Name.
+            lb_context: Prefetched LB resources.
         
         Returns:
             List of PublicIP or UsedInternalIP objects.
@@ -59,9 +60,8 @@ class AddressScanner(BaseScanner):
                 elif address_type == "INTERNAL" and a.address_type != "EXTERNAL":
                     target_addr.append(a)
             
-            # 0. Prefetch Resources
-            lb_context = None
-            if lb_scanner and hasattr(lb_scanner, 'prefetch_resources'):
+            # 0. Prefetch Resources (if not provided)
+            if not lb_context and lb_scanner and hasattr(lb_scanner, 'prefetch_resources'):
                 lb_context = lb_scanner.prefetch_resources(project_id)
 
             # 1. Get Forwarding Rules (LBs)
