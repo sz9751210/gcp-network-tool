@@ -95,6 +95,7 @@ class LoadBalancerDetails(BaseModel):
     frontend: Optional[LBFrontend] = None
     routing_rules: List[LBRoutingRule] = Field(default_factory=list)
     backends: List[LBBackend] = Field(default_factory=list)
+    url_map: Optional[str] = None # Name of the URL Map
 
 
 

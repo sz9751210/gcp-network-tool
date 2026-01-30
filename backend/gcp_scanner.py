@@ -184,28 +184,29 @@ class GCPScanner:
             internal_ips = self.address_scanner.scan_addresses(project_id, "INTERNAL", self.lb_scanner)
             
             # 4. Backend Services
-            # `collect_backend_services` in `LBScanner`
-            # It needs `service_to_ips` map... which implies we need to know which IPs point to which service.
-            # This mapping is usually built *during* address scanning/LB resolution.
-            # Let's build it:
+            # Build map of Service -> IPs based on the resolved LB details from previous step
             service_to_ips_map = {}
-            for ip in public_ips:
-                if ip.details:
-                    for rule in ip.details.routing_rules:
-                        key = f"{project_id}|global|{rule.backend_service}" # Approximating key
-                        if key not in service_to_ips_map: service_to_ips_map[key] = []
-                        service_to_ips_map[key].append(ip.ip_address)
+            all_scanned_ips = public_ips + internal_ips
             
-            # Real logic for `collect_backend_services` needs to be more robust about keys (region/global).
-            # I'll rely on `LBScanner.collect_backend_services` passing a simple map or modify it later.
-            # For now passing empty map to match the implementation in `lb_scanner.py`
+            for ip in all_scanned_ips:
+                if ip.details and ip.details.routing_rules:
+                    for rule in ip.details.routing_rules:
+                        # Key format matches LBScanner._process_backend_service
+                        # Note: ip.region is "global" or region name, which aligns with logic
+                        key = f"{project_id}|{ip.region}|{rule.backend_service}"
+                        
+                        if key not in service_to_ips_map:
+                            service_to_ips_map[key] = []
+                        if ip.ip_address not in service_to_ips_map[key]:
+                            service_to_ips_map[key].append(ip.ip_address)
             
             backend_services = self.lb_scanner.collect_backend_services(
                 Project(
                     project_id=project_id, project_name=details['display_name'], 
                     project_number=details['project_number'], vpc_networks=[], 
                     is_shared_vpc_host=False, shared_vpc_host_project=None, scan_status="pending"
-                )
+                ),
+                service_to_ips=service_to_ips_map
             )
 
             # Metadata

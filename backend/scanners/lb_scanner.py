@@ -130,6 +130,7 @@ class LBScanner(BaseScanner):
             if url_map_link:
                 url_maps_client = compute_v1.UrlMapsClient(credentials=self.credentials)
                 url_map_name = url_map_link.split("/")[-1]
+                details.url_map = url_map_name
                 url_map = url_maps_client.get(project=project_id, url_map=url_map_name)
 
                 # Default Service
@@ -215,19 +216,13 @@ class LBScanner(BaseScanner):
         except Exception as e:
             logger.debug(f"Failed to init cert client: {e}")
 
-    def collect_backend_services(self, project: Project) -> List[BackendService]:
+    def collect_backend_services(self, project: Project, service_to_ips: Dict[str, List[str]] = None) -> List[BackendService]:
         """Collect all Backend Services from a project."""
         services = []
         project_id = project.project_id
         
-        # We need service_to_ips map, passed in? or built here?
-        # Keeping it simple: separate logic from scanning for now.
-        # But wait, scanner usually builds the map first.
-        # Let's assume we pass in `service_to_ips` or calculate it if needed.
-        # For now, let's just collect the services. Populating `associated_ips` might happen later or passed as arg.
-        
         # Use empty map for now if not provided
-        service_to_ips = {} 
+        service_to_ips = service_to_ips or {} 
         
         try:
             # 1. Global

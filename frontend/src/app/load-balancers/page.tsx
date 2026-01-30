@@ -50,51 +50,41 @@ export default function LoadBalancersPage() {
     }, [refreshData]);
 
     const loadBalancers = useMemo(() => {
-        if (!topology || !topology.backend_services) return [];
+        if (!topology) return [];
 
-        return topology.backend_services.map(bs => {
-            const ips = bs.associated_ips || [];
-            const ipDisplay = ips.length > 0 ? ips[0] + (ips.length > 1 ? ` (+${ips.length - 1})` : '') : 'No IP';
+        const publicLbs = (topology.public_ips || [])
+            .filter(ip => ip.resource_type === 'LoadBalancer')
+            .map(ip => ({
+                ip: ip.ip_address,
+                name: ip.details?.url_map || ip.resource_name,
+                originalName: ip.resource_name,
+                type: ip.details?.frontend?.protocol || 'Unknown',
+                scope: (ip.region === 'global' ? 'Global' : 'Regional') as 'Global' | 'Regional',
+                network: ip.region || 'Global',
+                project: ip.project_id,
+                source: 'Public' as const,
+                description: ip.description,
+                labels: ip.labels,
+                details: ip.details
+            }));
 
-            // Determine Scope
-            const scope: 'Global' | 'Regional' = bs.region ? 'Regional' : 'Global';
-            const network = bs.region || 'Global';
+        const internalLbs = (topology.used_internal_ips || [])
+            .filter(ip => ip.resource_type === 'LoadBalancer')
+            .map(ip => ({
+                ip: ip.ip_address,
+                name: ip.details?.url_map || ip.resource_name,
+                originalName: ip.resource_name,
+                type: ip.details?.frontend?.protocol || 'Unknown',
+                scope: (ip.region === 'global' ? 'Global' : 'Regional') as 'Global' | 'Regional',
+                network: ip.vpc || 'Unknown',
+                project: ip.project_id,
+                source: 'Internal' as const,
+                description: ip.description,
+                labels: ip.labels,
+                details: ip.details
+            }));
 
-            // Determine Source (Public/Internal) based on Scheme
-            let source: 'Public' | 'Internal' = 'Internal';
-            const scheme = bs.load_balancing_scheme || '';
-            if (scheme.includes('EXTERNAL')) {
-                source = 'Public';
-            }
-
-            // Construct Details object for the Side Drawer
-            const details: LoadBalancerDetails = {
-                frontend: {
-                    protocol: bs.protocol,
-                    ip_port: ips.join(', '),
-                    network_tier: undefined,
-                    certificate: undefined,
-                    ssl_policy: undefined,
-                    certificate_details: []
-                },
-                routing_rules: [], // Not applicable for Backend Service view (it IS the target)
-                backends: bs.backends
-            };
-
-            return {
-                ip: ipDisplay,
-                name: bs.name,
-                originalName: bs.name,
-                type: bs.protocol,
-                scope: scope,
-                network: network,
-                project: bs.project_id,
-                source: source,
-                description: bs.description,
-                labels: {}, // Backend Services don't always have labels mapped in our scanner yet, but existing UI supports it
-                details: details
-            };
-        });
+        return [...publicLbs, ...internalLbs];
     }, [topology]);
 
     // Apply filters

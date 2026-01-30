@@ -110,6 +110,7 @@ export interface LoadBalancerDetails {
     frontend?: LBFrontend;
     routing_rules: LBRoutingRule[];
     backends: LBBackend[];
+    url_map?: string;
 }
 
 export interface UsedInternalIP {

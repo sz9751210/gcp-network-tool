@@ -29,6 +29,7 @@ class AddressScanner(BaseScanner):
             addresses_client = compute_v1.AddressesClient(credentials=self.credentials)
             global_addresses_client = compute_v1.GlobalAddressesClient(credentials=self.credentials)
             fwd_client = compute_v1.ForwardingRulesClient(credentials=self.credentials)
+            global_fwd_client = compute_v1.GlobalForwardingRulesClient(credentials=self.credentials)
             
             global_addresses = []
             # List global addresses
@@ -50,8 +51,6 @@ class AddressScanner(BaseScanner):
             all_addr = global_addresses + regional_addresses
             
             # Filter by type
-            # Note: GCP Address types are EXTERNAL, INTERNAL, etc.
-            # We want to match the requested type.
             target_addr = []
             for a in all_addr:
                 if address_type == "EXTERNAL" and a.address_type == "EXTERNAL":
@@ -62,14 +61,23 @@ class AddressScanner(BaseScanner):
             # 1. Get Forwarding Rules (LBs)
             fwd_rules = []
             try:
+                # Regional
                 for r, list_obj in fwd_client.aggregated_list(project=project_id):
                     if list_obj.forwarding_rules:
                         fwd_rules.extend(list_obj.forwarding_rules)
+                
+                # Global
+                try:
+                    for r in global_fwd_client.list(project=project_id):
+                        fwd_rules.append(r)
+                except Exception as e:
+                    logger.debug(f"Error listing global forwarding rules: {e}")
+
             except Exception as e:
                 logger.debug(f"Error listing forwarding rules for {project_id}: {e}")
             
             # Map IP to FwdRule
-            ip_to_fwd = {fr.I_p_address: fr for fr in fwd_rules}
+            ip_to_fwd = {fr.I_p_address: fr for fr in fwd_rules if fr.I_p_address}
             
             for addr in target_addr:
                 # Basic info
@@ -83,10 +91,29 @@ class AddressScanner(BaseScanner):
                 if fwd_rule and lb_scanner:
                     lb_details = lb_scanner.resolve_lb_details(fwd_rule, project_id)
                 
+                # Try to determine resource type if not LB
+                resource_type = "Unknown"
+                if fwd_rule:
+                    resource_type = "LoadBalancer"
+                elif is_in_use:
+                    # Check users field
+                    if addr.users:
+                        methods = [u.split("/")[-2] for u in addr.users] # e.g. instances, forwardingRules
+                        if "instances" in methods:
+                            resource_type = "VM"
+                        elif "forwardingRules" in methods:
+                            resource_type = "LoadBalancer (Indirect)"
+                        else:
+                            resource_type = methods[0] if methods else "Unknown"
+                    else:
+                        resource_type = "In Use (Unknown)"
+                else:
+                     resource_type = "Unused"
+                
                 if address_type == "EXTERNAL":
                     results.append(PublicIP(
                         ip_address=addr.address,
-                        resource_type="LoadBalancer" if fwd_rule else ("VM" if is_in_use else "Unused"),
+                        resource_type=resource_type,
                         resource_name=fwd_rule.name if fwd_rule else addr.name,
                         project_id=project_id,
                         region=addr.region.split("/")[-1] if addr.region else "global",
@@ -98,7 +125,7 @@ class AddressScanner(BaseScanner):
                      # Internal
                      results.append(UsedInternalIP(
                         ip_address=addr.address,
-                        resource_type="LoadBalancer" if fwd_rule else "Unknown",
+                        resource_type=resource_type,
                         resource_name=fwd_rule.name if fwd_rule else addr.name,
                         project_id=project_id,
                         vpc=addr.network.split("/")[-1] if addr.network else "unknown",
@@ -108,20 +135,10 @@ class AddressScanner(BaseScanner):
                         details=lb_details
                      ))
             
-            # TODO: Add ephemeral IPs (Forwarding rules without static IP object)
-            # This logic exists in original but not fully captured here for brevity/scope of refactor.
-            # However, for rigorous correctness we should iterate fwd_rules that are NOT in ip_to_fwd.
-            # But `ip_to_fwd` keys are IP addresses.
-            # We already iterated `target_addr`.
-            # We should also check `fwd_rules` whose IP is NOT in `[a.address for a in target_addr]`.
-            
             processed_ips = set(a.address for a in target_addr)
             
             for fr in fwd_rules:
                 if fr.I_p_address and fr.I_p_address not in processed_ips:
-                    # Determine type based on LoadBalancingScheme? 
-                    # If EXTERNAL, add to PublicIPs if requested type is EXTERNAL.
-                    # If INTERNAL, add to InternalIPs if requested type is INTERNAL.
                     
                     is_external = (fr.load_balancing_scheme == "EXTERNAL" or fr.load_balancing_scheme == "EXTERNAL_MANAGED")
                     
