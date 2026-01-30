@@ -249,8 +249,6 @@ export default function DomainSearchPage() {
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.ipAddress')}</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Load Balancer</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Cloud Armor</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.resource')}</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -258,14 +256,24 @@ export default function DomainSearchPage() {
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             {/* IP Address Column */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-mono font-bold text-slate-900 dark:text-white">{result.ip}</span>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${result.type === 'Public' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                        result.type === 'Internal' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                            'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                                        }`}>
-                                                        {result.type}
-                                                    </span>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="font-mono font-bold text-slate-900 dark:text-white">{result.ip}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${result.type === 'Public' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                            result.type === 'Internal' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                                            }`}>
+                                                            {result.type}
+                                                        </span>
+                                                    </div>
+                                                    {result.detailsLink && (
+                                                        <Link
+                                                            href={result.detailsLink}
+                                                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline mt-1"
+                                                        >
+                                                            View IP
+                                                        </Link>
+                                                    )}
                                                 </div>
                                             </td>
 
@@ -289,55 +297,21 @@ export default function DomainSearchPage() {
                                             {/* Cloud Armor Column */}
                                             <td className="px-6 py-4">
                                                 {result.cloudArmor && result.cloudArmor.policies.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-1">
+                                                    <div className="flex flex-col gap-2">
                                                         {result.cloudArmor.policies.map((policy, pIdx) => (
-                                                            <Link
-                                                                key={pIdx}
-                                                                href={`/cloud-armor?q=${policy}`}
-                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 hover:underline"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                                                </svg>
-                                                                {policy}
-                                                            </Link>
+                                                            <div key={pIdx} className="flex flex-col">
+                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{policy}</span>
+                                                                <Link
+                                                                    href={`/cloud-armor?q=${policy}`}
+                                                                    className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline mt-0.5"
+                                                                >
+                                                                    View Cloud Armor
+                                                                </Link>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
-                                                )}
-                                            </td>
-
-                                            {/* Resource Details Column */}
-                                            <td className="px-6 py-4">
-                                                {result.resourceName ? (
-                                                    <div className="flex flex-col gap-0.5 text-sm">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-200">{result.resourceName}</span>
-                                                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                            <span>{result.resourceType}</span>
-                                                            <span>•</span>
-                                                            <span>{result.project}</span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400 text-sm">External Resource</span>
-                                                )}
-                                            </td>
-
-                                            {/* Actions Column */}
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                {result.detailsLink && (
-                                                    <Link
-                                                        href={result.detailsLink}
-                                                        className="btn-outline text-sm py-1.5 px-3 inline-flex items-center gap-2"
-                                                    >
-                                                        {t('domainSearch.viewDetails')}
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                                            <polyline points="15 3 21 3 21 9" />
-                                                            <line x1="10" y1="14" x2="21" y2="3" />
-                                                        </svg>
-                                                    </Link>
                                                 )}
                                             </td>
                                         </tr>
