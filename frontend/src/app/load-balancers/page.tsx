@@ -218,8 +218,8 @@ export default function LoadBalancersPage() {
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.ipAddress')}</th>
                                     <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.name')}</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.ipAddress')}</th>
                                     <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.type')}</th>
                                     <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.scope')}</th>
                                     <th className="px-6 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('loadBalancers.network')}</th>
@@ -233,15 +233,15 @@ export default function LoadBalancersPage() {
                                         className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
                                         onClick={() => setSelectedLB(lb)}
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{lb.ip}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
                                             <div className="flex flex-col">
-                                                <span className="font-medium">{lb.name}</span>
+                                                <span className="font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{lb.name}</span>
                                                 {lb.name !== lb.originalName && (
                                                     <span className="text-xs text-slate-400">{lb.originalName.substring(0, 12)}...</span>
                                                 )}
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{lb.ip}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="inline-flex px-2 py-1 text-xs font-bold rounded uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
                                                 {lb.type}
@@ -290,7 +290,7 @@ export default function LoadBalancersPage() {
                 isOpen={!!selectedLB}
                 onClose={() => setSelectedLB(null)}
                 title={t('loadBalancers.title')}
-                width="max-w-2xl"
+                width="max-w-4xl"
             >
                 {selectedLB && (
                     <div className="space-y-6">
