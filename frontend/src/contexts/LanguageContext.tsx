@@ -13,7 +13,7 @@ type Translations = { [key: string]: TranslationValue };
 interface LanguageContextType {
     locale: Locale;
     setLocale: (locale: Locale) => void;
-    t: (key: string) => string;
+    t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const translations: Record<Locale, Translations> = {
@@ -43,7 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }, []);
 
     // Translation function
-    const t = useCallback((key: string): string => {
+    const t = useCallback((key: string, params?: Record<string, string | number>): string => {
         const keys = key.split('.');
         let value: TranslationValue = translations[locale];
 
@@ -66,7 +66,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        return typeof value === 'string' ? value : key;
+        if (typeof value !== 'string') return key;
+
+        // Handle params interpolation {count}
+        let result = value;
+        if (params) {
+            Object.entries(params).forEach(([k, v]) => {
+                result = result.replace(new RegExp(`{${k}}`, 'g'), String(v));
+            });
+        }
+        return result;
     }, [locale]);
 
     return (

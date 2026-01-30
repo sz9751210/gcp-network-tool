@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { SecurityReport, SecurityIssue } from '@/types/network';
+import { SecurityReport, SecurityIssue, CIDRCheckResponse, CIDRCheckRequest } from '@/types/network';
 
 export default function AuditPage() {
     const { t } = useLanguage();
@@ -34,7 +33,7 @@ export default function AuditPage() {
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-slate-600 dark:text-slate-400">Loading Security Audit...</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t('audit.loading')}</p>
                 </div>
             </div>
         );
@@ -44,21 +43,12 @@ export default function AuditPage() {
         return (
             <div className="p-8 max-w-[1800px] mx-auto">
                 <div className="card p-12 text-center">
-                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">No Audit Data</h3>
-                    <p className="text-slate-600 dark:text-slate-400">Please run a network scan first to generate a security report.</p>
+                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">{t('audit.noData')}</h3>
+                    <p className="text-slate-600 dark:text-slate-400">{t('audit.noDataDesc')}</p>
                 </div>
             </div>
         );
     }
-
-    const risks = report.issues.filter(i => i.category === 'FIREWALL' || i.category === 'SECURITY');
-    const certs = report.issues.filter(i => i.title.includes('SSL')); // Or use category if cleaner, but SSL is subset of SECURITY
-    // Actually, my backend puts SSL in SECURITY. To distinguish Firewall vs SSL, I can use title or metadata.
-    // Let's rely on category. FIREWALL is separate. SECURITY has SSL.
-    // Let's split: 
-    // - Risks: Firewall + High/Critical Security (non-SSL?)
-    // - Certs: SSL related (search "SSL" in title)
-    // - Cost: COST category
 
     const firewallIssues = report.issues.filter(i => i.category === 'FIREWALL');
     const sslIssues = report.issues.filter(i => i.title.includes('SSL'));
@@ -76,18 +66,18 @@ export default function AuditPage() {
         <div className="p-8 max-w-[1800px] mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Security & Compliance Audit</h1>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">{t('audit.title')}</h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                    Generated at {new Date(report.generated_at).toLocaleString()}
+                    {t('audit.generatedAt')} {new Date(report.generated_at).toLocaleString()}
                 </p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Critical Issues" count={report.summary.critical} color="border-l-4 border-l-red-500" />
-                <StatCard title="High Risks" count={report.summary.high} color="border-l-4 border-l-orange-500" />
-                <StatCard title="Medium Risks" count={report.summary.medium} color="border-l-4 border-l-yellow-500" />
-                <StatCard title="Optimization Ops" count={report.summary.by_category['COST'] || 0} color="border-l-4 border-l-green-500" />
+                <StatCard title={t('audit.criticalIssues')} count={report.summary.critical} color="border-l-4 border-l-red-500" />
+                <StatCard title={t('audit.highRisks')} count={report.summary.high} color="border-l-4 border-l-orange-500" />
+                <StatCard title={t('audit.mediumRisks')} count={report.summary.medium} color="border-l-4 border-l-yellow-500" />
+                <StatCard title={t('audit.optimizationOps')} count={report.summary.by_category['COST'] || 0} color="border-l-4 border-l-green-500" />
             </div>
 
             {/* Tabs */}
@@ -101,7 +91,7 @@ export default function AuditPage() {
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                                 }`}
                         >
-                            Firewall Risks ({firewallIssues.length})
+                            {t('audit.firewallRisks')} ({firewallIssues.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('certs')}
@@ -110,7 +100,7 @@ export default function AuditPage() {
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                                 }`}
                         >
-                            SSL Certificates ({sslIssues.length})
+                            {t('audit.sslCertificates')} ({sslIssues.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('cost')}
@@ -119,15 +109,15 @@ export default function AuditPage() {
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
                                 }`}
                         >
-                            Cost Optimization ({costIssues.length})
+                            {t('audit.costOptimization')} ({costIssues.length})
                         </button>
                     </nav>
                 </div>
 
                 <div className="p-6">
-                    {activeTab === 'risks' && <IssueList issues={firewallIssues} emptyMsg="No high-risk firewall rules found." />}
-                    {activeTab === 'certs' && <IssueList issues={sslIssues} emptyMsg="No SSL certificate issues found." />}
-                    {activeTab === 'cost' && <IssueList issues={costIssues} emptyMsg="No cost optimization opportunities found." />}
+                    {activeTab === 'risks' && <IssueList issues={firewallIssues} emptyMsg={t('audit.noFirewallIssues')} />}
+                    {activeTab === 'certs' && <IssueList issues={sslIssues} emptyMsg={t('audit.noSslIssues')} />}
+                    {activeTab === 'cost' && <IssueList issues={costIssues} emptyMsg={t('audit.noCostIssues')} />}
                 </div>
             </div>
         </div>
@@ -135,6 +125,7 @@ export default function AuditPage() {
 }
 
 function IssueList({ issues, emptyMsg }: { issues: SecurityIssue[], emptyMsg: string }) {
+    const { t } = useLanguage();
     if (issues.length === 0) {
         return <div className="text-center py-12 text-slate-500 dark:text-slate-400">{emptyMsg}</div>;
     }
@@ -146,9 +137,9 @@ function IssueList({ issues, emptyMsg }: { issues: SecurityIssue[], emptyMsg: st
                     {/* Severity Badge */}
                     <div className="flex-shrink-0">
                         <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider w-24 justify-center ${issue.severity === 'CRITICAL' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                                issue.severity === 'HIGH' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                                    issue.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                        'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                            issue.severity === 'HIGH' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                                issue.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                             }`}>
                             {issue.severity}
                         </span>
@@ -171,7 +162,7 @@ function IssueList({ issues, emptyMsg }: { issues: SecurityIssue[], emptyMsg: st
 
                     {/* Remediation */}
                     <div className="md:w-1/3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded text-sm border border-slate-100 dark:border-slate-800">
-                        <div className="font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs uppercase">Remediation</div>
+                        <div className="font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs uppercase">{t('audit.remediation')}</div>
                         <p className="text-slate-600 dark:text-slate-400">{issue.remediation}</p>
                     </div>
                 </div>

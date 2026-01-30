@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import {
     CIDRCheckResponse,
@@ -10,6 +11,7 @@ interface CIDRVisualizerProps {
 }
 
 export default function CIDRVisualizer({ className }: CIDRVisualizerProps) {
+    const { t } = useLanguage();
     const [cidr, setCidr] = useState('');
     const [isChecking, setIsChecking] = useState(false);
     const [result, setResult] = useState<CIDRCheckResponse | null>(null);
@@ -41,14 +43,16 @@ export default function CIDRVisualizer({ className }: CIDRVisualizerProps) {
 
     return (
         <div className={`card flex flex-col h-full overflow-hidden ${className}`}>
-            <div className="p-4 border-b border-slate-200 bg-slate-50/50">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-3 mb-1">
-                    <div className="p-1.5 bg-sky-100 rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-600"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /></svg>
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600 dark:text-indigo-400"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /></svg>
                     </div>
-                    <h2 className="font-bold text-slate-800">CIDR Planner</h2>
+                    <h2 className="font-bold text-slate-900 dark:text-slate-100">{t('cidrPlanner.conflictChecker') || 'CIDR Conflict Checker'}</h2>
                 </div>
-                <p className="text-xs text-slate-500 ml-11">Check for IP conflicts across your GCP organization before provisioning.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 ml-12">
+                    {t('cidrPlanner.conflictCheckerDesc') || 'Check for IP conflicts across your GCP organization before provisioning.'}
+                </p>
             </div>
 
             <div className="p-6 flex-1 overflow-y-auto">
