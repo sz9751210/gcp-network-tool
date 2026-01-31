@@ -13,13 +13,24 @@ import {
     ShieldCheck,
     Globe,
     Network as NetworkIcon,
-    Layers
+    Layers,
+    Cpu,
+    Shield,
+    Clock,
+    Tag,
+    UserCircle,
+    Server,
+    Zap
 } from 'lucide-react';
+import SlideOver from '@/components/SlideOver';
+import Badge from '@/components/Badge';
+import Link from 'next/link';
 
 export default function GKEClustersPage() {
     const { data: allClusters, loading, refresh } = useResources<GKECluster & { project_name?: string }>('gke-clusters');
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
+    const [selectedCluster, setSelectedCluster] = useState<GKECluster | null>(null);
 
     const filteredClusters = useMemo(() => {
         return allClusters.filter(cluster =>
@@ -90,7 +101,11 @@ export default function GKEClustersPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {filteredClusters.map((cluster, idx) => (
-                                <tr key={`${cluster.project_id}-${cluster.name}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                <tr
+                                    key={`${cluster.project_id}-${cluster.name}-${idx}`}
+                                    className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
+                                    onClick={() => setSelectedCluster(cluster)}
+                                >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-blue-50 dark:bg-blue-900/40 rounded-md text-blue-600 dark:text-blue-400">
@@ -162,6 +177,126 @@ export default function GKEClustersPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Details SlideOver */}
+            <SlideOver
+                isOpen={!!selectedCluster}
+                onClose={() => setSelectedCluster(null)}
+                title={t('gke.title')}
+                width="max-w-2xl"
+            >
+                {selectedCluster && (
+                    <div className="space-y-6">
+                        {/* Header Info */}
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white break-all">{selectedCluster.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                <span>{selectedCluster.project_id}</span>
+                                <span>•</span>
+                                <Badge variant={selectedCluster.status === 'RUNNING' ? 'emerald' : 'secondary'} pill>
+                                    {selectedCluster.status}
+                                </Badge>
+                            </p>
+                        </div>
+
+                        {/* Main Stats Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Zap size={12} /> Version
+                                </div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">v{selectedCluster.version}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Server size={12} /> Nodes
+                                </div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedCluster.node_count} instances</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg col-span-2">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Share2 size={12} /> Control Plane Endpoint
+                                </div>
+                                <div className="font-mono font-semibold text-indigo-600 dark:text-indigo-400 break-all">{selectedCluster.endpoint}</div>
+                            </div>
+                        </div>
+
+                        {/* Network Configuration */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Network Connectivity</h4>
+                            <dl className="space-y-4">
+                                <div>
+                                    <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">VPC Network</dt>
+                                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
+                                        {selectedCluster.network}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Subnet</dt>
+                                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
+                                        {selectedCluster.subnet}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        {/* CIDR Blocks */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">IP Address Management (IPAM)</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="info">PODS</Badge>
+                                        <span className="text-xs text-slate-500 uppercase tracking-wide">Pod CIDR</span>
+                                    </div>
+                                    <span className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedCluster.pods_ipv4_cidr || 'Disabled'}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="blue">SERVICES</Badge>
+                                        <span className="text-xs text-slate-500 uppercase tracking-wide">Service CIDR</span>
+                                    </div>
+                                    <span className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedCluster.services_ipv4_cidr || 'Disabled'}</span>
+                                </div>
+                                {selectedCluster.master_ipv4_cidr && (
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="indigo">MASTER</Badge>
+                                            <span className="text-xs text-slate-500 uppercase tracking-wide">Master CIDR</span>
+                                        </div>
+                                        <span className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedCluster.master_ipv4_cidr}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Metadata Details */}
+                        {selectedCluster.labels && Object.keys(selectedCluster.labels).length > 0 && (
+                            <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Tag size={16} className="text-slate-400" /> Labels
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {Object.entries(selectedCluster.labels).map(([k, v]) => (
+                                        <Badge key={k} variant="blue" pill className="normal-case">
+                                            {k}: {v}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                <Globe size={16} className="text-slate-400" /> Location
+                            </h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                                {selectedCluster.location} Cluster
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </SlideOver>
         </div>
     );
 }

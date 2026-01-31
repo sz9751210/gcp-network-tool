@@ -12,13 +12,21 @@ import {
     ExternalLink,
     Shield,
     Cpu,
-    Network as NetworkIcon
+    Network as NetworkIcon,
+    Clock,
+    Tag,
+    UserCircle,
+    Globe
 } from 'lucide-react';
+import SlideOver from '@/components/SlideOver';
+import Badge from '@/components/Badge';
+import Link from 'next/link';
 
 export default function GCEInstancesPage() {
     const { data: allInstances, loading, refresh } = useResources<GCEInstance & { project_name?: string }>('instances');
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
+    const [selectedInstance, setSelectedInstance] = useState<GCEInstance | null>(null);
 
     const filteredInstances = useMemo(() => {
         return allInstances.filter(inst =>
@@ -90,7 +98,11 @@ export default function GCEInstancesPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {filteredInstances.map((inst, idx) => (
-                                <tr key={`${inst.project_id}-${inst.name}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                <tr
+                                    key={`${inst.project_id}-${inst.name}-${idx}`}
+                                    className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
+                                    onClick={() => setSelectedInstance(inst)}
+                                >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded-md text-slate-600 dark:text-slate-400">
@@ -160,6 +172,150 @@ export default function GCEInstancesPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Details SlideOver */}
+            <SlideOver
+                isOpen={!!selectedInstance}
+                onClose={() => setSelectedInstance(null)}
+                title={t('gce.title')}
+                width="max-w-2xl"
+            >
+                {selectedInstance && (
+                    <div className="space-y-6">
+                        {/* Header Info */}
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white break-all">{selectedInstance.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                <span>{selectedInstance.project_id}</span>
+                                <span>•</span>
+                                <Badge variant={selectedInstance.status === 'RUNNING' ? 'emerald' : 'secondary'} pill>
+                                    {selectedInstance.status}
+                                </Badge>
+                            </p>
+                        </div>
+
+                        {/* Main Stats Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <NetworkIcon size={12} /> Internal IP
+                                </div>
+                                <div className="font-mono font-semibold text-slate-800 dark:text-slate-100 italic">
+                                    {selectedInstance.internal_ip ? (
+                                        <Link href={`/internal-ips?q=${selectedInstance.internal_ip}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                            {selectedInstance.internal_ip}
+                                        </Link>
+                                    ) : 'N/A'}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Globe size={12} /> External IP
+                                </div>
+                                <div className="font-mono font-semibold">
+                                    {selectedInstance.external_ip ? (
+                                        <Link href={`/public-ips?q=${selectedInstance.external_ip}`} className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                            {selectedInstance.external_ip}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-slate-400">None</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Cpu size={12} /> Machine Type
+                                </div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedInstance.machine_type}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                    <Activity size={12} /> Zone
+                                </div>
+                                <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedInstance.zone}</div>
+                            </div>
+                        </div>
+
+                        {/* Network Details */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Network Configuration</h4>
+                            <dl className="space-y-4">
+                                <div>
+                                    <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">VPC Network</dt>
+                                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
+                                        {selectedInstance.network}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Subnet</dt>
+                                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
+                                        {selectedInstance.subnet}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        {/* Metadata Details */}
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-6 space-y-6">
+                            {selectedInstance.tags && selectedInstance.tags.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                                        <Tag size={16} className="text-slate-400" /> Network Tags
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedInstance.tags.map(tag => (
+                                            <Badge key={tag} variant="indigo" pill>
+                                                {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedInstance.labels && Object.keys(selectedInstance.labels).length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                                        <Tag size={16} className="text-slate-400" /> Labels
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(selectedInstance.labels).map(([k, v]) => (
+                                            <Badge key={k} variant="blue" pill className="normal-case">
+                                                {k}: {v}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedInstance.service_accounts && selectedInstance.service_accounts.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                                        <UserCircle size={16} className="text-slate-400" /> Service Accounts
+                                    </h4>
+                                    <div className="space-y-1">
+                                        {selectedInstance.service_accounts.map(sa => (
+                                            <div key={sa} className="text-xs font-mono text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                                                {sa}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedInstance.creation_timestamp && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <Clock size={16} className="text-slate-400" /> Created
+                                    </h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                        {new Date(selectedInstance.creation_timestamp).toLocaleString()}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </SlideOver>
         </div>
     );
 }
