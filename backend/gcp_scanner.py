@@ -69,7 +69,9 @@ class GCPScanner:
             else:
                 project_ids = [source_id]
         
-        logger.info(f"Discovered {len(project_ids)} projects to scan.")
+        # Dedupe project IDs
+        project_ids = sorted(list(set(project_ids)))
+        logger.info(f"Discovered {len(project_ids)} unique projects to scan.")
         
         # 2. Scanning Phase (Parallel Projects)
         scanned_projects: List[Project] = []

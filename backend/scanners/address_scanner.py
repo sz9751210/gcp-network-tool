@@ -29,29 +29,24 @@ class AddressScanner(BaseScanner):
         try:
             # Initialize clients with credentials
             addresses_client = compute_v1.AddressesClient(credentials=self.credentials)
-            global_addresses_client = compute_v1.GlobalAddressesClient(credentials=self.credentials)
             fwd_client = compute_v1.ForwardingRulesClient(credentials=self.credentials)
-            global_fwd_client = compute_v1.GlobalForwardingRulesClient(credentials=self.credentials)
             
-            global_addresses = []
-            # List global addresses
-            try:
-                for addr in global_addresses_client.list(project=project_id):
-                    global_addresses.append(addr)
-            except Exception as e: 
-                logger.debug(f"Error listing global addresses for {project_id}: {e}")
-            
-            # List regional addresses
-            regional_addresses = []
+            # List regional and global addresses via aggregated_list
+            all_addr = []
             try:
                  for r, addr_list in addresses_client.aggregated_list(project=project_id):
                      if addr_list.addresses:
-                         regional_addresses.extend(addr_list.addresses)
+                         all_addr.extend(addr_list.addresses)
             except Exception as e:
-                logger.debug(f"Error listing regional addresses for {project_id}: {e}")
+                logger.debug(f"Error listing addresses for {project_id}: {e}")
             
-            all_addr = global_addresses + regional_addresses
-            
+            # Dedupe addresses by self_link
+            unique_addr = {}
+            for a in all_addr:
+                if a.self_link not in unique_addr:
+                    unique_addr[a.self_link] = a
+            all_addr = list(unique_addr.values())
+
             # Filter by type
             target_addr = []
             for a in all_addr:
@@ -64,23 +59,21 @@ class AddressScanner(BaseScanner):
             if not lb_context and lb_scanner and hasattr(lb_scanner, 'prefetch_resources'):
                 lb_context = lb_scanner.prefetch_resources(project_id)
 
-            # 1. Get Forwarding Rules (LBs)
+            # 1. Get Forwarding Rules (LBs) via aggregated_list
             fwd_rules = []
             try:
-                # Regional
                 for r, list_obj in fwd_client.aggregated_list(project=project_id):
                     if list_obj.forwarding_rules:
                         fwd_rules.extend(list_obj.forwarding_rules)
-                
-                # Global
-                try:
-                    for r in global_fwd_client.list(project=project_id):
-                        fwd_rules.append(r)
-                except Exception as e:
-                    logger.debug(f"Error listing global forwarding rules: {e}")
-
             except Exception as e:
                 logger.debug(f"Error listing forwarding rules for {project_id}: {e}")
+
+            # Dedupe forwarding rules by self_link
+            unique_fwd = {}
+            for fr in fwd_rules:
+                if fr.self_link not in unique_fwd:
+                    unique_fwd[fr.self_link] = fr
+            fwd_rules = list(unique_fwd.values())
             
             # Map IP to FwdRule
             ip_to_fwd = {fr.I_p_address: fr for fr in fwd_rules if fr.I_p_address}
