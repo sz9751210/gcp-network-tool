@@ -228,13 +228,23 @@ export default function GKEClustersPage() {
                                 <div>
                                     <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">VPC Network</dt>
                                     <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
-                                        {selectedCluster.network}
+                                        <Link
+                                            href={`/subnets?vpc=${selectedCluster.network.split('/').pop()}`}
+                                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            {selectedCluster.network.split('/').pop()}
+                                        </Link>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Subnet</dt>
                                     <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
-                                        {selectedCluster.subnet}
+                                        <Link
+                                            href={`/subnets?q=${selectedCluster.subnet.split('/').pop()}`}
+                                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            {selectedCluster.subnet.split('/').pop()}
+                                        </Link>
                                     </dd>
                                 </div>
                             </dl>

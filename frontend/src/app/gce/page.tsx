@@ -243,13 +243,23 @@ export default function GCEInstancesPage() {
                                 <div>
                                     <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">VPC Network</dt>
                                     <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
-                                        {selectedInstance.network}
+                                        <Link
+                                            href={`/subnets?vpc=${selectedInstance.network.split('/').pop()}`}
+                                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            {selectedInstance.network.split('/').pop()}
+                                        </Link>
                                     </dd>
                                 </div>
                                 <div>
                                     <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Subnet</dt>
                                     <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded break-all font-mono text-xs">
-                                        {selectedInstance.subnet}
+                                        <Link
+                                            href={`/subnets?q=${selectedInstance.subnet.split('/').pop()}`}
+                                            className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            {selectedInstance.subnet.split('/').pop()}
+                                        </Link>
                                     </dd>
                                 </div>
                             </dl>

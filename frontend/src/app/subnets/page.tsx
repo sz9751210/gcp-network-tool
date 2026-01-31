@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Subnet } from '@/types/network';
@@ -14,15 +15,21 @@ interface SubnetRow {
     ipCidrRange: string;
 }
 
-export default function SubnetsPage() {
+function SubnetsContent() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<keyof SubnetRow>('subnetName');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [filterText, setFilterText] = useState('');
+
+    // Initialize from search params
+    const initialVpc = searchParams.get('vpc') || 'all';
+    const initialQuery = searchParams.get('q') || '';
+
+    const [filterText, setFilterText] = useState(initialQuery);
     const [projectFilter, setProjectFilter] = useState<string>('all');
-    const [vpcFilter, setVpcFilter] = useState<string>('all');
+    const [vpcFilter, setVpcFilter] = useState<string>(initialVpc);
     const [regionFilter, setRegionFilter] = useState<string>('all');
 
     // Pagination state
@@ -290,5 +297,18 @@ export default function SubnetsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function SubnetsPage() {
+    return (
+        <Suspense fallback={
+            <div className="p-8 max-w-[1800px] mx-auto text-center">
+                <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-slate-600 dark:text-slate-400">Loading subnets...</p>
+            </div>
+        }>
+            <SubnetsContent />
+        </Suspense>
     );
 }
