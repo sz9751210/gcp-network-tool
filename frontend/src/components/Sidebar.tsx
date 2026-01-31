@@ -89,6 +89,43 @@ export default function Sidebar() {
             ),
         },
         {
+            key: 'sidebar.gce',
+            path: '/gce',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                    <line x1="6" y1="6" x2="6" y2="6" />
+                    <line x1="6" y1="18" x2="6" y2="18" />
+                </svg>
+            ),
+        },
+        {
+            key: 'sidebar.gke',
+            path: '/gke',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                    <polyline points="7.5 19.79 7.5 14.6 3 12" />
+                    <polyline points="21 12 16.5 14.6 16.5 19.79" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+            ),
+        },
+        {
+            key: 'sidebar.storage',
+            path: '/storage',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3" />
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                </svg>
+            ),
+        },
+        {
             key: 'sidebar.cidrPlanner',
             path: '/cidr-planner',
             icon: (
@@ -169,8 +206,27 @@ export default function Sidebar() {
                 </div>
             </div>
 
+            {/* Search Trigger (Visual Hint) */}
+            <div className="px-4 mb-4">
+                <button
+                    onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                    className="w-full flex items-center justify-between px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all group shadow-inner"
+                >
+                    <div className="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-indigo-400 transition-colors">
+                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                        </svg>
+                        <span className="text-xs font-bold tracking-tight">Search...</span>
+                    </div>
+                    <kbd className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-[10px] font-black text-slate-500 opacity-80">
+                        <span>⌘</span>
+                        <span>K</span>
+                    </kbd>
+                </button>
+            </div>
+
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            <nav className="flex-1 p-4 pt-0 space-y-1 overflow-y-auto">
                 {navItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (

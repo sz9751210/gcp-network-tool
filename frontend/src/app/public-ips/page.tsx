@@ -8,11 +8,14 @@ import { PublicIP } from '@/types/network';
 import Pagination from '@/components/Pagination';
 import Badge from '@/components/Badge';
 
+import { useResources } from '@/lib/useResources';
+
 function PublicIPsContent() {
-    const { topology, metadata, refreshData } = useScan();
+    const { data: publicIPs, loading, error } = useResources<PublicIP>('public-ips');
+    const { metadata } = useScan();
     const { t } = useLanguage();
     const searchParams = useSearchParams();
-    const [loading, setLoading] = useState(true);
+
     const [sortBy, setSortBy] = useState<keyof PublicIP>('ip_address');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [filterText, setFilterText] = useState(searchParams.get('q') || '');
@@ -24,19 +27,6 @@ function PublicIPsContent() {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-
-    useEffect(() => {
-        const load = async () => {
-            await refreshData();
-            setLoading(false);
-        };
-        load();
-    }, [refreshData]);
-
-    const publicIPs = useMemo(() => {
-        if (!topology?.public_ips) return [];
-        return topology.public_ips;
-    }, [topology]);
 
     // Filter options with counts
     const projectOptions = useMemo(() => {
@@ -166,7 +156,7 @@ function PublicIPsContent() {
                 </p>
             </div>
 
-            {!topology || publicIPs.length === 0 ? (
+            {!publicIPs || publicIPs.length === 0 ? (
                 <div className="card p-12 text-center">
                     <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">{t('publicIps.noData')}</h3>
                     <p className="text-slate-600 dark:text-slate-400">{t('publicIps.noDataDesc')}</p>

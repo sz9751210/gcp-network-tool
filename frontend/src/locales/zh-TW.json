@@ -40,7 +40,10 @@
         "domainSearch": "網域搜尋",
         "securityAudit": "安全稽核",
         "settings": "設定",
-        "language": "語言"
+        "language": "語言選項",
+        "gce": "GCE 執行個體",
+        "gke": "GKE 叢集",
+        "storage": "Cloud Storage 存放區"
     },
     "dashboard": {
         "title": "網路拓撲概覽",
@@ -324,5 +327,17 @@
         "project": "專案",
         "regional": "區域級",
         "global": "全球級"
+    },
+    "gce": {
+        "title": "GCE 執行個體概覽",
+        "subtitle": "監控與管理所有區域的虛擬機器執行個體"
+    },
+    "gke": {
+        "title": "GKE 叢集概覽",
+        "subtitle": "集中查看 Kubernetes 資源分佈"
+    },
+    "storage": {
+        "title": "Cloud Storage 存放區",
+        "subtitle": "儲存資源列表與安全狀態"
     }
 }

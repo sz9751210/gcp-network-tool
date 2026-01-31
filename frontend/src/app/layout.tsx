@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     description: 'Visualize and plan GCP network topology',
 };
 
+import GlobalSearch from "@/components/GlobalSearch";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -27,6 +29,7 @@ export default function RootLayout({
                     <ThemeProvider>
 
                         <ScanProvider>
+                            <GlobalSearch />
                             <div className="flex h-screen overflow-hidden">
                                 <Sidebar />
                                 <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-900 transition-colors duration-300 relative">

@@ -102,6 +102,32 @@ def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared
         })
 
 
+@app.get("/api/scan/{scan_id}/summary")
+async def get_scan_summary(scan_id: str):
+    """Get a light summary of scan results to avoid loading giant JSONs."""
+    scan_data = scan_manager.get_scan(scan_id)
+    if not scan_data:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    topo = scan_data.get("topology", {})
+    return {
+        "scan_id": scan_id,
+        "status": scan_data.get("status"),
+        "timestamp": topo.get("scan_timestamp"),
+        "summary": {
+            "projects": len(topo.get("projects", [])),
+            "vpcs": topo.get("total_vpcs", 0),
+            "subnets": topo.get("total_subnets", 0),
+            "public_ips": len(topo.get("public_ips", [])),
+            "internal_ips": len(topo.get("used_internal_ips", [])),
+            "instances": len(topo.get("instances", [])),
+            "gke_clusters": len(topo.get("gke_clusters", [])),
+            "storage_buckets": len(topo.get("storage_buckets", [])),
+            "firewall_rules": len(topo.get("firewall_rules", [])),
+        }
+    }
+
+
 @app.post("/api/scan", response_model=ScanStatusResponse)
 async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
     """
@@ -178,54 +204,31 @@ async def get_scan_results(scan_id: str):
 
 @app.get("/api/scans", response_model=List[ScanHistoryItem])
 async def list_scans():
-    """List all available scans."""
+    """List all available scans using metadata (memory efficient)."""
     history = []
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        # Only show items that have at least some basic info
-        if "topology" in data:
-            topo = data["topology"]
-            history.append(ScanHistoryItem(
-                scan_id=scan_id,
-                timestamp=topo.get("scan_timestamp", datetime.utcnow()),
-                status=data.get("status", "unknown"),
-                source_type=topo.get("source_type", "unknown"),
-                source_id=topo.get("source_id", "unknown"),
-                total_projects=topo.get("total_projects", 0),
-                total_vpcs=topo.get("total_vpcs", 0),
-                total_subnets=topo.get("total_subnets", 0)
-            ))
-        elif data.get("status") in ["running", "pending", "failed"]:
-             # Include partial scans
-             history.append(ScanHistoryItem(
-                scan_id=scan_id,
-                timestamp=datetime.utcnow(), # Approximate timestamp if not in topology
-                status=data.get("status", "unknown"),
-                source_type="unknown", # We might need to store request info separately if we want this
-                source_id="unknown",
-                total_projects=data.get("total_projects", 0),
-                total_vpcs=0,
-                total_subnets=0
-            ))
+    metadata = scan_manager.get_all_scans_metadata()
+    for scan_id, data in metadata.items():
+        history.append(ScanHistoryItem(
+            scan_id=scan_id,
+            timestamp=data.get("timestamp") or datetime.utcnow(),
+            status=data.get("status", "unknown"),
+            source_type=data.get("source_type", "unknown"),
+            source_id=data.get("source_id", "unknown"),
+            total_projects=data.get("total_projects", 0),
+            total_vpcs=0, # Summary doesn't have these, frontend handles gracefully
+            total_subnets=0
+        ))
             
     # Sort by timestamp desc
-    return sorted(history, key=lambda x: x.timestamp, reverse=True)
+    return sorted(history, key=lambda x: str(x.timestamp), reverse=True)
 
 
 @app.get("/api/networks", response_model=Optional[NetworkTopology])
 async def get_latest_topology():
-    """Get the most recent scan results."""
-    # Find the latest completed scan
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    """Get the most recent scan results efficiently."""
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         return None
-    
     return NetworkTopology(**latest["topology"])
 
 
@@ -237,13 +240,7 @@ async def check_cidr_conflict(request: CIDRCheckRequest):
     Uses the latest scan results to find conflicts.
     """
     # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(
             status_code=400, 
@@ -288,13 +285,7 @@ async def plan_ip(request: IPPlanRequest):
     2. Subnets in specified peer projects
     """
     # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(
             status_code=400, 
@@ -344,13 +335,7 @@ async def check_ip_details(request: IPCheckRequest):
     Check detailed information about an internal IP.
     """
     # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(
             status_code=400, 
@@ -368,13 +353,7 @@ async def find_suffix_ips(request: SuffixSearchRequest):
     Find available IPs with a specific suffix.
     """
     # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(
             status_code=400, 
@@ -416,14 +395,7 @@ class UtilizationRequest(BaseModel):
 @app.post("/api/utilization")
 async def get_vpc_utilization(request: UtilizationRequest):
     """Get IP utilization stats for a VPC."""
-    # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(status_code=400, detail="No scan results available")
     
@@ -470,19 +442,114 @@ async def resolve_domain(request: DomainResolveRequest):
 @app.get("/api/audit/latest", response_model=SecurityReport)
 async def get_security_audit():
     """Get security audit report for the latest scan."""
-    # Get the latest topology
-    latest = None
-    scans = scan_manager.get_all_scans()
-    for scan_id, data in scans.items():
-        if data.get("status") == "completed":
-            if latest is None or data["topology"]["scan_timestamp"] > latest["topology"]["scan_timestamp"]:
-                latest = data
-    
+    latest = scan_manager.get_latest_completed_scan()
     if latest is None:
         raise HTTPException(status_code=404, detail="No scan results available")
     
     topology = NetworkTopology(**latest["topology"])
     return analyze_security(topology)
+
+
+# ============ Granular Resource List Endpoints ============
+
+@app.get("/api/resources/instances")
+async def list_instances():
+    """List all GCE instances from the latest scan."""
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest:
+        return []
+    
+    topo = latest.get("topology", {})
+    all_instances = []
+    # Collect from projects
+    for project in topo.get("projects", []):
+        for inst in project.get("instances", []):
+            inst["project_name"] = project.get("project_name")
+            all_instances.append(inst)
+            
+    # Also collect from top-level list if present
+    if "instances" in topo:
+        # Avoid duplicates if they are already in project lists
+        seen = {inst["name"] + inst["project_id"] for inst in all_instances}
+        for inst in topo["instances"]:
+            if inst["name"] + inst["project_id"] not in seen:
+                all_instances.append(inst)
+                
+    return all_instances
+
+
+@app.get("/api/resources/gke-clusters")
+async def list_gke_clusters():
+    """List all GKE clusters from the latest scan."""
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest:
+        return []
+    
+    topo = latest.get("topology", {})
+    all_clusters = []
+    for project in topo.get("projects", []):
+        for cluster in project.get("gke_clusters", []):
+            cluster["project_name"] = project.get("project_name")
+            all_clusters.append(cluster)
+    
+    if "gke_clusters" in topo:
+        seen = {c["name"] + c["project_id"] for c in all_clusters}
+        for cluster in topo["gke_clusters"]:
+            if cluster["name"] + cluster["project_id"] not in seen:
+                all_clusters.append(cluster)
+                
+    return all_clusters
+
+
+@app.get("/api/resources/storage-buckets")
+async def list_storage_buckets():
+    """List all Storage buckets from the latest scan."""
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest:
+        return []
+    
+    topo = latest.get("topology", {})
+    all_buckets = []
+    for project in topo.get("projects", []):
+        for bucket in project.get("storage_buckets", []):
+            bucket["project_name"] = project.get("project_name")
+            all_buckets.append(bucket)
+            
+    if "storage_buckets" in topo:
+        seen = {b["name"] + b["project_id"] for b in all_buckets}
+        for bucket in topo["storage_buckets"]:
+            if bucket["name"] + bucket["project_id"] not in seen:
+                all_buckets.append(bucket)
+                
+    return all_buckets
+
+
+@app.get("/api/resources/vpcs")
+async def list_vpcs():
+    """List all VPC networks from the latest scan."""
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest:
+        return []
+    
+    topo = latest.get("topology", {})
+    all_vpcs = []
+    for project in topo.get("projects", []):
+        for vpc in project.get("vpc_networks", []):
+            vpc["project_id"] = project.get("project_id")
+            vpc["project_name"] = project.get("project_name")
+            all_vpcs.append(vpc)
+    return all_vpcs
+
+
+@app.get("/api/resources/public-ips")
+async def list_public_ips():
+    """List all Public IPs from the latest scan."""
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest:
+        return []
+    
+    topo = latest.get("topology", {})
+    return topo.get("public_ips", [])
 
 
 # ============ Credentials Management Endpoints ============

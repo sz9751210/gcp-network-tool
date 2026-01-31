@@ -40,7 +40,10 @@
         "domainSearch": "Domain Search",
         "securityAudit": "Security Audit",
         "settings": "Settings",
-        "language": "Language"
+        "language": "Language",
+        "gce": "GCE Instances",
+        "gke": "GKE Clusters",
+        "storage": "Cloud Storage"
     },
     "dashboard": {
         "title": "Network Topology Overview",
@@ -324,5 +327,17 @@
         "project": "Project",
         "regional": "Regional",
         "global": "Global"
+    },
+    "gce": {
+        "title": "GCE Instances Overview",
+        "subtitle": "Monitor and manage VM instances across all zones"
+    },
+    "gke": {
+        "title": "GKE Clusters Overview",
+        "subtitle": "Centralized view of Kubernetes resource distribution"
+    },
+    "storage": {
+        "title": "Cloud Storage Buckets",
+        "subtitle": "Storage resource list and security status"
     }
 }

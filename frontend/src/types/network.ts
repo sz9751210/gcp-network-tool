@@ -51,6 +51,49 @@ export interface VPCNetwork {
     peerings: VPCPeering[];
 }
 
+export interface GCEInstance {
+    name: string;
+    project_id: string;
+    zone: string;
+    machine_type: string;
+    status: string;
+    internal_ip: string | null;
+    external_ip: string | null;
+    network: string;
+    subnet: string;
+    tags: string[];
+    labels: Record<string, string>;
+    service_accounts: string[];
+    creation_timestamp: string | null;
+}
+
+export interface GKECluster {
+    name: string;
+    project_id: string;
+    location: string;
+    network: string;
+    subnet: string;
+    endpoint: string;
+    version: string;
+    status: string;
+    services_ipv4_cidr: string | null;
+    pods_ipv4_cidr: string | null;
+    master_ipv4_cidr: string | null;
+    node_count: number;
+    labels: Record<string, string>;
+}
+
+export interface GCSBucket {
+    name: string;
+    project_id: string;
+    location: string;
+    storage_class: string;
+    creation_time: string | null;
+    labels: Record<string, string>;
+    is_public: boolean;
+    versioning_enabled: boolean;
+}
+
 export interface Project {
     project_id: string;
     project_name: string;
@@ -60,6 +103,9 @@ export interface Project {
     shared_vpc_host_project: string | null;
     scan_status: 'pending' | 'success' | 'error' | 'permission_denied';
     error_message: string | null;
+    instances?: GCEInstance[];
+    gke_clusters?: GKECluster[];
+    storage_buckets?: GCSBucket[];
 }
 
 export interface PublicIP {
@@ -190,6 +236,9 @@ export interface NetworkTopology {
     firewall_rules: FirewallRule[];
     cloud_armor_policies: CloudArmorPolicy[];
     backend_services: BackendService[];
+    instances?: GCEInstance[];
+    gke_clusters?: GKECluster[];
+    storage_buckets?: GCSBucket[];
 }
 
 export interface ScanRequest {

@@ -18,6 +18,9 @@ from scanners.network_scanner import NetworkScanner
 from scanners.lb_scanner import LBScanner
 from scanners.firewall_scanner import FirewallScanner
 from scanners.address_scanner import AddressScanner
+from scanners.instance_scanner import GCEInstanceScanner
+from scanners.gke_scanner import GKEConsistentScanner
+from scanners.storage_scanner import StorageScanner
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +33,13 @@ class GCPScanner:
     def __init__(self, max_workers: int = 20):
         self.max_workers = max_workers
         self.project_scanner = ProjectScanner(max_workers)
-        # Initialize others leveraging shared credentials/config if needed
-        # (Assuming they load credentials internally or we could pass them)
         self.network_scanner = NetworkScanner(max_workers)
         self.lb_scanner = LBScanner(max_workers)
         self.firewall_scanner = FirewallScanner(max_workers)
         self.address_scanner = AddressScanner(max_workers)
+        self.instance_scanner = GCEInstanceScanner(max_workers)
+        self.gke_scanner = GKEConsistentScanner(max_workers)
+        self.storage_scanner = StorageScanner(max_workers)
         
     def scan_network_topology(
         self,
@@ -68,13 +72,15 @@ class GCPScanner:
         logger.info(f"Discovered {len(project_ids)} projects to scan.")
         
         # 2. Scanning Phase (Parallel Projects)
-        # We need to collect: Projects, PublicIPs, UsedInternalIPs, Firewalls, Policies, BackendServices
         scanned_projects: List[Project] = []
         all_public_ips: List[PublicIP] = []
         all_internal_ips: List[UsedInternalIP] = []
         all_firewalls: List[FirewallRule] = []
         all_policies: List[CloudArmorPolicy] = []
         all_backend_services: List[BackendService] = []
+        all_instances: List[Any] = []
+        all_gke_clusters: List[Any] = []
+        all_storage_buckets: List[Any] = []
         
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_pid = {
@@ -93,11 +99,11 @@ class GCPScanner:
                         all_firewalls.extend(result['firewalls'])
                         all_policies.extend(result['policies'])
                         all_backend_services.extend(result['backend_services'])
+                        all_instances.extend(result['instances'])
+                        all_gke_clusters.extend(result['gke_clusters'])
+                        all_storage_buckets.extend(result['storage_buckets'])
                 except Exception as e:
                     logger.error(f"Project {pid} scan failed unexpectedly: {e}")
-                    # Even if failed, we might want to record a failed Project object?
-                    # The _scan_single_project handles its own errors and returns a Project with error status
-                    # but if it raises, we catch it here.
                     
         # 3. Aggregation Phase
         topology = NetworkTopology(
@@ -116,7 +122,10 @@ class GCPScanner:
             used_internal_ips=all_internal_ips,
             firewall_rules=all_firewalls,
             cloud_armor_policies=all_policies,
-            backend_services=all_backend_services
+            backend_services=all_backend_services,
+            instances=all_instances,
+            gke_clusters=all_gke_clusters,
+            storage_buckets=all_storage_buckets
         )
         
         logger.info(f"Scan finished in {time.time() - start_time:.2f}s")
@@ -124,124 +133,103 @@ class GCPScanner:
 
     def _scan_single_project(self, project_id: str, include_shared_vpc: bool) -> Dict[str, Any]:
         """
-        Scans a single project for all resources.
-        Returns a dictionary containing the Project object and lists of other resources.
+        Scans a single project for all resources using parallel sub-tasks.
         """
         logger.info(f"Scanning project {project_id}...")
-        
-        # Init result containers
-        public_ips = []
-        internal_ips = []
-        firewalls = []
-        policies = []
-        backend_services = []
         
         # Get basic project info
         details = self.project_scanner.get_project_details(project_id)
         if not details:
-            # If we can't get basic info, assume permission denied or invalid
             return {
                 'project': Project(
-                    project_id=project_id,
-                    project_name=project_id,
-                    project_number="",
-                    vpc_networks=[],
-                    is_shared_vpc_host=False,
-                    shared_vpc_host_project=None,
-                    scan_status="error",
+                    project_id=project_id, project_name=project_id,
+                    project_number="", scan_status="error",
                     error_message="Could not access project or permission denied"
                 ),
-                'public_ips': [], 'internal_ips': [], 'firewalls': [], 'policies': [], 'backend_services': []
+                'public_ips': [], 'internal_ips': [], 'firewalls': [], 
+                'policies': [], 'backend_services': [], 'instances': [],
+                'gke_clusters': [], 'storage_buckets': []
             }
 
         try:
-            # 1. Network Scan (VPCs & Subnets)
-            vpcs = self.network_scanner.scan_vpc_networks(project_id, include_shared_vpc)
-            
-            # 2. Firewall & Cloud Armor
-            firewalls = self.firewall_scanner.scan_firewalls(project_id)
-            policies = self.firewall_scanner.scan_cloud_armor(project_id)
-            
-            # 3. Load Balancers & Backend Services
-            # Collect Backend Services first as they are needed for LBs?
-            # Actually LBs reference Backend Services.
-            
-            # Build Subnet Map (Subnet URL -> VPC Name)
-            subnet_map = {}
-            for vpc in vpcs:
-                if vpc.subnets:
+            # OPTIMIZATION: Scan sub-resources in parallel within the project
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                # 1. Start all basic network scans
+                f_vpcs = executor.submit(self.network_scanner.scan_vpc_networks, project_id, include_shared_vpc)
+                f_firewalls = executor.submit(self.firewall_scanner.scan_firewalls, project_id)
+                f_policies = executor.submit(self.firewall_scanner.scan_cloud_armor, project_id)
+                f_instances = executor.submit(self.instance_scanner.scan_instances, project_id)
+                f_gke = executor.submit(self.gke_scanner.scan_clusters, project_id)
+                f_storage = executor.submit(self.storage_scanner.scan_buckets, project_id)
+                f_lb_context = executor.submit(self.lb_scanner.prefetch_resources, project_id)
+
+                # Wait for core network results needed for IPs
+                vpcs = f_vpcs.result()
+                lb_context = f_lb_context.result()
+
+                # Build Subnet Map for IP resolution
+                subnet_map = {}
+                for vpc in vpcs:
                     for subnet in vpc.subnets:
                         subnet_map[subnet.self_link] = vpc.name
 
-            # 0. PREFETCH LB RESOURCES ONCE
-            lb_context = self.lb_scanner.prefetch_resources(project_id)
+                # Start Address Scans (depend on lb_context and subnet_map)
+                f_public_ips = executor.submit(self.address_scanner.scan_addresses, project_id, "EXTERNAL", self.lb_scanner, lb_context=lb_context)
+                f_internal_ips = executor.submit(self.address_scanner.scan_addresses, project_id, "INTERNAL", self.lb_scanner, subnet_map=subnet_map, lb_context=lb_context)
 
-            # We need to scan addresses to find LBs (Forwarding Rules).
-            # Address scanning logic (Public & Internal) needs to be implemented.
-            # I missed creating an `AddressScanner` or putting it in `NetworkScanner` or `LBScanner`.
-            # Let's verify `LBScanner` capabilities. It has `resolve_lb_details` but not `scan_addresses`.
-            # Original code had `_scan_public_ips` and `_scan_internal_ips`.
-            # I should implement address scanning here or in a scanner module.
-            # For cleanliness, I'll implement `_scan_addresses` locally or add to `NetworkScanner`.
-            # Let's add it to `NetworkScanner` (logical fit) or `LBScanner` (since LBs use them)?
-            # Addresses are core network resources. Let's add scanning logic locally for now 
-            # to match the monolithic behavior or quickly extend `NetworkScanner`.
-            # Extending `NetworkScanner` with `scan_addresses` seems best but requires editing that file.
-            # I'll implement helper methods `_scan_public_ips` and `_scan_internal_ips` inside this class 
-            # leveraging the `lb_scanner` for details resolution.
-            
-            public_ips = self.address_scanner.scan_addresses(project_id, "EXTERNAL", self.lb_scanner, lb_context=lb_context)
-            internal_ips = self.address_scanner.scan_addresses(project_id, "INTERNAL", self.lb_scanner, subnet_map=subnet_map, lb_context=lb_context)
-            
-            # 4. Backend Services
-            # Build map of Service -> IPs based on the resolved LB details from previous step
-            service_to_ips_map = {}
-            all_scanned_ips = public_ips + internal_ips
-            
-            for ip in all_scanned_ips:
-                if ip.details and ip.details.routing_rules:
-                    for rule in ip.details.routing_rules:
-                        # Key format matches LBScanner._process_backend_service
-                        # Note: ip.region is "global" or region name, which aligns with logic
-                        key = f"{project_id}|{ip.region}|{rule.backend_service}"
-                        
-                        if key not in service_to_ips_map:
-                            service_to_ips_map[key] = []
-                        if ip.ip_address not in service_to_ips_map[key]:
-                            service_to_ips_map[key].append(ip.ip_address)
-            
-            backend_services = self.lb_scanner.collect_backend_services(
-                Project(
-                    project_id=project_id, project_name=details['display_name'], 
-                    project_number=details['project_number'], vpc_networks=[], 
-                    is_shared_vpc_host=False, shared_vpc_host_project=None, scan_status="pending"
-                ),
-                service_to_ips=service_to_ips_map,
-                context=lb_context
-            )
+                # Collect all remaining results
+                firewalls = f_firewalls.result()
+                policies = f_policies.result()
+                instances = f_instances.result()
+                gke_clusters = f_gke.result()
+                storage_buckets = f_storage.result()
+                public_ips = f_public_ips.result()
+                internal_ips = f_internal_ips.result()
 
-            # Metadata
-            shared_vpc_info = self.project_scanner.get_shared_vpc_info(project_id)
-
+            # Result aggregation logic
             project_obj = Project(
                 project_id=project_id,
                 project_name=details['display_name'],
                 project_number=details['project_number'],
                 vpc_networks=vpcs,
-                is_shared_vpc_host=shared_vpc_info['is_host'],
-                shared_vpc_host_project=shared_vpc_info['host_project'],
-                scan_status="success",
-                error_message=None
+                instances=instances,
+                gke_clusters=gke_clusters,
+                storage_buckets=storage_buckets,
+                scan_status="success"
             )
+
+            # Backend Services resolution (remains sequential but fast)
+            all_ips = public_ips + internal_ips
+            service_to_ips_map = {}
+            for ip in all_ips:
+                if ip.details and ip.details.routing_rules:
+                    for rule in ip.details.routing_rules:
+                        key = f"{project_id}|{ip.region}|{rule.backend_service}"
+                        if key not in service_to_ips_map: service_to_ips_map[key] = []
+                        if ip.ip_address not in service_to_ips_map[key]: service_to_ips_map[key].append(ip.ip_address)
             
+            backend_services = self.lb_scanner.collect_backend_services(project_obj, service_to_ips_map, lb_context)
+
             return {
                 'project': project_obj,
-                'public_ips': public_ips,
-                'internal_ips': internal_ips,
-                'firewalls': firewalls,
-                'policies': policies,
-                'backend_services': backend_services
+                'public_ips': public_ips, 'internal_ips': internal_ips,
+                'firewalls': firewalls, 'policies': policies,
+                'backend_services': backend_services, 'instances': instances,
+                'gke_clusters': gke_clusters, 'storage_buckets': storage_buckets
             }
+
+        except Exception as e:
+            logger.error(f"Error scanning project {project_id}: {e}")
+            return {
+                'project': Project(
+                    project_id=project_id, project_name=details.get('display_name', project_id),
+                    project_number=details.get('project_number', ""), scan_status="error", error_message=str(e)
+                ),
+                'public_ips': [], 'internal_ips': [], 'firewalls': [], 
+                'policies': [], 'backend_services': [], 'instances': [],
+                'gke_clusters': [], 'storage_buckets': []
+            }
+
 
         except Exception as e:
             logger.error(f"Error scanning project {project_id}: {e}")

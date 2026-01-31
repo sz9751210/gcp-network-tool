@@ -3,7 +3,7 @@ Pydantic models for GCP Network Planner.
 Defines the data structures for network topology representation.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 
@@ -151,6 +151,52 @@ class BackendService(BaseModel):
     self_link: str = ""
 
 
+class GCEInstance(BaseModel):
+    """Represents a GCE VM Instance."""
+    name: str
+    project_id: str
+    zone: str
+    machine_type: str
+    status: str
+    internal_ip: Optional[str] = None
+    external_ip: Optional[str] = None
+    network: str
+    subnet: str
+    tags: List[str] = Field(default_factory=list)
+    labels: Dict[str, str] = Field(default_factory=dict)
+    service_accounts: List[str] = Field(default_factory=list)
+    creation_timestamp: Optional[datetime] = None
+
+
+class GKECluster(BaseModel):
+    """Represents a GKE Cluster."""
+    name: str
+    project_id: str
+    location: str
+    network: str
+    subnet: str
+    endpoint: str
+    version: str
+    status: str
+    services_ipv4_cidr: Optional[str] = None
+    pods_ipv4_cidr: Optional[str] = None
+    master_ipv4_cidr: Optional[str] = None
+    node_count: int = 0
+    labels: Dict[str, str] = Field(default_factory=dict)
+
+
+class GCSBucket(BaseModel):
+    """Represents a Cloud Storage Bucket."""
+    name: str
+    project_id: str
+    location: str
+    storage_class: str
+    creation_time: Optional[datetime] = None
+    labels: Dict[str, str] = Field(default_factory=dict)
+    is_public: bool = False
+    versioning_enabled: bool = False
+
+
 class Project(BaseModel):
     """Represents a GCP Project with its networks."""
     project_id: str
@@ -166,6 +212,9 @@ class Project(BaseModel):
     scan_status: str = "pending"  # pending, success, error, permission_denied
     error_message: Optional[str] = None
     backend_services: list['BackendService'] = Field(default_factory=list)
+    instances: list[GCEInstance] = Field(default_factory=list)
+    gke_clusters: list[GKECluster] = Field(default_factory=list)
+    storage_buckets: list[GCSBucket] = Field(default_factory=list)
 
 
 class UsedInternalIP(BaseModel):
@@ -200,6 +249,9 @@ class NetworkTopology(BaseModel):
     firewall_rules: list[FirewallRule] = Field(default_factory=list)
     cloud_armor_policies: list[CloudArmorPolicy] = Field(default_factory=list)
     backend_services: list['BackendService'] = Field(default_factory=list)
+    instances: list[GCEInstance] = Field(default_factory=list)
+    gke_clusters: list[GKECluster] = Field(default_factory=list)
+    storage_buckets: list[GCSBucket] = Field(default_factory=list)
 
 
 # Request/Response schemas
