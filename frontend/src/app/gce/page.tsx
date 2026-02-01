@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useResources } from '@/lib/useResources';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GCEInstance } from '@/types/network';
@@ -21,12 +21,20 @@ import {
 import SlideOver from '@/components/SlideOver';
 import Badge from '@/components/Badge';
 import Link from 'next/link';
+import Pagination from '@/components/Pagination';
 
-export default function GCEInstancesPage() {
+function GCEInstancesContent() {
     const { data: allInstances, loading, refresh } = useResources<GCEInstance & { project_name?: string }>('instances');
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
     const [selectedInstance, setSelectedInstance] = useState<GCEInstance | null>(null);
+
+    const [sortBy, setSortBy] = useState<keyof GCEInstance>('name');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const filteredInstances = useMemo(() => {
         return allInstances.filter(inst =>
@@ -36,6 +44,39 @@ export default function GCEInstancesPage() {
             (inst.external_ip || '').includes(search)
         );
     }, [allInstances, search]);
+
+    // Sort instances
+    const sortedInstances = useMemo(() => {
+        return [...filteredInstances].sort((a, b) => {
+            const aVal = a[sortBy] ?? '';
+            const bVal = b[sortBy] ?? '';
+
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredInstances, sortBy, sortOrder]);
+
+    // Paginated instances
+    const totalPages = Math.ceil(sortedInstances.length / itemsPerPage);
+    const paginatedInstances = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedInstances.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedInstances, currentPage, itemsPerPage]);
+
+    const handleSort = (column: keyof GCEInstance) => {
+        if (sortBy === column) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+    };
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, itemsPerPage]);
 
     if (loading) {
         return (
@@ -85,19 +126,36 @@ export default function GCEInstancesPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('ipAddress.name') || 'Instance Name'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('publicIps.status') || 'Status'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Network Info</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('publicIps.project') || 'Project'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('publicIps.region') || 'Zone'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Machine Type</th>
+                                {[
+                                    { key: 'name', label: t('ipAddress.name') || 'Instance Name' },
+                                    { key: 'status', label: t('publicIps.status') || 'Status' },
+                                    { key: 'internal_ip', label: 'Network Info' },
+                                    { key: 'project_id', label: t('publicIps.project') || 'Project' },
+                                    { key: 'zone', label: t('publicIps.region') || 'Zone' },
+                                    { key: 'machine_type', label: 'Machine Type' },
+                                ].map((col) => (
+                                    <th
+                                        key={col.key}
+                                        onClick={() => handleSort(col.key as keyof GCEInstance)}
+                                        className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {col.label}
+                                            {sortBy === col.key && (
+                                                <span className="text-indigo-600 dark:text-indigo-400">
+                                                    {sortOrder === 'asc' ? '↑' : '↓'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {filteredInstances.map((inst, idx) => (
+                            {paginatedInstances.map((inst, idx) => (
                                 <tr
                                     key={`${inst.project_id}-${inst.name}-${idx}`}
                                     className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
@@ -114,7 +172,7 @@ export default function GCEInstancesPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${inst.status === 'RUNNING'
                                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                             : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-400'
@@ -144,20 +202,27 @@ export default function GCEInstancesPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <div className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1 whitespace-nowrap">
                                             <Activity size={14} className="text-slate-400" />
                                             {inst.zone}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-mono text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                                            <Cpu size={14} className="text-slate-400" />
-                                            {inst.machine_type}
+                                        <div className="text-sm font-mono text-slate-600 dark:text-slate-400 flex flex-col gap-0.5 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <Cpu size={14} className="text-slate-400" />
+                                                {inst.machine_type}
+                                            </div>
+                                            {(inst.cpu_count || inst.memory_mb) && (
+                                                <div className="text-[10px] text-slate-500 pl-5">
+                                                    ({inst.cpu_count} vCPU, {inst.memory_mb ? (inst.memory_mb / 1024).toFixed(2) : 0} GB)
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {filteredInstances.length === 0 && (
+                            {paginatedInstances.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center">
                                         <div className="flex flex-col items-center gap-2 text-slate-500">
@@ -171,8 +236,18 @@ export default function GCEInstancesPage() {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
+                {/* Pagination */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    totalItems={allInstances.length}
+                    filteredCount={filteredInstances.length}
+                />
+            </div>
             {/* Details SlideOver */}
             <SlideOver
                 isOpen={!!selectedInstance}
@@ -180,7 +255,7 @@ export default function GCEInstancesPage() {
                 title={t('gce.title')}
                 width="max-w-2xl"
             >
-                {selectedInstance && (
+                {selectedInstance ? (
                     <div className="space-y-6">
                         {/* Header Info */}
                         <div>
@@ -227,6 +302,11 @@ export default function GCEInstancesPage() {
                                     <Cpu size={12} /> Machine Type
                                 </div>
                                 <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedInstance.machine_type}</div>
+                                {(selectedInstance.cpu_count || selectedInstance.memory_mb) && (
+                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                        {selectedInstance.cpu_count} vCPU, {selectedInstance.memory_mb ? (selectedInstance.memory_mb / 1024).toFixed(2) : 0} GB Memory
+                                    </div>
+                                )}
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
@@ -324,8 +404,16 @@ export default function GCEInstancesPage() {
                             )}
                         </div>
                     </div>
-                )}
+                ) : null}
             </SlideOver>
         </div>
+    );
+}
+
+export default function GCEInstancesPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading instances...</div>}>
+            <GCEInstancesContent />
+        </Suspense>
     );
 }

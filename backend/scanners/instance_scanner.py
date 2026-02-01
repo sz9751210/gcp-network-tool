@@ -15,8 +15,14 @@ class GCEInstanceScanner(BaseScanner):
         logger.info(f"Scanning GCE instances in project {project_id}")
         instances = []
         
+        # Cache for machine types to avoid redundant API calls
+        # Key: (zone, machine_type_name), Value: (cpu_count, memory_mb)
+        machine_type_cache = {}
+        
         try:
             client = compute_v1.InstancesClient(credentials=self.credentials)
+            mt_client = compute_v1.MachineTypesClient(credentials=self.credentials)
+            
             # Use aggregated_list to get instances across all zones
             request = compute_v1.AggregatedListInstancesRequest(project=project_id)
             
@@ -40,11 +46,28 @@ class GCEInstanceScanner(BaseScanner):
                     network_url = primary_if.network if primary_if else ""
                     subnet_url = primary_if.subnetwork if primary_if else ""
                     
+                    # Machine type info
+                    mt_name = inst.machine_type.split('/')[-1]
+                    cpu_count = None
+                    memory_mb = None
+                    
+                    cache_key = (zone_name, mt_name)
+                    if cache_key in machine_type_cache:
+                        cpu_count, memory_mb = machine_type_cache[cache_key]
+                    else:
+                        try:
+                            mt_info = mt_client.get(project=project_id, zone=zone_name, machine_type=mt_name)
+                            cpu_count = mt_info.guest_cpus
+                            memory_mb = mt_info.memory_mb
+                            machine_type_cache[cache_key] = (cpu_count, memory_mb)
+                        except Exception as mt_e:
+                            logger.warning(f"Could not fetch machine type {mt_name} in {zone_name}: {mt_e}")
+                    
                     instances.append(GCEInstance(
                         name=inst.name,
                         project_id=project_id,
                         zone=zone_name,
-                        machine_type=inst.machine_type.split('/')[-1],
+                        machine_type=mt_name,
                         status=inst.status,
                         internal_ip=internal_ip,
                         external_ip=external_ip,
@@ -53,7 +76,9 @@ class GCEInstanceScanner(BaseScanner):
                         tags=list(inst.tags.items) if inst.tags else [],
                         labels=dict(inst.labels) if inst.labels else {},
                         service_accounts=[sa.email for sa in inst.service_accounts] if inst.service_accounts else [],
-                        creation_timestamp=datetime.fromisoformat(inst.creation_timestamp) if inst.creation_timestamp else None
+                        creation_timestamp=datetime.fromisoformat(inst.creation_timestamp) if inst.creation_timestamp else None,
+                        cpu_count=cpu_count,
+                        memory_mb=memory_mb
                     ))
                     
             return instances

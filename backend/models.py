@@ -166,6 +166,8 @@ class GCEInstance(BaseModel):
     labels: Dict[str, str] = Field(default_factory=dict)
     service_accounts: List[str] = Field(default_factory=list)
     creation_timestamp: Optional[datetime] = None
+    cpu_count: Optional[int] = None
+    memory_mb: Optional[int] = None
 
 
 class GKECluster(BaseModel):

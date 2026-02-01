@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useResources } from '@/lib/useResources';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GCSBucket } from '@/types/network';
@@ -16,11 +16,19 @@ import {
     Calendar,
     HardDrive
 } from 'lucide-react';
+import Pagination from '@/components/Pagination';
 
-export default function StoragePage() {
+function StorageContent() {
     const { data: allBuckets, loading, refresh } = useResources<GCSBucket & { project_name?: string }>('storage-buckets');
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
+
+    const [sortBy, setSortBy] = useState<keyof GCSBucket>('name');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const filteredBuckets = useMemo(() => {
         return allBuckets.filter(bucket =>
@@ -29,6 +37,39 @@ export default function StoragePage() {
             bucket.location.toLowerCase().includes(search.toLowerCase())
         );
     }, [allBuckets, search]);
+
+    // Sort buckets
+    const sortedBuckets = useMemo(() => {
+        return [...filteredBuckets].sort((a, b) => {
+            const aVal = a[sortBy] ?? '';
+            const bVal = b[sortBy] ?? '';
+
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredBuckets, sortBy, sortOrder]);
+
+    // Paginated buckets
+    const totalPages = Math.ceil(sortedBuckets.length / itemsPerPage);
+    const paginatedBuckets = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return sortedBuckets.slice(startIndex, startIndex + itemsPerPage);
+    }, [sortedBuckets, currentPage, itemsPerPage]);
+
+    const handleSort = (column: keyof GCSBucket) => {
+        if (sortBy === column) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+    };
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, itemsPerPage]);
 
     if (loading) {
         return (
@@ -78,18 +119,35 @@ export default function StoragePage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('ipAddress.name') || 'Bucket Name'}</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Access Control</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Storage Info</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Configuration</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Security</th>
+                                {[
+                                    { key: 'name', label: t('ipAddress.name') || 'Bucket Name' },
+                                    { key: 'is_public', label: 'Access Control' },
+                                    { key: 'storage_class', label: 'Storage Info' },
+                                    { key: 'versioning_enabled', label: 'Configuration' },
+                                    { key: 'is_public', label: 'Security' },
+                                ].map((col, idx) => (
+                                    <th
+                                        key={`${col.key}-${idx}`}
+                                        onClick={() => handleSort(col.key as keyof GCSBucket)}
+                                        className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {col.label}
+                                            {sortBy === col.key && (
+                                                <span className="text-amber-600 dark:text-amber-400">
+                                                    {sortOrder === 'asc' ? '↑' : '↓'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {filteredBuckets.map((bucket, idx) => (
+                            {paginatedBuckets.map((bucket, idx) => (
                                 <tr key={`${bucket.project_id}-${bucket.name}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -115,7 +173,7 @@ export default function StoragePage() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2 text-sm">
                                                 <HardDrive size={12} className="text-slate-400" />
@@ -126,7 +184,7 @@ export default function StoragePage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
                                             <div className="flex flex-col gap-1">
                                                 <span className={`flex items-center gap-1 text-[11px] ${bucket.versioning_enabled ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
@@ -140,7 +198,7 @@ export default function StoragePage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         {bucket.is_public ? (
                                             <div className="flex items-center gap-2 text-red-500 font-medium text-xs">
                                                 <ShieldAlert size={14} />
@@ -154,7 +212,7 @@ export default function StoragePage() {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredBuckets.length === 0 && (
+                            {paginatedBuckets.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center">
                                         <div className="flex flex-col items-center gap-2 text-slate-500">
@@ -168,6 +226,16 @@ export default function StoragePage() {
                         </tbody>
                     </table>
                 </div>
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    totalItems={allBuckets.length}
+                    filteredCount={filteredBuckets.length}
+                />
             </div>
 
             <style jsx>{`
@@ -180,5 +248,13 @@ export default function StoragePage() {
                 }
             `}</style>
         </div>
+    );
+}
+
+export default function StoragePage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading buckets...</div>}>
+            <StorageContent />
+        </Suspense>
     );
 }

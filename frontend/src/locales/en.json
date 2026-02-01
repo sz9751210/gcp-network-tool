@@ -43,6 +43,13 @@
         "language": "Language",
         "gce": "GCE Instances",
         "gke": "GKE Clusters",
+        "gkeResources": "GKE Resources",
+        "gkeWorkloads": "Workloads",
+        "gkeServices": "Services",
+        "gkeIngress": "Ingress",
+        "gkeConfigMaps": "ConfigMaps",
+        "gkeSecrets": "Secrets",
+        "gkePvcs": "PVCs",
         "storage": "Cloud Storage"
     },
     "dashboard": {

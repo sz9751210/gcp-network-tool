@@ -65,6 +65,8 @@ export interface GCEInstance {
     labels: Record<string, string>;
     service_accounts: string[];
     creation_timestamp: string | null;
+    cpu_count?: number;
+    memory_mb?: number;
 }
 
 export interface GKECluster {
