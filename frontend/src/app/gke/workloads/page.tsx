@@ -27,8 +27,8 @@ function GKEWorkloadsContent() {
     const [search, setSearch] = useState('');
 
     // Fetch Data
-    const { data: deployments, loading: loadingDeps } = useResources<GKEDeployment>('gke-deployments');
-    const { data: pods, loading: loadingPods } = useResources<GKEPod>('gke-pods');
+    const { data: deployments, loading: loadingDeps, error: errorDeps } = useResources<GKEDeployment>('gke-deployments');
+    const { data: pods, loading: loadingPods, error: errorPods } = useResources<GKEPod>('gke-pods');
 
     const [selectedPod, setSelectedPod] = useState<GKEPod | null>(null);
     const [selectedDep, setSelectedDep] = useState<GKEDeployment | null>(null);
@@ -93,13 +93,23 @@ function GKEWorkloadsContent() {
                 </p>
             </div>
 
+            {(errorDeps || errorPods) && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
+                    <p className="font-bold">Error loading workloads:</p>
+                    <ul className="list-disc list-inside">
+                        {errorDeps && <li>Deployments: {errorDeps}</li>}
+                        {errorPods && <li>Pods: {errorPods}</li>}
+                    </ul>
+                </div>
+            )}
+
             {/* Tabs */}
             <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
                 <button
                     onClick={() => setActiveTab('deployments')}
                     className={`px-6 py-3 text-sm font-medium transition-colors relative ${activeTab === 'deployments'
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                         }`}
                 >
                     {t('gke.workloads.deploymentsTab')}
@@ -110,8 +120,8 @@ function GKEWorkloadsContent() {
                 <button
                     onClick={() => setActiveTab('pods')}
                     className={`px-6 py-3 text-sm font-medium transition-colors relative ${activeTab === 'pods'
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                         }`}
                 >
                     {t('gke.workloads.podsTab')}
@@ -209,7 +219,10 @@ function GKEWorkloadsContent() {
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{pod.namespace}</td>
                                         <td className="px-6 py-4">
                                             <Badge
-                                                variant={pod.status === 'Running' ? 'emerald' : pod.status === 'Pending' ? 'amber' : 'red'}
+                                                variant={
+                                                    pod.status === 'Running' ? 'emerald' :
+                                                        pod.status === 'Pending' ? 'amber' : 'error'
+                                                }
                                                 pill
                                             >
                                                 {pod.status}
@@ -304,7 +317,7 @@ function GKEWorkloadsContent() {
                                         <div key={c.name} className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="font-medium text-sm">{c.name}</span>
-                                                <Badge variant={c.ready ? 'emerald' : 'red'} pill>
+                                                <Badge variant={c.ready ? 'emerald' : 'error'} pill>
                                                     {c.ready ? 'Ready' : 'Not Ready'}
                                                 </Badge>
                                             </div>

@@ -19,7 +19,7 @@ except ImportError:
 from scanners.base import BaseScanner
 from models import (
     GKECluster, GKEPod, GKEDeployment, GKEService, 
-    GKEIngress, GKEConfigMap, GKESecret, GKEPVC
+    GKEIngress, GKEConfigMap, GKESecret, GKEPVC, GKEContainer
 )
 
 logger = logging.getLogger(__name__)
@@ -114,9 +114,11 @@ class GKEConsistentScanner(BaseScanner):
 
     def _get_k8s_client(self, cluster) -> Optional[Any]:
         if not K8S_AVAILABLE:
+            logger.warning(f"Skipping K8s client for {cluster.name}: Kubernetes library not available")
             return None
             
         if not cluster.master_auth or not cluster.master_auth.cluster_ca_certificate:
+            logger.warning(f"Skipping K8s client for {cluster.name}: Missing master_auth or ca_certificate")
             return None
             
         try:
@@ -133,7 +135,8 @@ class GKEConsistentScanner(BaseScanner):
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 f.write(ca_cert_data)
                 configuration.ssl_ca_cert = f.name
-                
+            
+            logger.info(f"Successfully created K8s client for cluster {cluster.name} at {cluster.endpoint}")
             return k8s_client.ApiClient(configuration)
         except Exception as e:
             logger.error(f"Error creating K8s client for {cluster.name}: {e}")
@@ -155,6 +158,20 @@ class GKEConsistentScanner(BaseScanner):
             # Pods
             pods = v1.list_pod_for_all_namespaces(timeout_seconds=10)
             for p in pods.items:
+                containers = []
+                # Map container statuses
+                ready_map = {}
+                if p.status.container_statuses:
+                    for cs in p.status.container_statuses:
+                        ready_map[cs.name] = cs.ready
+                
+                for c in p.spec.containers:
+                    containers.append(GKEContainer(
+                        name=c.name,
+                        image=c.image,
+                        ready=ready_map.get(c.name, False)
+                    ))
+
                 res['pods'].append(GKEPod(
                     name=p.metadata.name,
                     namespace=p.metadata.namespace,
@@ -165,6 +182,7 @@ class GKEConsistentScanner(BaseScanner):
                     host_ip=p.status.host_ip,
                     node_name=p.spec.node_name,
                     labels=p.metadata.labels or {},
+                    containers=containers,
                     creation_timestamp=p.metadata.creation_timestamp
                 ))
 
@@ -180,6 +198,7 @@ class GKEConsistentScanner(BaseScanner):
                     available_replicas=d.status.available_replicas or 0,
                     updated_replicas=d.status.updated_replicas or 0,
                     labels=d.metadata.labels or {},
+                    selector=d.spec.selector.match_labels or {},
                     creation_timestamp=d.metadata.creation_timestamp
                 ))
 

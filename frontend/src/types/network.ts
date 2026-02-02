@@ -85,6 +85,12 @@ export interface GKECluster {
     labels: Record<string, string>;
 }
 
+export interface GKEContainer {
+    name: string;
+    image: string;
+    ready: boolean;
+}
+
 export interface GKEPod {
     name: string;
     namespace: string;
@@ -96,7 +102,7 @@ export interface GKEPod {
     node_name: string | null;
     creation_timestamp: string | null;
     labels: Record<string, string>;
-    containers: string[];
+    containers: GKEContainer[];
 }
 
 export interface GKEDeployment {
@@ -108,6 +114,7 @@ export interface GKEDeployment {
     available_replicas: number;
     updated_replicas: number;
     labels: Record<string, string>;
+    selector: Record<string, string>;
     creation_timestamp: string | null;
 }
 

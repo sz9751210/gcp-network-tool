@@ -186,6 +186,11 @@ class GKECluster(BaseModel):
     node_count: int = 0
     labels: Dict[str, str] = Field(default_factory=dict)
 
+class GKEContainer(BaseModel):
+    name: str
+    image: str
+    ready: bool
+
 class GKEPod(BaseModel):
     """Represents a Pod in a GKE Cluster."""
     name: str
@@ -198,7 +203,7 @@ class GKEPod(BaseModel):
     node_name: Optional[str] = None
     creation_timestamp: Optional[datetime] = None
     labels: Dict[str, str] = Field(default_factory=dict)
-    containers: List[str] = Field(default_factory=list)
+    containers: List[GKEContainer] = Field(default_factory=list)
 
 class GKEDeployment(BaseModel):
     """Represents a Deployment in a GKE Cluster."""
@@ -210,6 +215,7 @@ class GKEDeployment(BaseModel):
     available_replicas: int
     updated_replicas: int
     labels: Dict[str, str] = Field(default_factory=dict)
+    selector: Dict[str, str] = Field(default_factory=dict)
     creation_timestamp: Optional[datetime] = None
 
 class GKEService(BaseModel):
