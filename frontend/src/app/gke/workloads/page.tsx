@@ -330,6 +330,14 @@ function GKEWorkloadsContent() {
                                 <div className="text-xs text-slate-500 uppercase mb-1">Host IP</div>
                                 <div className="font-mono font-bold">{selectedPod.host_ip || 'None'}</div>
                             </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">Restarts</div>
+                                <div className="font-mono font-bold">{selectedPod.restart_count}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">QoS Class</div>
+                                <div className="font-mono font-bold">{selectedPod.qos_class || 'N/A'}</div>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -409,6 +417,34 @@ function GKEWorkloadsContent() {
                                 <span className="text-sm font-bold">{selectedDep.available_replicas} / {selectedDep.replicas}</span>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">Strategy</div>
+                                <div className="font-mono font-bold">{selectedDep.strategy || 'N/A'}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">Min Ready Seconds</div>
+                                <div className="font-mono font-bold">{selectedDep.min_ready_seconds}s</div>
+                            </div>
+                        </div>
+
+                        {selectedDep.conditions && selectedDep.conditions.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Conditions</h4>
+                                <div className="space-y-2">
+                                    {selectedDep.conditions.map((cond, i) => (
+                                        <div key={i} className="bg-slate-50 dark:bg-slate-900 p-2 rounded text-xs border border-slate-200 dark:border-slate-800">
+                                            <div className="flex justify-between font-medium">
+                                                <span>{cond.type}</span>
+                                                <span className={cond.status === 'True' ? 'text-green-500' : 'text-red-500'}>{cond.status}</span>
+                                            </div>
+                                            {cond.reason && <div className="text-slate-500 mt-1">{cond.reason}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="space-y-4">
                             <div>

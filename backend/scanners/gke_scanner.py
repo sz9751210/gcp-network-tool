@@ -19,7 +19,7 @@ except ImportError:
 from scanners.base import BaseScanner
 from models import (
     GKECluster, GKEPod, GKEDeployment, GKEService, 
-    GKEIngress, GKEConfigMap, GKESecret, GKEPVC, GKEContainer
+    GKEIngress, GKEConfigMap, GKESecret, GKEPVC, GKEContainer, GKEHPA
 )
 
 logger = logging.getLogger(__name__)
@@ -152,7 +152,7 @@ class GKEConsistentScanner(BaseScanner):
         if not api_client:
             return {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs']}
 
-        res = {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs']}
+        res = {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs', 'hpas']}
         cluster_name = cluster.name
 
         try:
@@ -166,9 +166,11 @@ class GKEConsistentScanner(BaseScanner):
                 containers = []
                 # Map container statuses
                 ready_map = {}
+                restart_count = 0
                 if p.status.container_statuses:
                     for cs in p.status.container_statuses:
                         ready_map[cs.name] = cs.ready
+                        restart_count += cs.restart_count
                 
                 for c in p.spec.containers:
                     containers.append(GKEContainer(
@@ -186,26 +188,60 @@ class GKEConsistentScanner(BaseScanner):
                     pod_ip=p.status.pod_ip,
                     host_ip=p.status.host_ip,
                     node_name=p.spec.node_name,
+                    restart_count=restart_count,
+                    qos_class=p.status.qos_class,
                     labels=p.metadata.labels or {},
                     containers=containers,
                     creation_timestamp=p.metadata.creation_timestamp
                 ))
 
             # Deployments
-            deps = apps_v1.list_deployment_for_all_namespaces(timeout_seconds=10)
-            for d in deps.items:
-                res['deployments'].append(GKEDeployment(
-                    name=d.metadata.name,
-                    namespace=d.metadata.namespace,
-                    cluster_name=cluster_name,
-                    project_id=project_id,
-                    replicas=d.spec.replicas or 0,
-                    available_replicas=d.status.available_replicas or 0,
-                    updated_replicas=d.status.updated_replicas or 0,
-                    labels=d.metadata.labels or {},
-                    selector=d.spec.selector.match_labels or {},
-                    creation_timestamp=d.metadata.creation_timestamp
-                ))
+            try:
+                deps = apps_v1.list_deployment_for_all_namespaces(timeout_seconds=10)
+                for d in deps.items:
+                    conditions = []
+                    if d.status.conditions:
+                        for cond in d.status.conditions:
+                            conditions.append({"type": cond.type, "status": cond.status, "reason": cond.reason})
+
+                    res['deployments'].append(GKEDeployment(
+                        name=d.metadata.name,
+                        namespace=d.metadata.namespace,
+                        cluster_name=cluster_name,
+                        project_id=project_id,
+                        replicas=d.spec.replicas or 0,
+                        available_replicas=d.status.available_replicas or 0,
+                        updated_replicas=d.status.updated_replicas or 0,
+                        strategy=d.spec.strategy.type if d.spec.strategy else None,
+                        min_ready_seconds=d.spec.min_ready_seconds or 0,
+                        revision_history_limit=d.spec.revision_history_limit,
+                        conditions=conditions,
+                        labels=d.metadata.labels or {},
+                        selector=d.spec.selector.match_labels or {},
+                        creation_timestamp=d.metadata.creation_timestamp
+                    ))
+            except Exception as e:
+                logger.warning(f"Failed to list deployments for {cluster_name}: {e}")
+
+            # HPA
+            try:
+                autoscaling_v1 = k8s_client.AutoscalingV1Api(api_client)
+                hpas = autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(timeout_seconds=10)
+                for hpa in hpas.items:
+                    res['hpas'].append(GKEHPA(
+                        name=hpa.metadata.name,
+                        namespace=hpa.metadata.namespace,
+                        cluster_name=cluster_name,
+                        project_id=project_id,
+                        min_replicas=hpa.spec.min_replicas,
+                        max_replicas=hpa.spec.max_replicas,
+                        current_replicas=hpa.status.current_replicas or 0,
+                        desired_replicas=hpa.status.desired_replicas or 0,
+                        target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
+                        creation_timestamp=hpa.metadata.creation_timestamp
+                    ))
+            except Exception as e:
+                logger.warning(f"Failed to list HPAs for {cluster_name}: {e}")
 
             # Services
             svcs = v1.list_service_for_all_namespaces(timeout_seconds=10)

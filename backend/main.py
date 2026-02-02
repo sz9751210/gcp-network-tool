@@ -17,7 +17,8 @@ from models import (
     NetworkTopology, ScanStatusResponse,
     IPPlanRequest, IPPlanResponse, ScanHistoryItem,
     IPCheckRequest, IPCheckResponse,
-    SuffixSearchRequest, SuffixSearchResponse
+    SuffixSearchRequest, SuffixSearchResponse,
+    GKEHPA
 )
 from gcp_scanner import GCPScanner
 from cidr_analyzer import (
@@ -591,6 +592,14 @@ async def list_gke_pvcs():
     if not latest: return []
     topo = latest.get("topology", {})
     return topo.get("gke_pvcs", [])
+
+
+@app.get("/api/resources/gke-hpa")
+async def list_gke_hpa():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_hpas", [])
 
 
 @app.get("/api/resources/public-ips")

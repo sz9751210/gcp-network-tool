@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 
 const resourceCache: Record<string, CacheEntry<any>> = {};
 
-export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs') {
+export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs' | 'gke-hpa') {
     const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,6 +62,9 @@ export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-bu
                     break;
                 case 'gke-pvcs':
                     result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-pvcs`).then(res => res.json());
+                    break;
+                case 'gke-hpa':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-hpa`).then(res => res.json());
                     break;
             }
             setData(result);

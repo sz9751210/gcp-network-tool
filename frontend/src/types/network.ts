@@ -100,6 +100,8 @@ export interface GKEPod {
     pod_ip: string | null;
     host_ip: string | null;
     node_name: string | null;
+    restart_count: number;
+    qos_class: string | null;
     creation_timestamp: string | null;
     labels: Record<string, string>;
     containers: GKEContainer[];
@@ -113,8 +115,26 @@ export interface GKEDeployment {
     replicas: number;
     available_replicas: number;
     updated_replicas: number;
+    strategy?: string;
+    min_ready_seconds: number;
+    revision_history_limit?: number;
+    conditions: Array<{ type: string, status: string, reason?: string }>;
     labels: Record<string, string>;
     selector: Record<string, string>;
+    creation_timestamp: string | null;
+}
+
+export interface GKEHPA {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    min_replicas: number | null;
+    max_replicas: number;
+    current_replicas: number;
+    desired_replicas: number;
+    target_cpu_utilization_percentage: number | null;
+    metrics: string[];
     creation_timestamp: string | null;
 }
 

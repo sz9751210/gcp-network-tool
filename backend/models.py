@@ -201,6 +201,8 @@ class GKEPod(BaseModel):
     pod_ip: Optional[str] = None
     host_ip: Optional[str] = None
     node_name: Optional[str] = None
+    restart_count: int = 0
+    qos_class: Optional[str] = None
     creation_timestamp: Optional[datetime] = None
     labels: Dict[str, str] = Field(default_factory=dict)
     containers: List[GKEContainer] = Field(default_factory=list)
@@ -214,8 +216,26 @@ class GKEDeployment(BaseModel):
     replicas: int
     available_replicas: int
     updated_replicas: int
+    strategy: Optional[str] = None
+    min_ready_seconds: int = 0
+    revision_history_limit: Optional[int] = None
+    conditions: List[Dict[str, str]] = Field(default_factory=list) # e.g. [{"type": "Available", "status": "True", "reason": "..."}]
     labels: Dict[str, str] = Field(default_factory=dict)
     selector: Dict[str, str] = Field(default_factory=dict)
+    creation_timestamp: Optional[datetime] = None
+
+class GKEHPA(BaseModel):
+    """Represents a HorizontalPodAutoscaler."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    min_replicas: Optional[int] = None
+    max_replicas: int
+    current_replicas: int
+    desired_replicas: int
+    target_cpu_utilization_percentage: Optional[int] = None
+    metrics: List[str] = Field(default_factory=list) # Simplified summaries
     creation_timestamp: Optional[datetime] = None
 
 class GKEService(BaseModel):
