@@ -38,23 +38,48 @@ function GKEWorkloadsContent() {
     const [podPage, setPodPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Filtering
+    // Filtering State
+    const [selectedCluster, setSelectedCluster] = useState('all');
+    const [selectedNamespace, setSelectedNamespace] = useState('all');
+
+    // Derived Lists
+    const uniqueClusters = useMemo(() => {
+        const set = new Set([...deployments, ...pods].map(r => r.cluster_name));
+        return Array.from(set).sort();
+    }, [deployments, pods]);
+
+    const uniqueNamespaces = useMemo(() => {
+        const set = new Set([...deployments, ...pods].map(r => r.namespace));
+        return Array.from(set).sort();
+    }, [deployments, pods]);
+
+    // Filtering Logic
     const filteredDeployments = useMemo(() => {
-        return deployments.filter(dep =>
-            dep.name.toLowerCase().includes(search.toLowerCase()) ||
-            dep.namespace.toLowerCase().includes(search.toLowerCase()) ||
-            dep.cluster_name.toLowerCase().includes(search.toLowerCase())
-        );
-    }, [deployments, search]);
+        return deployments.filter(dep => {
+            const matchesSearch = dep.name.toLowerCase().includes(search.toLowerCase()) ||
+                dep.namespace.toLowerCase().includes(search.toLowerCase()) ||
+                dep.cluster_name.toLowerCase().includes(search.toLowerCase());
+
+            const matchesCluster = selectedCluster === 'all' || dep.cluster_name === selectedCluster;
+            const matchesNamespace = selectedNamespace === 'all' || dep.namespace === selectedNamespace;
+
+            return matchesSearch && matchesCluster && matchesNamespace;
+        });
+    }, [deployments, search, selectedCluster, selectedNamespace]);
 
     const filteredPods = useMemo(() => {
-        return pods.filter(pod =>
-            pod.name.toLowerCase().includes(search.toLowerCase()) ||
-            pod.namespace.toLowerCase().includes(search.toLowerCase()) ||
-            pod.cluster_name.toLowerCase().includes(search.toLowerCase()) ||
-            (pod.pod_ip || '').includes(search)
-        );
-    }, [pods, search]);
+        return pods.filter(pod => {
+            const matchesSearch = pod.name.toLowerCase().includes(search.toLowerCase()) ||
+                pod.namespace.toLowerCase().includes(search.toLowerCase()) ||
+                pod.cluster_name.toLowerCase().includes(search.toLowerCase()) ||
+                (pod.pod_ip || '').includes(search);
+
+            const matchesCluster = selectedCluster === 'all' || pod.cluster_name === selectedCluster;
+            const matchesNamespace = selectedNamespace === 'all' || pod.namespace === selectedNamespace;
+
+            return matchesSearch && matchesCluster && matchesNamespace;
+        });
+    }, [pods, search, selectedCluster, selectedNamespace]);
 
     const paginatedDeployments = useMemo(() => {
         const start = (depPage - 1) * itemsPerPage;
@@ -143,6 +168,29 @@ function GKEWorkloadsContent() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <select
+                            value={selectedCluster}
+                            onChange={(e) => setSelectedCluster(e.target.value)}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer text-sm font-medium min-w-[160px]"
+                        >
+                            <option value="all">All Clusters</option>
+                            {uniqueClusters.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={selectedNamespace}
+                            onChange={(e) => setSelectedNamespace(e.target.value)}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer text-sm font-medium min-w-[160px]"
+                        >
+                            <option value="all">All Namespaces</option>
+                            {uniqueNamespaces.map(ns => (
+                                <option key={ns} value={ns}>{ns}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
