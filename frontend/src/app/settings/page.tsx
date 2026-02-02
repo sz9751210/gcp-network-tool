@@ -161,8 +161,8 @@ export default function SettingsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {scanHistory.map((scan) => (
-                                        <tr key={scan.scanId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    {scanHistory.map((scan, idx) => (
+                                        <tr key={`${scan.scanId}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-400">
                                                 {new Date(scan.timestamp).toLocaleString()}
                                                 {scan.status === 'failed' && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-bold">FAILED</span>}
@@ -505,8 +505,8 @@ export default function SettingsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {topology.projects.map((p) => (
-                                    <tr key={p.project_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                {topology.projects.map((p, idx) => (
+                                    <tr key={`${p.project_id}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                         <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{p.project_name}</td>
                                         <td className="p-4 font-mono text-sm text-slate-600 dark:text-slate-400">{p.project_id}</td>
                                         <td className="p-4">

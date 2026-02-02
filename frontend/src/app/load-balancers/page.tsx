@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
@@ -23,13 +24,14 @@ interface LoadBalancer {
     details?: LoadBalancerDetails;
 }
 
-export default function LoadBalancersPage() {
+function LoadBalancersContent() {
     const { topology, metadata, refreshData } = useScan();
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
 
     // Filters
-    const [filterText, setFilterText] = useState('');
+    const [filterText, setFilterText] = useState(searchParams.get('q') || '');
     const [projectFilter, setProjectFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [scopeFilter, setScopeFilter] = useState('all');
@@ -48,6 +50,12 @@ export default function LoadBalancersPage() {
         };
         load();
     }, [refreshData]);
+
+    // Sync filter with URL params
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (q) setFilterText(q);
+    }, [searchParams]);
 
     const loadBalancers = useMemo(() => {
         if (!topology) return [];
@@ -502,5 +510,13 @@ export default function LoadBalancersPage() {
                 )}
             </SlideOver>
         </div>
+    );
+}
+
+export default function LoadBalancersPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+            <LoadBalancersContent />
+        </Suspense>
     );
 }

@@ -21,6 +21,11 @@ function CloudArmorContent() {
     const [testInput, setTestInput] = useState('');
     const [projectFilter, setProjectFilter] = useState('all');
 
+    // Sync filter with URL params
+    useEffect(() => {
+        setFilterText(searchParams.get('q') || '');
+    }, [searchParams]);
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);

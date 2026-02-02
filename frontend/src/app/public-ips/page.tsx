@@ -28,6 +28,11 @@ function PublicIPsContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // Sync filter with URL params
+    useEffect(() => {
+        setFilterText(searchParams.get('q') || '');
+    }, [searchParams]);
+
     // Filter options with counts
     const projectOptions = useMemo(() => {
         const counts = new Map<string, number>();
