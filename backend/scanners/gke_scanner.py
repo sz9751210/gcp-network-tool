@@ -122,6 +122,11 @@ class GKEConsistentScanner(BaseScanner):
             return None
             
         try:
+            # Lazy load credentials if missing
+            if not self.credentials:
+                import google.auth
+                self.credentials, _ = google.auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
+            
             # Refresh GCP credentials
             from google.auth.transport.requests import Request
             self.credentials.refresh(Request())
