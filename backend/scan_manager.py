@@ -73,10 +73,15 @@ class ScanManager:
             self.scans_cache[scan_id] = data
             
             # Update metadata
+            # Prepare timestamp
+            timestamp = data.get("topology", {}).get("scan_timestamp") if "topology" in data else data.get("timestamp")
+            if isinstance(timestamp, datetime):
+                timestamp = timestamp.isoformat()
+
             metadata = {
                 "scan_id": scan_id,
                 "status": data.get("status"),
-                "timestamp": data.get("topology", {}).get("scan_timestamp") if "topology" in data else data.get("timestamp"),
+                "timestamp": timestamp,
                 "source_type": data.get("topology", {}).get("source_type") if "topology" in data else "unknown",
                 "source_id": data.get("topology", {}).get("source_id") if "topology" in data else "unknown",
                 "total_projects": data.get("topology", {}).get("total_projects", 0) if "topology" in data else data.get("total_projects", 0),

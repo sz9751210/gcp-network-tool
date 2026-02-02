@@ -7,3 +7,4 @@ python-dotenv>=1.0.0
 python-multipart>=0.0.9
 google-cloud-container>=2.36.0
 google-cloud-storage>=2.14.0
+kubernetes>=29.0.0

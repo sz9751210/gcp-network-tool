@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 
 const resourceCache: Record<string, CacheEntry<any>> = {};
 
-export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips') {
+export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs') {
     const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,6 +41,27 @@ export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-bu
                     break;
                 case 'public-ips':
                     result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/public-ips`).then(res => res.json());
+                    break;
+                case 'gke-pods':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-pods`).then(res => res.json());
+                    break;
+                case 'gke-deployments':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-deployments`).then(res => res.json());
+                    break;
+                case 'gke-services':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-services`).then(res => res.json());
+                    break;
+                case 'gke-ingress':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-ingress`).then(res => res.json());
+                    break;
+                case 'gke-configmaps':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-configmaps`).then(res => res.json());
+                    break;
+                case 'gke-secrets':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-secrets`).then(res => res.json());
+                    break;
+                case 'gke-pvcs':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-pvcs`).then(res => res.json());
                     break;
             }
             setData(result);

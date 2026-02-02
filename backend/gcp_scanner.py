@@ -10,7 +10,9 @@ from google.cloud import compute_v1
 
 from models import (
     Project, NetworkTopology, PublicIP, UsedInternalIP, 
-    FirewallRule, CloudArmorPolicy, BackendService
+    FirewallRule, CloudArmorPolicy, BackendService,
+    GKEPod, GKEDeployment, GKEService, GKEIngress,
+    GKEConfigMap, GKESecret, GKEPVC, GKECluster
 )
 from scanners.base import BaseScanner
 from scanners.project_scanner import ProjectScanner
@@ -83,6 +85,13 @@ class GCPScanner:
         all_instances: List[Any] = []
         all_gke_clusters: List[Any] = []
         all_storage_buckets: List[Any] = []
+        all_gke_pods: List[Any] = []
+        all_gke_deployments: List[Any] = []
+        all_gke_services: List[Any] = []
+        all_gke_ingress: List[Any] = []
+        all_gke_configmaps: List[Any] = []
+        all_gke_secrets: List[Any] = []
+        all_gke_pvcs: List[Any] = []
         
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_pid = {
@@ -104,6 +113,13 @@ class GCPScanner:
                         all_instances.extend(result['instances'])
                         all_gke_clusters.extend(result['gke_clusters'])
                         all_storage_buckets.extend(result['storage_buckets'])
+                        all_gke_pods.extend(result['gke_pods'])
+                        all_gke_deployments.extend(result['gke_deployments'])
+                        all_gke_services.extend(result.get('gke_services', []))
+                        all_gke_ingress.extend(result.get('gke_ingress', []))
+                        all_gke_configmaps.extend(result.get('gke_configmaps', []))
+                        all_gke_secrets.extend(result.get('gke_secrets', []))
+                        all_gke_pvcs.extend(result.get('gke_pvcs', []))
                 except Exception as e:
                     logger.error(f"Project {pid} scan failed unexpectedly: {e}")
                     
@@ -127,7 +143,14 @@ class GCPScanner:
             backend_services=all_backend_services,
             instances=all_instances,
             gke_clusters=all_gke_clusters,
-            storage_buckets=all_storage_buckets
+            storage_buckets=all_storage_buckets,
+            gke_pods=all_gke_pods,
+            gke_deployments=all_gke_deployments,
+            gke_services=all_gke_services,
+            gke_ingress=all_gke_ingress,
+            gke_configmaps=all_gke_configmaps,
+            gke_secrets=all_gke_secrets,
+            gke_pvcs=all_gke_pvcs
         )
         
         logger.info(f"Scan finished in {time.time() - start_time:.2f}s")
@@ -161,7 +184,7 @@ class GCPScanner:
                 f_firewalls = executor.submit(self.firewall_scanner.scan_firewalls, project_id)
                 f_policies = executor.submit(self.firewall_scanner.scan_cloud_armor, project_id)
                 f_instances = executor.submit(self.instance_scanner.scan_instances, project_id)
-                f_gke = executor.submit(self.gke_scanner.scan_clusters, project_id)
+                f_gke = executor.submit(self.gke_scanner.scan_all, project_id)
                 f_storage = executor.submit(self.storage_scanner.scan_buckets, project_id)
                 f_lb_context = executor.submit(self.lb_scanner.prefetch_resources, project_id)
 
@@ -183,7 +206,7 @@ class GCPScanner:
                 firewalls = f_firewalls.result()
                 policies = f_policies.result()
                 instances = f_instances.result()
-                gke_clusters = f_gke.result()
+                gke_data = f_gke.result()
                 storage_buckets = f_storage.result()
                 public_ips = f_public_ips.result()
                 internal_ips = f_internal_ips.result()
@@ -195,7 +218,14 @@ class GCPScanner:
                 project_number=details['project_number'],
                 vpc_networks=vpcs,
                 instances=instances,
-                gke_clusters=gke_clusters,
+                gke_clusters=gke_data.get('clusters', []),
+                gke_pods=gke_data.get('pods', []),
+                gke_deployments=gke_data.get('deployments', []),
+                gke_services=gke_data.get('services', []),
+                gke_ingress=gke_data.get('ingress', []),
+                gke_configmaps=gke_data.get('configmaps', []),
+                gke_secrets=gke_data.get('secrets', []),
+                gke_pvcs=gke_data.get('pvcs', []),
                 storage_buckets=storage_buckets,
                 scan_status="success"
             )
@@ -217,7 +247,15 @@ class GCPScanner:
                 'public_ips': public_ips, 'internal_ips': internal_ips,
                 'firewalls': firewalls, 'policies': policies,
                 'backend_services': backend_services, 'instances': instances,
-                'gke_clusters': gke_clusters, 'storage_buckets': storage_buckets
+                'gke_clusters': gke_data.get('clusters', []),
+                'gke_pods': gke_data.get('pods', []),
+                'gke_deployments': gke_data.get('deployments', []),
+                'gke_services': gke_data.get('services', []),
+                'gke_ingress': gke_data.get('ingress', []),
+                'gke_configmaps': gke_data.get('configmaps', []),
+                'gke_secrets': gke_data.get('secrets', []),
+                'gke_pvcs': gke_data.get('pvcs', []),
+                'storage_buckets': storage_buckets
             }
 
         except Exception as e:

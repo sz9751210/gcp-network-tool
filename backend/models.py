@@ -186,6 +186,85 @@ class GKECluster(BaseModel):
     node_count: int = 0
     labels: Dict[str, str] = Field(default_factory=dict)
 
+class GKEPod(BaseModel):
+    """Represents a Pod in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    status: str
+    pod_ip: Optional[str] = None
+    host_ip: Optional[str] = None
+    node_name: Optional[str] = None
+    creation_timestamp: Optional[datetime] = None
+    labels: Dict[str, str] = Field(default_factory=dict)
+    containers: List[str] = Field(default_factory=list)
+
+class GKEDeployment(BaseModel):
+    """Represents a Deployment in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    replicas: int
+    available_replicas: int
+    updated_replicas: int
+    labels: Dict[str, str] = Field(default_factory=dict)
+    creation_timestamp: Optional[datetime] = None
+
+class GKEService(BaseModel):
+    """Represents a Service in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    type: str # ClusterIP, NodePort, LoadBalancer
+    cluster_ip: Optional[str] = None
+    external_ip: Optional[str] = None
+    ports: List[dict] = Field(default_factory=list) # [{"port": 80, "targetPort": 8080}]
+    selector: Dict[str, str] = Field(default_factory=dict)
+    creation_timestamp: Optional[datetime] = None
+
+class GKEIngress(BaseModel):
+    """Represents an Ingress in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    hosts: List[str] = Field(default_factory=list)
+    address: Optional[str] = None # External IP
+    rules: List[dict] = Field(default_factory=list)
+    creation_timestamp: Optional[datetime] = None
+
+class GKEConfigMap(BaseModel):
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    data_keys: List[str] = Field(default_factory=list)
+    creation_timestamp: Optional[datetime] = None
+
+class GKESecret(BaseModel):
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    type: str
+    data_keys: List[str] = Field(default_factory=list)
+    creation_timestamp: Optional[datetime] = None
+
+class GKEPVC(BaseModel):
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    status: str
+    volume_name: Optional[str] = None
+    capacity: Optional[str] = None
+    access_modes: List[str] = Field(default_factory=list)
+    storage_class: Optional[str] = None
+    creation_timestamp: Optional[datetime] = None
+
 
 class GCSBucket(BaseModel):
     """Represents a Cloud Storage Bucket."""
@@ -217,6 +296,13 @@ class Project(BaseModel):
     instances: list[GCEInstance] = Field(default_factory=list)
     gke_clusters: list[GKECluster] = Field(default_factory=list)
     storage_buckets: list[GCSBucket] = Field(default_factory=list)
+    gke_pods: list[GKEPod] = Field(default_factory=list)
+    gke_deployments: list[GKEDeployment] = Field(default_factory=list)
+    gke_services: list[GKEService] = Field(default_factory=list)
+    gke_ingress: list[GKEIngress] = Field(default_factory=list)
+    gke_configmaps: list[GKEConfigMap] = Field(default_factory=list)
+    gke_secrets: list[GKESecret] = Field(default_factory=list)
+    gke_pvcs: list[GKEPVC] = Field(default_factory=list)
 
 
 class UsedInternalIP(BaseModel):
@@ -254,6 +340,13 @@ class NetworkTopology(BaseModel):
     instances: list[GCEInstance] = Field(default_factory=list)
     gke_clusters: list[GKECluster] = Field(default_factory=list)
     storage_buckets: list[GCSBucket] = Field(default_factory=list)
+    gke_pods: list[GKEPod] = Field(default_factory=list)
+    gke_deployments: list[GKEDeployment] = Field(default_factory=list)
+    gke_services: list[GKEService] = Field(default_factory=list)
+    gke_ingress: list[GKEIngress] = Field(default_factory=list)
+    gke_configmaps: list[GKEConfigMap] = Field(default_factory=list)
+    gke_secrets: list[GKESecret] = Field(default_factory=list)
+    gke_pvcs: list[GKEPVC] = Field(default_factory=list)
 
 
 # Request/Response schemas

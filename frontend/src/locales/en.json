@@ -52,6 +52,41 @@
         "gkePvcs": "PVCs",
         "storage": "Cloud Storage"
     },
+    "gke": {
+        "workloads": {
+            "title": "GKE Workloads",
+            "subtitle": "Monitor and manage Kubernetes deployments and pods",
+            "podsTab": "Pods",
+            "deploymentsTab": "Deployments",
+            "noPods": "No pods found",
+            "noDeployments": "No deployments found"
+        },
+        "services": {
+            "title": "GKE Services",
+            "subtitle": "Kubernetes services and endpoints",
+            "noServices": "No services found"
+        },
+        "ingress": {
+            "title": "GKE Ingress",
+            "subtitle": "External access and routing rules",
+            "noIngress": "No ingress resources found"
+        },
+        "configmaps": {
+            "title": "GKE ConfigMaps",
+            "subtitle": "Configuration data for workloads",
+            "noConfigMaps": "No configmaps found"
+        },
+        "secrets": {
+            "title": "GKE Secrets",
+            "subtitle": "Sensitive configuration data",
+            "noSecrets": "No secrets found"
+        },
+        "pvcs": {
+            "title": "GKE PVCs",
+            "subtitle": "Persistent Volume Claims",
+            "noPvcs": "No PVCs found"
+        }
+    },
     "dashboard": {
         "title": "Network Topology Overview",
         "subtitle": "Visualize and analyze your GCP network infrastructure",
@@ -338,10 +373,6 @@
     "gce": {
         "title": "GCE Instances Overview",
         "subtitle": "Monitor and manage VM instances across all zones"
-    },
-    "gke": {
-        "title": "GKE Clusters Overview",
-        "subtitle": "Centralized view of Kubernetes resource distribution"
     },
     "storage": {
         "title": "Cloud Storage Buckets",

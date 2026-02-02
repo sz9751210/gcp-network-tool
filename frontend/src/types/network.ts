@@ -85,6 +85,88 @@ export interface GKECluster {
     labels: Record<string, string>;
 }
 
+export interface GKEPod {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    status: string;
+    pod_ip: string | null;
+    host_ip: string | null;
+    node_name: string | null;
+    creation_timestamp: string | null;
+    labels: Record<string, string>;
+    containers: string[];
+}
+
+export interface GKEDeployment {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    replicas: number;
+    available_replicas: number;
+    updated_replicas: number;
+    labels: Record<string, string>;
+    creation_timestamp: string | null;
+}
+
+export interface GKEService {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    type: string;
+    cluster_ip: string | null;
+    external_ip: string | null;
+    ports: any[];
+    selector: Record<string, string>;
+    creation_timestamp: string | null;
+}
+
+export interface GKEIngress {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    hosts: string[];
+    address: string | null;
+    rules: any[];
+    creation_timestamp: string | null;
+}
+
+export interface GKEConfigMap {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    data_keys: string[];
+    creation_timestamp: string | null;
+}
+
+export interface GKESecret {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    type: string;
+    data_keys: string[];
+    creation_timestamp: string | null;
+}
+
+export interface GKEPVC {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    status: string;
+    volume_name: string | null;
+    capacity: string | null;
+    access_modes: string[];
+    storage_class: string | null;
+    creation_timestamp: string | null;
+}
+
 export interface GCSBucket {
     name: string;
     project_id: string;
@@ -108,6 +190,13 @@ export interface Project {
     instances?: GCEInstance[];
     gke_clusters?: GKECluster[];
     storage_buckets?: GCSBucket[];
+    gke_pods?: GKEPod[];
+    gke_deployments?: GKEDeployment[];
+    gke_services?: GKEService[];
+    gke_ingress?: GKEIngress[];
+    gke_configmaps?: GKEConfigMap[];
+    gke_secrets?: GKESecret[];
+    gke_pvcs?: GKEPVC[];
 }
 
 export interface PublicIP {
@@ -241,6 +330,13 @@ export interface NetworkTopology {
     instances?: GCEInstance[];
     gke_clusters?: GKECluster[];
     storage_buckets?: GCSBucket[];
+    gke_pods?: GKEPod[];
+    gke_deployments?: GKEDeployment[];
+    gke_services?: GKEService[];
+    gke_ingress?: GKEIngress[];
+    gke_configmaps?: GKEConfigMap[];
+    gke_secrets?: GKESecret[];
+    gke_pvcs?: GKEPVC[];
 }
 
 export interface ScanRequest {

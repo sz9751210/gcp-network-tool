@@ -122,6 +122,9 @@ async def get_scan_summary(scan_id: str):
             "internal_ips": len(topo.get("used_internal_ips", [])),
             "instances": len(topo.get("instances", [])),
             "gke_clusters": len(topo.get("gke_clusters", [])),
+            "gke_pods": len(topo.get("gke_pods", [])),
+            "gke_deployments": len(topo.get("gke_deployments", [])),
+            "gke_services": len(topo.get("gke_services", [])),
             "storage_buckets": len(topo.get("storage_buckets", [])),
             "firewall_rules": len(topo.get("firewall_rules", [])),
         }
@@ -539,6 +542,55 @@ async def list_vpcs():
             vpc["project_name"] = project.get("project_name")
             all_vpcs.append(vpc)
     return all_vpcs
+
+@app.get("/api/resources/gke-pods")
+async def list_gke_pods():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_pods", [])
+
+@app.get("/api/resources/gke-deployments")
+async def list_gke_deployments():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_deployments", [])
+
+@app.get("/api/resources/gke-services")
+async def list_gke_services():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_services", [])
+
+@app.get("/api/resources/gke-ingress")
+async def list_gke_ingress():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_ingress", [])
+
+@app.get("/api/resources/gke-configmaps")
+async def list_gke_configmaps():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_configmaps", [])
+
+@app.get("/api/resources/gke-secrets")
+async def list_gke_secrets():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_secrets", [])
+
+@app.get("/api/resources/gke-pvcs")
+async def list_gke_pvcs():
+    latest = scan_manager.get_latest_completed_scan()
+    if not latest: return []
+    topo = latest.get("topology", {})
+    return topo.get("gke_pvcs", [])
 
 
 @app.get("/api/resources/public-ips")
