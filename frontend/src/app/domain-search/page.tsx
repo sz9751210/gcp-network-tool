@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PublicIP, UsedInternalIP, LoadBalancerDetails, BackendService } from '@/types/network';
+import DomainTopology from '@/components/DomainTopology';
 
 interface ResolveResponse {
     domain: string;
@@ -318,6 +319,19 @@ export default function DomainSearchPage() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+                    {/* Topology Graph */}
+                    {results && results.length > 0 && (
+                        <div className="mt-8">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{t('domainSearch.topology')}</h2>
+                            <div className="h-[500px] bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <DomainTopology
+                                    domain={domain}
+                                    resolvedIps={results.map(r => r.ip)}
+                                    topology={topology}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
