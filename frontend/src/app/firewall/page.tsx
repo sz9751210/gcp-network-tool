@@ -235,7 +235,7 @@ export default function FirewallPage() {
                                     onChange={(e) => setActionFilter(e.target.value)}
                                     className="input-select w-32"
                                 >
-                                    <option value="all">Action (All)</option>
+                                    <option value="all">Action ({t('common.all')})</option>
                                     {actionOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label} ({opt.count})</option>
                                     ))}
@@ -246,7 +246,7 @@ export default function FirewallPage() {
                                     onChange={(e) => setProjectFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Projects</option>
+                                    <option value="all">{t('common.allProjects')}</option>
                                     {projectOptions.map(p => (
                                         <option key={p.value} value={p.value}>{p.value} ({p.count})</option>
                                     ))}
@@ -257,7 +257,7 @@ export default function FirewallPage() {
                                     onChange={(e) => setVpcFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All VPCs</option>
+                                    <option value="all">{t('firewall.allVpcs')}</option>
                                     {vpcOptions.map(v => (
                                         <option key={v.value} value={v.value}>{v.value} ({v.count})</option>
                                     ))}
@@ -268,7 +268,7 @@ export default function FirewallPage() {
                                     onChange={(e) => setProtocolFilter(e.target.value)}
                                     className="input-select w-32"
                                 >
-                                    <option value="all">All Proto</option>
+                                    <option value="all">{t('firewall.allProto')}</option>
                                     {protocolOptions.map(p => (
                                         <option key={p.value} value={p.value}>{p.value.toUpperCase()} ({p.count})</option>
                                     ))}
@@ -299,7 +299,7 @@ export default function FirewallPage() {
                                         {t('publicIps.project')} {sortBy === 'project_id' && (sortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Details
+                                        {t('common.details')}
                                     </th>
                                 </tr>
                             </thead>
@@ -420,13 +420,13 @@ export default function FirewallPage() {
                             {/* Key Properties */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600">
-                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Direction</span>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">{t('firewall.direction')}</span>
                                     <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${selectedRule.direction === 'INGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'}`}>
                                         {selectedRule.direction}
                                     </span>
                                 </div>
                                 <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600">
-                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Priority</span>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">{t('firewall.priority')}</span>
                                     <span className="font-mono text-lg font-semibold text-slate-700 dark:text-slate-200">{selectedRule.priority}</span>
                                 </div>
                             </div>
@@ -436,7 +436,7 @@ export default function FirewallPage() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="M22 12h-4" /><path d="M6 12H2" /><path d="m12 6 2-2 4 4" /><path d="m10 18-2 2-4-4" /></svg>
-                                        Source Ranges
+                                        {t('firewall.sourceRanges')}
                                     </h4>
                                     <div className="bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600 h-40 overflow-y-auto p-2">
                                         {selectedRule.source_ranges.length > 0 ? (
@@ -451,7 +451,7 @@ export default function FirewallPage() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="m12 16-4-4 4-4" /><path d="m16 12-4 4-4-4" /></svg>
-                                        Destination Ranges
+                                        {t('firewall.destRanges')}
                                     </h4>
                                     <div className="bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600 h-40 overflow-y-auto p-2">
                                         {selectedRule.destination_ranges.length > 0 ? (
@@ -467,7 +467,7 @@ export default function FirewallPage() {
 
                             {/* Protocols & Ports */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Protocols & Ports</h4>
+                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">{t('firewall.protocolsAndPorts')}</h4>
                                 <div className="space-y-2">
                                     {[...selectedRule.allowed, ...selectedRule.denied].map((p, i) => (
                                         <div key={i} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
@@ -484,7 +484,7 @@ export default function FirewallPage() {
                             {/* Tags */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Target Tags</h4>
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">{t('firewall.targetTags')}</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedRule.target_tags && selectedRule.target_tags.length > 0 ? (
                                             selectedRule.target_tags.map(tag => (
@@ -498,7 +498,7 @@ export default function FirewallPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Target Service Accounts</h4>
+                                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">{t('firewall.targetServiceAccounts')}</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedRule.target_service_accounts && selectedRule.target_service_accounts.length > 0 ? (
                                             selectedRule.target_service_accounts.map(sa => (
@@ -518,9 +518,9 @@ export default function FirewallPage() {
                                 <div className="mt-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg flex items-start gap-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 dark:text-rose-400 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                                     <div>
-                                        <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400">Security Risk Detected</h4>
+                                        <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400">{t('firewall.riskTitle')}</h4>
                                         <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
-                                            This rule allows ingress traffic from any source (0.0.0.0/0). Ensure this is intended (e.g., for public web servers).
+                                            {t('firewall.riskDesc')}
                                         </p>
                                     </div>
                                 </div>
@@ -532,7 +532,7 @@ export default function FirewallPage() {
                                 onClick={() => setSelectedRule(null)}
                                 className="btn-secondary"
                             >
-                                Close
+                                {t('common.close')}
                             </button>
                         </div>
                     </div>

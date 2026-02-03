@@ -192,7 +192,7 @@ function PublicIPsContent() {
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="input-select w-36"
                                 >
-                                    <option value="all">{t('publicIps.status')} (All)</option>
+                                    <option value="all">{t('publicIps.status')} ({t('common.all')})</option>
                                     {statusOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.value} ({opt.count})</option>
                                     ))}
@@ -203,7 +203,7 @@ function PublicIPsContent() {
                                     onChange={(e) => setTypeFilter(e.target.value)}
                                     className="input-select w-36"
                                 >
-                                    <option value="all">Type (All)</option>
+                                    <option value="all">{t('common.type')} ({t('common.all')})</option>
                                     {typeOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.value} ({opt.count})</option>
                                     ))}
@@ -214,7 +214,7 @@ function PublicIPsContent() {
                                     onChange={(e) => setProjectFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Projects</option>
+                                    <option value="all">{t('common.allProjects')}</option>
                                     {projectOptions.map(p => (
                                         <option key={p.value} value={p.value}>{p.value} ({p.count})</option>
                                     ))}
@@ -225,7 +225,7 @@ function PublicIPsContent() {
                                     onChange={(e) => setRegionFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Regions</option>
+                                    <option value="all">{t('common.allRegions')}</option>
                                     {regionOptions.map(r => (
                                         <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
                                     ))}
@@ -315,8 +315,9 @@ function PublicIPsContent() {
 }
 
 export default function PublicIPsPage() {
+    const { t } = useLanguage();
     return (
-        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+        <Suspense fallback={<div className="p-8 text-center">{t('common.loading')}...</div>}>
             <PublicIPsContent />
         </Suspense>
     );

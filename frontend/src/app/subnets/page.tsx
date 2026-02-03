@@ -210,7 +210,7 @@ function SubnetsContent() {
                                     onChange={(e) => setProjectFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Projects</option>
+                                    <option value="all">{t('common.allProjects')}</option>
                                     {projectOptions.map(p => (
                                         <option key={p.value} value={p.value}>{p.value} ({p.count})</option>
                                     ))}
@@ -221,7 +221,7 @@ function SubnetsContent() {
                                     onChange={(e) => setVpcFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All VPCs</option>
+                                    <option value="all">{t('firewall.allVpcs')}</option>
                                     {vpcOptions.map(v => (
                                         <option key={v.value} value={v.value}>{v.value} ({v.count})</option>
                                     ))}
@@ -232,7 +232,7 @@ function SubnetsContent() {
                                     onChange={(e) => setRegionFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Regions</option>
+                                    <option value="all">{t('common.allRegions')}</option>
                                     {regionOptions.map(r => (
                                         <option key={r.value} value={r.value}>{r.value} ({r.count})</option>
                                     ))}
@@ -248,7 +248,7 @@ function SubnetsContent() {
                                 <tr>
                                     {[
                                         { key: 'projectName', label: t('publicIps.project') },
-                                        { key: 'vpcName', label: 'VPC' },
+                                        { key: 'vpcName', label: t('common.vpc') },
                                         { key: 'subnetName', label: t('subnets.subnetName') },
                                         { key: 'region', label: t('publicIps.region') },
                                         { key: 'ipCidrRange', label: t('subnets.cidrRange') },
@@ -301,11 +301,12 @@ function SubnetsContent() {
 }
 
 export default function SubnetsPage() {
+    const { t } = useLanguage();
     return (
         <Suspense fallback={
             <div className="p-8 max-w-[1800px] mx-auto text-center">
                 <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">Loading subnets...</p>
+                <p className="text-slate-600 dark:text-slate-400">{t('common.loading')}...</p>
             </div>
         }>
             <SubnetsContent />

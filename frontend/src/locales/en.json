@@ -59,7 +59,36 @@
             "podsTab": "Pods",
             "deploymentsTab": "Deployments",
             "noPods": "No pods found",
-            "noDeployments": "No deployments found"
+            "noDeployments": "No deployments found",
+            "errorLoading": "Error loading workloads",
+            "allClusters": "All Clusters",
+            "allNamespaces": "All Namespaces",
+            "podDetails": "Pod Details",
+            "deploymentDetails": "Deployment Details",
+            "podIp": "Pod IP",
+            "hostIp": "Host IP",
+            "restarts": "Restarts",
+            "qosClass": "QoS Class",
+            "clusterInfo": "Cluster Info",
+            "labels": "Labels",
+            "containers": "Containers",
+            "replicaStatus": "Replica Status",
+            "strategy": "Strategy",
+            "minReadySeconds": "Min Ready Seconds",
+            "conditions": "Conditions",
+            "selector": "Selector",
+            "associatedPods": "Associated Pods",
+            "filteredFromPods": "Filtered from Pods list",
+            "ready": "Ready",
+            "notReady": "Not Ready",
+            "cluster": "Cluster",
+            "node": "Node",
+            "deployment": "Deployment",
+            "pod": "Pod",
+            "namespace": "Namespace",
+            "status": "Status",
+            "replicas": "Replicas",
+            "ipAddress": "IP Address"
         },
         "services": {
             "title": "GKE Services",
@@ -82,9 +111,18 @@
             "noSecrets": "No secrets found"
         },
         "pvcs": {
-            "title": "GKE PVCs",
-            "subtitle": "Persistent Volume Claims",
-            "noPvcs": "No PVCs found"
+            "title": "Persistent Volume Claims",
+            "subtitle": "Storage claims for your workloads",
+            "noPvcs": "No PVCs found matching your criteria",
+            "searchPlaceholder": "Search PVCs...",
+            "details": "PVC Details",
+            "capacity": "Capacity",
+            "storageClass": "Storage Class",
+            "accessModes": "Access Modes",
+            "volumeInfo": "Volume Information",
+            "volumeName": "Volume Name",
+            "location": "Location",
+            "comingSoon": "Associated Persistent Volume link Coming Soon"
         }
     },
     "dashboard": {
@@ -104,7 +142,11 @@
         "resourceByRegion": "Resources by Region",
         "totalResources": "Total Resources",
         "activeProjects": "Active Projects",
-        "connectivity": "Network Connectivity"
+        "connectivity": "Network Connectivity",
+        "overview": "Overview",
+        "riskyFirewalls": "Risky Firewall Rules",
+        "openToAll": "Open to 0.0.0.0/0",
+        "interactive": "Interactive"
     },
     "audit": {
         "title": "Security & Compliance Audit",
@@ -120,9 +162,10 @@
         "firewallRisks": "Firewall Risks",
         "sslCertificates": "SSL Certificates",
         "costOptimization": "Cost Optimization",
-        "remediation": "Remediation",
         "resource": "Resource",
         "project": "Project",
+        "severity": "Severity",
+        "remediation": "Remediation",
         "noFirewallIssues": "No high-risk firewall rules found.",
         "noSslIssues": "No SSL certificate issues found.",
         "noCostIssues": "No cost optimization opportunities found."
@@ -231,13 +274,20 @@
         "action": "Action",
         "priority": "Priority",
         "network": "Network",
-        "sourceRanges": "Source/Dest",
+        "sourceRanges": "Source Ranges",
         "destinationRanges": "Destination Ranges",
         "protocols": "Protocols",
         "ingress": "Ingress",
         "egress": "Egress",
         "allow": "Allow",
-        "deny": "Deny"
+        "deny": "Deny",
+        "allVpcs": "All VPCs",
+        "allProto": "All Protocols",
+        "targetTags": "Target Tags",
+        "targetServiceAccounts": "Target Service Accounts",
+        "protocolsAndPorts": "Protocols & Ports",
+        "riskTitle": "Security Risk Detected",
+        "riskDesc": "This rule allows ingress traffic from any source (0.0.0.0/0). Ensure this is intended."
     },
     "cloudArmor": {
         "title": "Cloud Armor Policies",

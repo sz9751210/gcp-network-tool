@@ -182,7 +182,7 @@ function LoadBalancersContent() {
                                     onChange={(e) => setTypeFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Types</option>
+                                    <option value="all">{t('loadBalancers.allTypes')}</option>
                                     {typeOptions.map(type => (
                                         <option key={type} value={type}>{type}</option>
                                     ))}
@@ -193,7 +193,7 @@ function LoadBalancersContent() {
                                     onChange={(e) => setProjectFilter(e.target.value)}
                                     className="input-select w-40"
                                 >
-                                    <option value="all">All Projects</option>
+                                    <option value="all">{t('common.allProjects')}</option>
                                     {projectOptions.map(p => (
                                         <option key={p} value={p}>{p}</option>
                                     ))}
@@ -204,7 +204,7 @@ function LoadBalancersContent() {
                                     onChange={(e) => setScopeFilter(e.target.value)}
                                     className="input-select w-32"
                                 >
-                                    <option value="all">All Scopes</option>
+                                    <option value="all">{t('loadBalancers.allScopes')}</option>
                                     {scopeOptions.map(s => (
                                         <option key={s} value={s}>{s === 'Global' ? t('loadBalancers.global') : t('loadBalancers.regional')}</option>
                                     ))}
@@ -306,26 +306,26 @@ function LoadBalancersContent() {
                         {/* Main Stats Grid */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">IP Address</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('common.ipAddress')}</div>
                                 <div className="font-mono font-semibold text-slate-800 dark:text-slate-100">{selectedLB.ip}</div>
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Type</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('common.type')}</div>
                                 <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.type}</div>
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Scope</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('loadBalancers.scope')}</div>
                                 <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.scope}</div>
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Network / Region</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t('loadBalancers.network')} / {t('common.region')}</div>
                                 <div className="font-semibold text-slate-800 dark:text-slate-100">{selectedLB.network}</div>
                             </div>
                         </div>
 
                         {/* Raw Details */}
                         <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Technical Details</h4>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4">{t('loadBalancers.technicalDetails')}</h4>
 
                             <dl className="space-y-4">
                                 <div>
@@ -337,7 +337,7 @@ function LoadBalancersContent() {
 
                                 {selectedLB.labels && Object.keys(selectedLB.labels).length > 0 && (
                                     <div>
-                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Labels</dt>
+                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('common.labels')}</dt>
                                         <dd className="mt-1">
                                             <div className="flex flex-wrap gap-2">
                                                 {Object.entries(selectedLB.labels).map(([k, v]) => (
@@ -352,7 +352,7 @@ function LoadBalancersContent() {
 
                                 {selectedLB.description && (
                                     <div>
-                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Description</dt>
+                                        <dt className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('common.description')}</dt>
                                         <dd className="mt-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 p-2 rounded whitespace-pre-wrap font-mono text-xs">
                                             {selectedLB.description}
                                         </dd>
@@ -367,15 +367,15 @@ function LoadBalancersContent() {
                                 {/* Frontend */}
                                 {selectedLB.details.frontend && (
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Frontend</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">{t('loadBalancers.frontend')}</h4>
                                         <div className="overflow-hidden bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg">
                                             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-xs">
                                                 <thead className="bg-slate-50 dark:bg-slate-800">
                                                     <tr>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Protocol</th>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">IP:Port</th>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Certificate</th>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">SSL Policy</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('common.protocol')}</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">IP:{t('common.port')}</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('loadBalancers.certificate')}</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('loadBalancers.sslPolicy')}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
@@ -438,14 +438,14 @@ function LoadBalancersContent() {
                                 {/* Routing Rules */}
                                 {selectedLB.details.routing_rules.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Routing Rules (Forwarding Rules)</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">{t('loadBalancers.routingRules')}</h4>
                                         <div className="overflow-hidden bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg">
                                             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-xs">
                                                 <thead className="bg-slate-50 dark:bg-slate-800">
                                                     <tr>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Hosts</th>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Path</th>
-                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">Backend Service</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('loadBalancers.hosts')}</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('loadBalancers.path')}</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{t('loadBalancers.backendService')}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
@@ -465,7 +465,7 @@ function LoadBalancersContent() {
                                 {/* Backends */}
                                 {selectedLB.details.backends.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Backends</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">{t('loadBalancers.backends')}</h4>
                                         <div className="space-y-3">
                                             {selectedLB.details.backends.map((backend, i) => (
                                                 <div key={i} className="bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg p-3">
@@ -475,13 +475,13 @@ function LoadBalancersContent() {
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                                         <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                                                            <span className="text-slate-500">Cloud CDN</span>
+                                                            <span className="text-slate-500">{t('loadBalancers.cloudCdn')}</span>
                                                             <span className={backend.cdn_enabled ? "text-green-600 font-medium" : "text-slate-400"}>
                                                                 {backend.cdn_enabled ? 'Enabled' : 'Disabled'}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                                                            <span className="text-slate-500">Security Policy</span>
+                                                            <span className="text-slate-500">{t('loadBalancers.securityPolicy')}</span>
                                                             <span className="text-slate-700 dark:text-slate-300">
                                                                 {backend.security_policy ? (
                                                                     <Link

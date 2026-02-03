@@ -66,7 +66,7 @@ export default function Home() {
                 <div>
                     <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold mb-1">
                         <LayoutDashboard size={20} />
-                        <span className="uppercase tracking-wider text-xs">Overview</span>
+                        <span className="uppercase tracking-wider text-xs">{t('dashboard.overview')}</span>
                     </div>
                     <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
                         {t('dashboard.title')}
@@ -112,11 +112,11 @@ export default function Home() {
                             subtitle="Managed projects"
                         />
                         <StatCard
-                            title="Risky Firewall Rules"
+                            title={t('dashboard.riskyFirewalls')}
                             value={stats?.riskyFirewalls || 0}
                             icon={ShieldAlert}
                             color="rose"
-                            subtitle="Open to 0.0.0.0/0"
+                            subtitle={t('dashboard.openToAll')}
                         />
                         <StatCard
                             title={t('dashboard.publicIps')}
@@ -145,10 +145,10 @@ export default function Home() {
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                                     <Lock size={18} className="text-indigo-500" />
-                                    {t('dashboard.connectivity') || 'Resource Map'}
+                                    {t('dashboard.connectivity')}
                                 </h3>
                                 <div className="text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded font-bold uppercase tracking-wider">
-                                    Interactive
+                                    {t('dashboard.interactive')}
                                 </div>
                             </div>
                             <div className="p-6 flex-1 bg-slate-50/30 dark:bg-slate-900/10 h-[300px] overflow-y-auto">

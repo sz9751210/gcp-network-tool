@@ -75,7 +75,7 @@ function GKEServicesContent() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Search services..."
+                            placeholder={t('gke.services.searchPlaceholder')}
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -87,12 +87,12 @@ function GKEServicesContent() {
                     <table className="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Service</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Namespace</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cluster IP</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">External IP</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cluster</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('common.service')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('common.namespace')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('common.type')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('gke.services.clusterIp')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('gke.services.externalIp')}</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('common.cluster')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -140,7 +140,7 @@ function GKEServicesContent() {
             <SlideOver
                 isOpen={!!selectedService}
                 onClose={() => setSelectedService(null)}
-                title="Service Details"
+                title={t('gke.services.details')}
             >
                 {selectedService && (
                     <div className="space-y-6">
@@ -154,24 +154,24 @@ function GKEServicesContent() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Cluster IP</div>
-                                <div className="font-mono font-bold">{selectedService.cluster_ip || 'None'}</div>
+                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.clusterIp')}</div>
+                                <div className="font-mono font-bold">{selectedService.cluster_ip || t('common.none')}</div>
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">External IP</div>
+                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.externalIp')}</div>
                                 <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
                                     {selectedService.external_ip ? (
                                         <Link href={`/public-ips?q=${selectedService.external_ip}`} className="hover:underline">
                                             {selectedService.external_ip}
                                         </Link>
-                                    ) : 'None'}
+                                    ) : t('common.none')}
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Ports</h4>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.ports')}</h4>
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
                                     {selectedService.ports.map((p, i) => (
                                         <div key={i} className="flex justify-between text-sm">
@@ -184,7 +184,7 @@ function GKEServicesContent() {
 
                             {selectedService.selector && Object.keys(selectedService.selector).length > 0 && (
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Selector</h4>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.selector')}</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {Object.entries(selectedService.selector).map(([k, v]) => (
                                             <Badge key={k} variant="secondary" pill className="text-[10px]">{k}: {v}</Badge>
@@ -194,14 +194,14 @@ function GKEServicesContent() {
                             )}
 
                             <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.metadata')}</h4>
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Cluster</span>
+                                        <span className="text-slate-500">{t('common.cluster')}</span>
                                         <span className="font-medium">{selectedService.cluster_name}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Created</span>
+                                        <span className="text-slate-500">{t('common.created')}</span>
                                         <span className="font-mono text-xs">{selectedService.creation_timestamp ? new Date(selectedService.creation_timestamp).toLocaleString() : 'N/A'}</span>
                                     </div>
                                 </div>
@@ -215,8 +215,9 @@ function GKEServicesContent() {
 }
 
 export default function GKEServicesPage() {
+    const { t } = useLanguage();
     return (
-        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading services...</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">{t('common.loading')}...</div>}>
             <GKEServicesContent />
         </Suspense>
     );

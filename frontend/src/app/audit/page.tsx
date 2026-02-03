@@ -152,10 +152,10 @@ function IssueList({ issues, emptyMsg }: { issues: SecurityIssue[], emptyMsg: st
 
                         <div className="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400 mt-3">
                             <span className="flex items-center gap-1">
-                                <span className="font-semibold">Resource:</span> {issue.resource_name}
+                                <span className="font-semibold">{t('audit.resource')}:</span> {issue.resource_name}
                             </span>
                             <span className="flex items-center gap-1">
-                                <span className="font-semibold">Project:</span> {issue.project_id}
+                                <span className="font-semibold">{t('audit.project')}:</span> {issue.project_id}
                             </span>
                         </div>
                     </div>

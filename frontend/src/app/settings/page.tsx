@@ -1,8 +1,10 @@
 'use client';
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Clock } from 'lucide-react';
 
 
 interface Credential {
@@ -28,6 +30,27 @@ export default function SettingsPage() {
     const [uploadName, setUploadName] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+
+    // Scan Timer
+    const [elapsedTime, setElapsedTime] = useState(0);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isScanning) {
+            interval = setInterval(() => {
+                setElapsedTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            setElapsedTime(0);
+        }
+        return () => clearInterval(interval);
+    }, [isScanning]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
 
 
@@ -394,33 +417,82 @@ export default function SettingsPage() {
                         </label>
                     </div>
 
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isScanning}
-                        className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isScanning ? (
-                            <div className="flex items-center justify-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>{t('settings.scanning')}</span>
+                    {/* Submit Button or Status Card */}
+                    {isScanning ? (
+                        <div className="card p-6 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 shadow-sm relative overflow-hidden animate-fade-in">
+                            {/* Background decoration */}
+                            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl animate-pulse"></div>
+                            <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl animate-pulse delay-700"></div>
+
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-100">{t('settings.scanning')}</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {scanStatus.includes('0/0')
+                                                    ? 'Initializing project discovery...'
+                                                    : 'Please wait while we explore your GCP network...'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="font-mono text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                            <Clock size={12} />
+                                            <span>
+                                                {formatTime(elapsedTime)}
+                                            </span>
+                                        </div>
+                                        <span className="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
+                                            {scanStatus.replace('Scanning... ', '')}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="h-4 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden relative">
+                                    {/* Striped Background */}
+                                    <div className="absolute inset-0 w-full h-full bg-[linear-gradient(45deg,rgba(255,255,255,0.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.15)_50%,rgba(255,255,255,0.15)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-progress-stripes z-10 pointer-events-none opacity-30"></div>
+
+                                    {/* Gradient Bar */}
+                                    <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 w-1/3 rounded-full animate-progress-indeterminate relative">
+                                        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                    </div>
+                                </div>
                             </div>
-                        ) : (
-                            t('settings.startScan')
-                        )}
-                    </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* Success Message if recently scanned */}
+                            {!isScanning && scanStatus === 'Scan completed!' && (
+                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-3 animate-fade-in">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Scan Completed Successfully</h3>
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400">Your network structure has been updated.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={isScanning}
+                                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {t('settings.startScan')}
+                            </button>
+                        </div>
+                    )}
                 </form>
             </div>
-
-            {/* Status Messages */}
-            {scanStatus && (
-                <div className="card p-4 mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
-                        <div className="w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse"></div>
-                        <span className="font-medium">{scanStatus}</span>
-                    </div>
-                </div>
-            )}
 
             {error && (
                 <div className="card p-4 mb-6 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">

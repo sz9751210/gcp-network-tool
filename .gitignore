@@ -3,3 +3,4 @@ credential*.json
 node_modules
 .next
 tsconfig.tsbuildinfo
+backend/data
