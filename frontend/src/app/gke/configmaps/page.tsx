@@ -169,18 +169,20 @@ function GKEConfigMapsContent() {
 
                             <div>
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Cluster</span>
-                                        <span className="font-medium text-xs font-mono">{selectedCM.cluster_name}</span>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Cluster</div>
+                                        <div className="font-mono font-medium text-sm">{selectedCM.cluster_name}</div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Project</span>
-                                        <span className="font-medium text-xs font-mono">{selectedCM.project_id}</span>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Project</div>
+                                        <div className="font-mono font-medium text-sm">{selectedCM.project_id}</div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Created At</span>
-                                        <span className="font-mono text-xs">{selectedCM.creation_timestamp ? new Date(selectedCM.creation_timestamp).toLocaleString() : 'N/A'}</span>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg col-span-2">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Created At</div>
+                                        <div className="font-mono font-medium text-sm">
+                                            {selectedCM.creation_timestamp ? new Date(selectedCM.creation_timestamp).toLocaleString() : 'N/A'}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

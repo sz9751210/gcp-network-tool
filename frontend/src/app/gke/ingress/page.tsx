@@ -152,14 +152,34 @@ function GKEIngressContent() {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                            <div className="text-xs text-slate-500 uppercase mb-1">Load Balancer IP</div>
-                            <div className="font-mono font-bold text-lg text-indigo-600 dark:text-indigo-400">
-                                {selectedIngress.address ? (
-                                    <Link href={`/public-ips?q=${selectedIngress.address}`} className="hover:underline">
-                                        {selectedIngress.address}
-                                    </Link>
-                                ) : 'None'}
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Hosts</h4>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-col gap-2">
+                                    {selectedIngress.hosts.map((host, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <Globe size={14} className="text-slate-400" />
+                                            <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{host}</span>
+                                            <a href={`http://${host}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-indigo-500 hover:text-indigo-600">
+                                                <ExternalLink size={14} />
+                                            </a>
+                                        </div>
+                                    ))}
+                                    {selectedIngress.hosts.length === 0 && (
+                                        <span className="text-sm text-slate-500 italic">No hosts defined (catch-all)</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">Load Balancer IP</div>
+                                <div className="font-mono font-bold text-lg text-indigo-600 dark:text-indigo-400">
+                                    {selectedIngress.address ? (
+                                        <Link href={`/public-ips?q=${selectedIngress.address}`} className="hover:underline">
+                                            {selectedIngress.address}
+                                        </Link>
+                                    ) : 'None'}
+                                </div>
                             </div>
                         </div>
 

@@ -152,19 +152,22 @@ function GKEServicesContent() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.clusterIp')}</div>
-                                <div className="font-mono font-bold">{selectedService.cluster_ip || t('common.none')}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.externalIp')}</div>
-                                <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                    {selectedService.external_ip ? (
-                                        <Link href={`/public-ips?q=${selectedService.external_ip}`} className="hover:underline">
-                                            {selectedService.external_ip}
-                                        </Link>
-                                    ) : t('common.none')}
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Connectivity</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                    <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.clusterIp')}</div>
+                                    <div className="font-mono font-bold">{selectedService.cluster_ip || t('common.none')}</div>
+                                </div>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                    <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.externalIp')}</div>
+                                    <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                        {selectedService.external_ip ? (
+                                            <Link href={`/public-ips?q=${selectedService.external_ip}`} className="hover:underline">
+                                                {selectedService.external_ip}
+                                            </Link>
+                                        ) : t('common.none')}
+                                    </div>
                                 </div>
                             </div>
                         </div>
