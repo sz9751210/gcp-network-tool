@@ -204,6 +204,12 @@ class GKEConsistentScanner(BaseScanner):
                         for cond in d.status.conditions:
                             conditions.append({"type": cond.type, "status": cond.status, "reason": cond.reason})
 
+                    max_surge = None
+                    max_unavailable = None
+                    if d.spec.strategy and d.spec.strategy.type == "RollingUpdate" and d.spec.strategy.rolling_update:
+                        max_surge = str(d.spec.strategy.rolling_update.max_surge)
+                        max_unavailable = str(d.spec.strategy.rolling_update.max_unavailable)
+
                     res['deployments'].append(GKEDeployment(
                         name=d.metadata.name,
                         namespace=d.metadata.namespace,
@@ -213,6 +219,8 @@ class GKEConsistentScanner(BaseScanner):
                         available_replicas=d.status.available_replicas or 0,
                         updated_replicas=d.status.updated_replicas or 0,
                         strategy=d.spec.strategy.type if d.spec.strategy else None,
+                        max_surge=max_surge,
+                        max_unavailable=max_unavailable,
                         min_ready_seconds=d.spec.min_ready_seconds or 0,
                         revision_history_limit=d.spec.revision_history_limit,
                         conditions=conditions,

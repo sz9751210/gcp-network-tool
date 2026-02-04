@@ -116,6 +116,8 @@ export interface GKEDeployment {
     available_replicas: number;
     updated_replicas: number;
     strategy?: string;
+    max_surge?: string;
+    max_unavailable?: string;
     min_ready_seconds: number;
     revision_history_limit?: number;
     conditions: Array<{ type: string, status: string, reason?: string }>;

@@ -217,6 +217,8 @@ class GKEDeployment(BaseModel):
     available_replicas: int
     updated_replicas: int
     strategy: Optional[str] = None
+    max_surge: Optional[str] = None
+    max_unavailable: Optional[str] = None
     min_ready_seconds: int = 0
     revision_history_limit: Optional[int] = None
     conditions: List[Dict[str, str]] = Field(default_factory=list) # e.g. [{"type": "Available", "status": "True", "reason": "..."}]

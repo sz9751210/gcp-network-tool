@@ -419,13 +419,31 @@ function GKEWorkloadsContent() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.strategy')}</div>
-                                <div className="font-mono font-bold">{selectedDep.strategy || 'N/A'}</div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg col-span-2">
+                                <div className="text-xs text-slate-500 uppercase mb-2">{t('gke.workloads.strategy')}</div>
+                                <div className="flex justify-between items-center">
+                                    <div className="font-mono font-bold text-lg">{selectedDep.strategy || 'N/A'}</div>
+                                    {selectedDep.strategy === 'RollingUpdate' && (
+                                        <div className="flex gap-4 text-xs">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-slate-500">Max Surge</span>
+                                                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_surge || '25%'}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-slate-500">Max Unavailable</span>
+                                                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_unavailable || '25%'}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.minReadySeconds')}</div>
                                 <div className="font-mono font-bold">{selectedDep.min_ready_seconds}s</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div className="text-xs text-slate-500 uppercase mb-1">Rev History Limit</div>
+                                <div className="font-mono font-bold">{selectedDep.revision_history_limit ?? 10}</div>
                             </div>
                         </div>
 
