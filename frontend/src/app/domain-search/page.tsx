@@ -137,8 +137,9 @@ export default function DomainSearchPage() {
 
                     if (associatedBS.length > 0 || matchingResource?.resource_type?.includes('LoadBalancer') || matchingResource?.resource_type?.includes('Forwarding')) {
                         // Determine LB Name
-                        // Priority: Associated Backend Service Name (usually cleaner) > Resource Name (Frontend/FR) > Default
-                        const lbName = associatedBS.length > 0 ? associatedBS[0].name : (matchingResource?.resource_name || 'Unknown Load Balancer');
+                        // Priority: URL Map name (from details.url_map, matching `gcloud compute url-maps list`) > Backend Service Name > Resource Name > Default
+                        const urlMapName = matchingResource?.details?.url_map;
+                        const lbName = urlMapName || (associatedBS.length > 0 ? associatedBS[0].name : (matchingResource?.resource_name || 'Unknown Load Balancer'));
 
                         result.loadBalancer = {
                             name: lbName,
