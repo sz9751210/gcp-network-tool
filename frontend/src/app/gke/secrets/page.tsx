@@ -145,6 +145,7 @@ function GKESecretsContent() {
                 isOpen={!!selectedSecret}
                 onClose={() => { setSelectedSecret(null); setDetailTab('details'); }}
                 title="Secret Details"
+                width="max-w-3xl"
             >
                 {selectedSecret && (
                     <div className="space-y-4">

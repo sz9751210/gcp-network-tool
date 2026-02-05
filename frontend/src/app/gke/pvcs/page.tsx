@@ -148,6 +148,7 @@ function GKEPvcsContent() {
                 isOpen={!!selectedPVC}
                 onClose={() => { setSelectedPVC(null); setDetailTab('details'); }}
                 title={t('gke.pvcs.details')}
+                width="max-w-3xl"
             >
                 {selectedPVC && (
                     <div className="space-y-4">

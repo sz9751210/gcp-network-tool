@@ -146,6 +146,7 @@ function GKEHPAContent() {
                 isOpen={!!selectedHPA}
                 onClose={() => { setSelectedHPA(null); setDetailTab('details'); }}
                 title="HPA Details"
+                width="max-w-3xl"
             >
                 {selectedHPA && (
                     <div className="space-y-4">

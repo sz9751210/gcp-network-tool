@@ -313,6 +313,7 @@ function GKEWorkloadsContent() {
                 isOpen={!!selectedPod}
                 onClose={() => { setSelectedPod(null); setPodDetailTab('details'); }}
                 title={t('gke.workloads.podDetails')}
+                width="max-w-3xl"
             >
                 {selectedPod && (
                     <div className="space-y-4">
@@ -419,6 +420,7 @@ function GKEWorkloadsContent() {
                 isOpen={!!selectedDep}
                 onClose={() => { setSelectedDep(null); setDepDetailTab('details'); }}
                 title={t('gke.workloads.deploymentDetails')}
+                width="max-w-3xl"
             >
                 {selectedDep && (
                     <div className="space-y-4">

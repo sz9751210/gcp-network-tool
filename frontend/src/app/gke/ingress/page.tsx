@@ -143,6 +143,7 @@ function GKEIngressContent() {
                 isOpen={!!selectedIngress}
                 onClose={() => { setSelectedIngress(null); setDetailTab('details'); }}
                 title="Ingress Details"
+                width="max-w-3xl"
             >
                 {selectedIngress && (
                     <div className="space-y-4">

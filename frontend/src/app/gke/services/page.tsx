@@ -143,6 +143,7 @@ function GKEServicesContent() {
                 isOpen={!!selectedService}
                 onClose={() => { setSelectedService(null); setDetailTab('details'); }}
                 title={t('gke.services.details')}
+                width="max-w-3xl"
             >
                 {selectedService && (
                     <div className="space-y-4">

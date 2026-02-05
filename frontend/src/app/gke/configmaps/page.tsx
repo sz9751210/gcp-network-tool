@@ -142,6 +142,7 @@ function GKEConfigMapsContent() {
                 isOpen={!!selectedCM}
                 onClose={() => { setSelectedCM(null); setDetailTab('details'); }}
                 title="ConfigMap Details"
+                width="max-w-3xl"
             >
                 {selectedCM && (
                     <div className="space-y-4">
