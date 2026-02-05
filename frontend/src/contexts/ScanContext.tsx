@@ -146,6 +146,30 @@ export function ScanProvider({ children }: { children: ReactNode }) {
         loadScanHistory();
     }, [loadScanHistory]);
 
+    // Auto-load cached topology from sessionStorage on mount
+    useEffect(() => {
+        if (!topology) {
+            const cachedTopology = sessionStorage.getItem('lastTopology');
+            if (cachedTopology) {
+                try {
+                    const parsed = JSON.parse(cachedTopology);
+                    setTopology(parsed);
+                    setMetadata({
+                        scanId: parsed.scan_id,
+                        timestamp: parsed.scan_timestamp,
+                        sourceType: parsed.source_type,
+                        sourceId: parsed.source_id,
+                        totalProjects: parsed.total_projects,
+                        totalVpcs: parsed.total_vpcs,
+                        totalSubnets: parsed.total_subnets,
+                    });
+                } catch (e) {
+                    console.error('Failed to parse cached topology', e);
+                }
+            }
+        }
+    }, []);
+
     return (
         <ScanContext.Provider
             value={{
