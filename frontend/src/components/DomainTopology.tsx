@@ -23,8 +23,8 @@ interface DomainTopologyProps {
     topology: NetworkTopology | null;
 }
 
-const nodeWidth = 200;
-const nodeHeight = 60;
+const nodeWidth = 350;
+const nodeHeight = 80;
 
 // Custom Node Components
 const DomainNode = memo(({ data }: NodeProps) => (
@@ -118,7 +118,7 @@ const nodeTypes = {
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
-    dagreGraph.setGraph({ rankdir: direction, ranksep: 80, nodesep: 40 });
+    dagreGraph.setGraph({ rankdir: direction, ranksep: 120, nodesep: 100, marginx: 50, marginy: 50 });
 
     nodes.forEach((node) => {
         dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
