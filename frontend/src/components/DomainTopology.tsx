@@ -28,11 +28,11 @@ const nodeHeight = 60;
 
 // Custom Node Components
 const DomainNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30 min-w-[160px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30 min-w-[180px] max-w-[400px]">
         <Handle type="source" position={Position.Bottom} className="!bg-indigo-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
-            <Globe size={18} className="text-indigo-200" />
-            <div className="font-bold text-sm truncate">{data.label}</div>
+            <Globe size={18} className="text-indigo-200 flex-shrink-0" />
+            <div className="font-bold text-sm break-all">{data.label}</div>
         </div>
         <div className="text-[10px] text-indigo-200 mt-1">Domain</div>
     </div>
@@ -53,12 +53,12 @@ const IpNode = memo(({ data }: NodeProps) => (
 IpNode.displayName = 'IpNode';
 
 const ResourceNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400/30 min-w-[160px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400/30 min-w-[180px] max-w-[400px]">
         <Handle type="target" position={Position.Top} className="!bg-emerald-300 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-emerald-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
-            <Server size={16} className="text-emerald-200" />
-            <div className="font-semibold text-sm truncate max-w-[180px]">{data.label}</div>
+            <Server size={16} className="text-emerald-200 flex-shrink-0" />
+            <div className="font-semibold text-sm break-all">{data.label}</div>
         </div>
         <div className="text-[10px] text-emerald-200 mt-1">{data.type || 'Resource'}</div>
     </div>
@@ -66,12 +66,12 @@ const ResourceNode = memo(({ data }: NodeProps) => (
 ResourceNode.displayName = 'ResourceNode';
 
 const BackendServiceNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 min-w-[160px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 min-w-[180px] max-w-[400px]">
         <Handle type="target" position={Position.Top} className="!bg-blue-300 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-blue-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
-            <Database size={16} className="text-blue-200" />
-            <div className="font-semibold text-sm truncate max-w-[180px]">{data.label}</div>
+            <Database size={16} className="text-blue-200 flex-shrink-0" />
+            <div className="font-semibold text-sm break-all">{data.label}</div>
         </div>
         <div className="text-[10px] text-blue-200 mt-1 flex items-center gap-1">
             {data.protocol && <span className="px-1.5 py-0.5 bg-blue-400/30 rounded text-[9px]">{data.protocol}</span>}
@@ -82,11 +82,11 @@ const BackendServiceNode = memo(({ data }: NodeProps) => (
 BackendServiceNode.displayName = 'BackendServiceNode';
 
 const BackendNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 border border-rose-400/30 min-w-[140px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 border border-rose-400/30 min-w-[160px] max-w-[400px]">
         <Handle type="target" position={Position.Top} className="!bg-rose-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
-            <Cpu size={16} className="text-rose-200" />
-            <div className="font-semibold text-sm truncate max-w-[160px]">{data.label}</div>
+            <Cpu size={16} className="text-rose-200 flex-shrink-0" />
+            <div className="font-semibold text-sm break-all">{data.label}</div>
         </div>
         <div className="text-[10px] text-rose-200 mt-1">{data.type || 'Instance Group'}</div>
     </div>

@@ -248,9 +248,8 @@ export default function DomainSearchPage() {
                                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                                     <tr>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.ipAddress')}</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Resource</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Load Balancer</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Cloud Armor</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.loadBalancer')}</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.cloudArmor')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -281,21 +280,6 @@ export default function DomainSearchPage() {
                                                         {result.type}
                                                     </span>
                                                 </div>
-                                            </td>
-
-                                            {/* Resource Column */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {result.resourceName ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{result.resourceName}</span>
-                                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                            {result.resourceType && <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">{result.resourceType}</span>}
-                                                            {result.region && <span>{result.region}</span>}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
                                             </td>
 
                                             {/* Load Balancer Column */}
@@ -356,7 +340,7 @@ export default function DomainSearchPage() {
                     {results && results.length > 0 && (
                         <div className="mt-8">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{t('domainSearch.topology')}</h2>
-                            <div className="h-[500px] bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="h-[700px] bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <DomainTopology
                                     domain={domain}
                                     resolvedIps={results.map(r => r.ip)}
