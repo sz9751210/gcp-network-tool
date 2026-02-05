@@ -105,6 +105,7 @@ export interface GKEPod {
     creation_timestamp: string | null;
     labels: Record<string, string>;
     containers: GKEContainer[];
+    yaml_manifest?: string;
 }
 
 export interface GKEDeployment {
@@ -124,6 +125,7 @@ export interface GKEDeployment {
     labels: Record<string, string>;
     selector: Record<string, string>;
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKEHPA {
@@ -138,6 +140,7 @@ export interface GKEHPA {
     target_cpu_utilization_percentage: number | null;
     metrics: string[];
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKEService {
@@ -151,6 +154,7 @@ export interface GKEService {
     ports: any[];
     selector: Record<string, string>;
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKEIngress {
@@ -162,6 +166,7 @@ export interface GKEIngress {
     address: string | null;
     rules: any[];
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKEConfigMap {
@@ -171,6 +176,7 @@ export interface GKEConfigMap {
     project_id: string;
     data_keys: string[];
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKESecret {
@@ -181,6 +187,7 @@ export interface GKESecret {
     type: string;
     data_keys: string[];
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GKEPVC {
@@ -194,6 +201,7 @@ export interface GKEPVC {
     access_modes: string[];
     storage_class: string | null;
     creation_timestamp: string | null;
+    yaml_manifest?: string;
 }
 
 export interface GCSBucket {

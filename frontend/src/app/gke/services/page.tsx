@@ -17,6 +17,7 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 import Link from 'next/link';
 
 function GKEServicesContent() {
@@ -24,6 +25,7 @@ function GKEServicesContent() {
     const [search, setSearch] = useState('');
     const { data: services, loading } = useResources<GKEService>('gke-services');
     const [selectedService, setSelectedService] = useState<GKEService | null>(null);
+    const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -139,11 +141,11 @@ function GKEServicesContent() {
 
             <SlideOver
                 isOpen={!!selectedService}
-                onClose={() => setSelectedService(null)}
+                onClose={() => { setSelectedService(null); setDetailTab('details'); }}
                 title={t('gke.services.details')}
             >
                 {selectedService && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedService.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -152,64 +154,88 @@ function GKEServicesContent() {
                             </div>
                         </div>
 
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Connectivity</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                    <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.clusterIp')}</div>
-                                    <div className="font-mono font-bold">{selectedService.cluster_ip || t('common.none')}</div>
-                                </div>
-                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                    <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.externalIp')}</div>
-                                    <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                        {selectedService.external_ip ? (
-                                            <Link href={`/public-ips?q=${selectedService.external_ip}`} className="hover:underline">
-                                                {selectedService.external_ip}
-                                            </Link>
-                                        ) : t('common.none')}
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {detailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {detailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.ports')}</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    {selectedService.ports.map((p, i) => (
-                                        <div key={i} className="flex justify-between text-sm">
-                                            <span className="text-slate-500">{p.name || 'default'}</span>
-                                            <span className="font-mono">{p.port}:{p.target_port} / {p.protocol}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {selectedService.selector && Object.keys(selectedService.selector).length > 0 && (
+                        {detailTab === 'details' ? (
+                            <>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.selector')}</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Object.entries(selectedService.selector).map(([k, v]) => (
-                                            <Badge key={k} variant="secondary" pill className="text-[10px]">{k}: {v}</Badge>
-                                        ))}
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Connectivity</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                            <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.clusterIp')}</div>
+                                            <div className="font-mono font-bold">{selectedService.cluster_ip || t('common.none')}</div>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                            <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.services.externalIp')}</div>
+                                            <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                                {selectedService.external_ip ? (
+                                                    <Link href={`/public-ips?q=${selectedService.external_ip}`} className="hover:underline">
+                                                        {selectedService.external_ip}
+                                                    </Link>
+                                                ) : t('common.none')}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.metadata')}</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">{t('common.cluster')}</span>
-                                        <span className="font-medium">{selectedService.cluster_name}</span>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.ports')}</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                            {selectedService.ports.map((p, i) => (
+                                                <div key={i} className="flex justify-between text-sm">
+                                                    <span className="text-slate-500">{p.name || 'default'}</span>
+                                                    <span className="font-mono">{p.port}:{p.target_port} / {p.protocol}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">{t('common.created')}</span>
-                                        <span className="font-mono text-xs">{selectedService.creation_timestamp ? new Date(selectedService.creation_timestamp).toLocaleString() : 'N/A'}</span>
+
+                                    {selectedService.selector && Object.keys(selectedService.selector).length > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.selector')}</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {Object.entries(selectedService.selector).map(([k, v]) => (
+                                                    <Badge key={k} variant="secondary" pill className="text-[10px]">{k}: {v}</Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.services.metadata')}</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">{t('common.cluster')}</span>
+                                                <span className="font-medium">{selectedService.cluster_name}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">{t('common.created')}</span>
+                                                <span className="font-mono text-xs">{selectedService.creation_timestamp ? new Date(selectedService.creation_timestamp).toLocaleString() : 'N/A'}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedService.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>

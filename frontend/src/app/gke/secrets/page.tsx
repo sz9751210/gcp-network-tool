@@ -16,12 +16,14 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 
 function GKESecretsContent() {
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
     const { data: secrets, loading } = useResources<GKESecret>('gke-secrets');
     const [selectedSecret, setSelectedSecret] = useState<GKESecret | null>(null);
+    const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -141,11 +143,11 @@ function GKESecretsContent() {
 
             <SlideOver
                 isOpen={!!selectedSecret}
-                onClose={() => setSelectedSecret(null)}
+                onClose={() => { setSelectedSecret(null); setDetailTab('details'); }}
                 title="Secret Details"
             >
                 {selectedSecret && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <Lock className="text-indigo-500" size={20} />
@@ -157,54 +159,78 @@ function GKESecretsContent() {
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                            <div className="text-xs text-slate-500 uppercase mb-2">Secret Type</div>
-                            <div className="font-mono text-sm break-all font-medium text-slate-700 dark:text-slate-300">
-                                {selectedSecret.type}
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {detailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {detailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Data Keys</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-wrap gap-2 border border-slate-200 dark:border-slate-800">
-                                    {selectedSecret.data_keys.length > 0 ? (
-                                        selectedSecret.data_keys.map(key => (
-                                            <Badge key={key} variant="secondary" pill className="text-[10px] font-mono">
-                                                {key}
-                                            </Badge>
-                                        ))
-                                    ) : (
-                                        <span className="text-xs text-slate-500 italic">No data keys found</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Cluster</span>
-                                        <span className="font-medium text-xs font-mono">{selectedSecret.cluster_name}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Project</span>
-                                        <span className="font-medium text-xs font-mono">{selectedSecret.project_id}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Created At</span>
-                                        <span className="font-mono text-xs">{selectedSecret.creation_timestamp ? new Date(selectedSecret.creation_timestamp).toLocaleString() : 'N/A'}</span>
+                        {detailTab === 'details' ? (
+                            <>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                    <div className="text-xs text-slate-500 uppercase mb-2">Secret Type</div>
+                                    <div className="font-mono text-sm break-all font-medium text-slate-700 dark:text-slate-300">
+                                        {selectedSecret.type}
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                                <ShieldCheck className="text-amber-600 dark:text-amber-400 mt-0.5" size={16} />
-                                <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                                    Secret content is encrypted and not retrieved during network scans for security reasons. Only metadata and key names are shown.
-                                </p>
-                            </div>
-                        </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Data Keys</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-wrap gap-2 border border-slate-200 dark:border-slate-800">
+                                            {selectedSecret.data_keys.length > 0 ? (
+                                                selectedSecret.data_keys.map(key => (
+                                                    <Badge key={key} variant="secondary" pill className="text-[10px] font-mono">
+                                                        {key}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-slate-500 italic">No data keys found</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Cluster</span>
+                                                <span className="font-medium text-xs font-mono">{selectedSecret.cluster_name}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Project</span>
+                                                <span className="font-medium text-xs font-mono">{selectedSecret.project_id}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Created At</span>
+                                                <span className="font-mono text-xs">{selectedSecret.creation_timestamp ? new Date(selectedSecret.creation_timestamp).toLocaleString() : 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                                        <ShieldCheck className="text-amber-600 dark:text-amber-400 mt-0.5" size={16} />
+                                        <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                                            Secret content is encrypted and not retrieved during network scans for security reasons. Only metadata and key names are shown.
+                                        </p>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedSecret.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>

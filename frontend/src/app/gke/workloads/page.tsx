@@ -19,6 +19,7 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 import Link from 'next/link';
 
 function GKEWorkloadsContent() {
@@ -32,6 +33,8 @@ function GKEWorkloadsContent() {
 
     const [selectedPod, setSelectedPod] = useState<GKEPod | null>(null);
     const [selectedDep, setSelectedDep] = useState<GKEDeployment | null>(null);
+    const [podDetailTab, setPodDetailTab] = useState<'details' | 'yaml'>('details');
+    const [depDetailTab, setDepDetailTab] = useState<'details' | 'yaml'>('details');
 
     // Pagination state
     const [depPage, setDepPage] = useState(1);
@@ -308,11 +311,11 @@ function GKEWorkloadsContent() {
             {/* Pod Details */}
             <SlideOver
                 isOpen={!!selectedPod}
-                onClose={() => setSelectedPod(null)}
+                onClose={() => { setSelectedPod(null); setPodDetailTab('details'); }}
                 title={t('gke.workloads.podDetails')}
             >
                 {selectedPod && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedPod.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -321,68 +324,92 @@ function GKEWorkloadsContent() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.podIp')}</div>
-                                <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedPod.pod_ip || 'None'}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.hostIp')}</div>
-                                <div className="font-mono font-bold">{selectedPod.host_ip || 'None'}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.restarts')}</div>
-                                <div className="font-mono font-bold">{selectedPod.restart_count}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.qosClass')}</div>
-                                <div className="font-mono font-bold">{selectedPod.qos_class || 'N/A'}</div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setPodDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${podDetailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {podDetailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setPodDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${podDetailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {podDetailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.clusterInfo')}</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">{t('gke.workloads.cluster')}</span>
-                                        <span className="font-medium">{selectedPod.cluster_name}</span>
+                        {podDetailTab === 'details' ? (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.podIp')}</div>
+                                        <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedPod.pod_ip || 'None'}</div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">{t('gke.workloads.node')}</span>
-                                        <span className="font-mono">{selectedPod.node_name}</span>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.hostIp')}</div>
+                                        <div className="font-mono font-bold">{selectedPod.host_ip || 'None'}</div>
                                     </div>
-                                </div>
-                            </div>
-
-                            {selectedPod.labels && Object.keys(selectedPod.labels).length > 0 && (
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.labels')}</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Object.entries(selectedPod.labels).map(([k, v]) => (
-                                            <Badge key={k} variant="secondary" pill className="text-[10px] py-0.5">{k}: {v}</Badge>
-                                        ))}
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.restarts')}</div>
+                                        <div className="font-mono font-bold">{selectedPod.restart_count}</div>
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.qosClass')}</div>
+                                        <div className="font-mono font-bold">{selectedPod.qos_class || 'N/A'}</div>
                                     </div>
                                 </div>
-                            )}
 
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.containers')}</h4>
-                                <div className="space-y-2">
-                                    {selectedPod.containers.map(c => (
-                                        <div key={c.name} className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-medium text-sm">{c.name}</span>
-                                                <Badge variant={c.ready ? 'emerald' : 'error'} pill>
-                                                    {c.ready ? t('gke.workloads.ready') : t('gke.workloads.notReady')}
-                                                </Badge>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.clusterInfo')}</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">{t('gke.workloads.cluster')}</span>
+                                                <span className="font-medium">{selectedPod.cluster_name}</span>
                                             </div>
-                                            <div className="text-xs text-slate-500 font-mono truncate">{c.image}</div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">{t('gke.workloads.node')}</span>
+                                                <span className="font-mono">{selectedPod.node_name}</span>
+                                            </div>
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    {selectedPod.labels && Object.keys(selectedPod.labels).length > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.labels')}</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {Object.entries(selectedPod.labels).map(([k, v]) => (
+                                                    <Badge key={k} variant="secondary" pill className="text-[10px] py-0.5">{k}: {v}</Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.containers')}</h4>
+                                        <div className="space-y-2">
+                                            {selectedPod.containers.map(c => (
+                                                <div key={c.name} className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-medium text-sm">{c.name}</span>
+                                                        <Badge variant={c.ready ? 'emerald' : 'error'} pill>
+                                                            {c.ready ? t('gke.workloads.ready') : t('gke.workloads.notReady')}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 font-mono truncate">{c.image}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedPod.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>
@@ -390,11 +417,11 @@ function GKEWorkloadsContent() {
             {/* Deployment Details */}
             <SlideOver
                 isOpen={!!selectedDep}
-                onClose={() => setSelectedDep(null)}
+                onClose={() => { setSelectedDep(null); setDepDetailTab('details'); }}
                 title={t('gke.workloads.deploymentDetails')}
             >
                 {selectedDep && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedDep.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -403,102 +430,126 @@ function GKEWorkloadsContent() {
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                            <h4 className="text-xs text-slate-500 uppercase mb-3">{t('gke.workloads.replicaStatus')}</h4>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                    <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-indigo-500 transition-all duration-500"
-                                            style={{ width: `${(selectedDep.available_replicas / selectedDep.replicas) * 100}%` }}
-                                        />
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDepDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${depDetailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {depDetailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setDepDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${depDetailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {depDetailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                        </div>
+
+                        {depDetailTab === 'details' ? (
+                            <>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                    <h4 className="text-xs text-slate-500 uppercase mb-3">{t('gke.workloads.replicaStatus')}</h4>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1">
+                                            <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-500 transition-all duration-500"
+                                                    style={{ width: `${(selectedDep.available_replicas / selectedDep.replicas) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <span className="text-sm font-bold">{selectedDep.available_replicas} / {selectedDep.replicas}</span>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold">{selectedDep.available_replicas} / {selectedDep.replicas}</span>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg col-span-2">
-                                <div className="text-xs text-slate-500 uppercase mb-2">{t('gke.workloads.strategy')}</div>
-                                <div className="flex justify-between items-center">
-                                    <div className="font-mono font-bold text-lg">{selectedDep.strategy || 'N/A'}</div>
-                                    {selectedDep.strategy === 'RollingUpdate' && (
-                                        <div className="flex gap-4 text-xs">
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-slate-500">Max Surge</span>
-                                                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_surge || '25%'}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-slate-500">Max Unavailable</span>
-                                                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_unavailable || '25%'}</span>
-                                            </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg col-span-2">
+                                        <div className="text-xs text-slate-500 uppercase mb-2">{t('gke.workloads.strategy')}</div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="font-mono font-bold text-lg">{selectedDep.strategy || 'N/A'}</div>
+                                            {selectedDep.strategy === 'RollingUpdate' && (
+                                                <div className="flex gap-4 text-xs">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-slate-500">Max Surge</span>
+                                                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_surge || '25%'}</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-slate-500">Max Unavailable</span>
+                                                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedDep.max_unavailable || '25%'}</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.minReadySeconds')}</div>
+                                        <div className="font-mono font-bold">{selectedDep.min_ready_seconds}s</div>
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Rev History Limit</div>
+                                        <div className="font-mono font-bold">{selectedDep.revision_history_limit ?? 10}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">{t('gke.workloads.minReadySeconds')}</div>
-                                <div className="font-mono font-bold">{selectedDep.min_ready_seconds}s</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Rev History Limit</div>
-                                <div className="font-mono font-bold">{selectedDep.revision_history_limit ?? 10}</div>
-                            </div>
-                        </div>
 
-                        {selectedDep.conditions && selectedDep.conditions.length > 0 && (
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.conditions')}</h4>
-                                <div className="space-y-2">
-                                    {selectedDep.conditions.map((cond, i) => (
-                                        <div key={i} className="bg-slate-50 dark:bg-slate-900 p-2 rounded text-xs border border-slate-200 dark:border-slate-800">
-                                            <div className="flex justify-between font-medium">
-                                                <span>{cond.type}</span>
-                                                <span className={cond.status === 'True' ? 'text-green-500' : 'text-red-500'}>{cond.status}</span>
-                                            </div>
-                                            {cond.reason && <div className="text-slate-500 mt-1">{cond.reason}</div>}
+                                {selectedDep.conditions && selectedDep.conditions.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.conditions')}</h4>
+                                        <div className="space-y-2">
+                                            {selectedDep.conditions.map((cond, i) => (
+                                                <div key={i} className="bg-slate-50 dark:bg-slate-900 p-2 rounded text-xs border border-slate-200 dark:border-slate-800">
+                                                    <div className="flex justify-between font-medium">
+                                                        <span>{cond.type}</span>
+                                                        <span className={cond.status === 'True' ? 'text-green-500' : 'text-red-500'}>{cond.status}</span>
+                                                    </div>
+                                                    {cond.reason && <div className="text-slate-500 mt-1">{cond.reason}</div>}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.selector')}</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(selectedDep.selector).map(([k, v]) => (
+                                                <Badge key={k} variant="secondary" pill className="text-[10px]">{k}: {v}</Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center justify-between">
+                                            {t('gke.workloads.associatedPods')}
+                                            <span className="text-[10px] text-slate-400 font-normal italic">({t('gke.workloads.filteredFromPods')})</span>
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {pods.filter(p => p.namespace === selectedDep.namespace && Object.entries(selectedDep.selector).every(([k, v]) => p.labels[k] === v)).slice(0, 5).map(p => (
+                                                <div
+                                                    key={p.name}
+                                                    className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                                                    onClick={() => {
+                                                        setSelectedDep(null);
+                                                        setSelectedPod(p);
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Cpu size={14} className="text-emerald-500" />
+                                                        <span className="text-sm font-medium">{p.name}</span>
+                                                    </div>
+                                                    <ChevronRight size={14} className="text-slate-400" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedDep.yaml_manifest || ''} />
                         )}
-
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{t('gke.workloads.selector')}</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {Object.entries(selectedDep.selector).map(([k, v]) => (
-                                        <Badge key={k} variant="secondary" pill className="text-[10px]">{k}: {v}</Badge>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center justify-between">
-                                    {t('gke.workloads.associatedPods')}
-                                    <span className="text-[10px] text-slate-400 font-normal italic">({t('gke.workloads.filteredFromPods')})</span>
-                                </h4>
-                                <div className="space-y-2">
-                                    {pods.filter(p => p.namespace === selectedDep.namespace && Object.entries(selectedDep.selector).every(([k, v]) => p.labels[k] === v)).slice(0, 5).map(p => (
-                                        <div
-                                            key={p.name}
-                                            className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                                            onClick={() => {
-                                                setSelectedDep(null);
-                                                setSelectedPod(p);
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <Cpu size={14} className="text-emerald-500" />
-                                                <span className="text-sm font-medium">{p.name}</span>
-                                            </div>
-                                            <ChevronRight size={14} className="text-slate-400" />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 )}
             </SlideOver>

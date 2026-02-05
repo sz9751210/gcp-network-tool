@@ -206,6 +206,7 @@ class GKEPod(BaseModel):
     creation_timestamp: Optional[datetime] = None
     labels: Dict[str, str] = Field(default_factory=dict)
     containers: List[GKEContainer] = Field(default_factory=list)
+    yaml_manifest: Optional[str] = None
 
 class GKEDeployment(BaseModel):
     """Represents a Deployment in a GKE Cluster."""
@@ -225,6 +226,7 @@ class GKEDeployment(BaseModel):
     labels: Dict[str, str] = Field(default_factory=dict)
     selector: Dict[str, str] = Field(default_factory=dict)
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKEHPA(BaseModel):
     """Represents a HorizontalPodAutoscaler."""
@@ -239,6 +241,7 @@ class GKEHPA(BaseModel):
     target_cpu_utilization_percentage: Optional[int] = None
     metrics: List[str] = Field(default_factory=list) # Simplified summaries
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKEService(BaseModel):
     """Represents a Service in a GKE Cluster."""
@@ -252,6 +255,7 @@ class GKEService(BaseModel):
     ports: List[dict] = Field(default_factory=list) # [{"port": 80, "targetPort": 8080}]
     selector: Dict[str, str] = Field(default_factory=dict)
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKEIngress(BaseModel):
     """Represents an Ingress in a GKE Cluster."""
@@ -263,6 +267,7 @@ class GKEIngress(BaseModel):
     address: Optional[str] = None # External IP
     rules: List[dict] = Field(default_factory=list)
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKEConfigMap(BaseModel):
     name: str
@@ -271,6 +276,7 @@ class GKEConfigMap(BaseModel):
     project_id: str
     data_keys: List[str] = Field(default_factory=list)
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKESecret(BaseModel):
     name: str
@@ -280,6 +286,7 @@ class GKESecret(BaseModel):
     type: str
     data_keys: List[str] = Field(default_factory=list)
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 class GKEPVC(BaseModel):
     name: str
@@ -292,6 +299,7 @@ class GKEPVC(BaseModel):
     access_modes: List[str] = Field(default_factory=list)
     storage_class: Optional[str] = None
     creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
 
 
 class GCSBucket(BaseModel):

@@ -5,6 +5,7 @@ import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import yaml
 
 from google.cloud import container_v1
 try:
@@ -147,6 +148,22 @@ class GKEConsistentScanner(BaseScanner):
             logger.error(f"Error creating K8s client for {cluster.name}: {e}")
             return None
 
+    def _to_yaml(self, api_client, k8s_obj) -> str:
+        """Convert a Kubernetes API object to YAML string."""
+        try:
+            # Use the API client's serializer to get a clean dict
+            obj_dict = api_client.sanitize_for_serialization(k8s_obj)
+            # Remove managed fields and other noise for cleaner output
+            if 'metadata' in obj_dict:
+                obj_dict['metadata'].pop('managedFields', None)
+                obj_dict['metadata'].pop('selfLink', None)
+                obj_dict['metadata'].pop('uid', None)
+                obj_dict['metadata'].pop('resourceVersion', None)
+            return yaml.dump(obj_dict, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        except Exception as e:
+            logger.warning(f"Failed to convert object to YAML: {e}")
+            return ""
+
     def _scan_cluster_resources(self, project_id: str, cluster) -> Dict[str, List]:
         api_client = self._get_k8s_client(cluster)
         if not api_client:
@@ -192,7 +209,8 @@ class GKEConsistentScanner(BaseScanner):
                     qos_class=p.status.qos_class,
                     labels=p.metadata.labels or {},
                     containers=containers,
-                    creation_timestamp=p.metadata.creation_timestamp
+                    creation_timestamp=p.metadata.creation_timestamp,
+                    yaml_manifest=self._to_yaml(api_client, p)
                 ))
 
             # Deployments
@@ -226,7 +244,8 @@ class GKEConsistentScanner(BaseScanner):
                         conditions=conditions,
                         labels=d.metadata.labels or {},
                         selector=d.spec.selector.match_labels or {},
-                        creation_timestamp=d.metadata.creation_timestamp
+                        creation_timestamp=d.metadata.creation_timestamp,
+                        yaml_manifest=self._to_yaml(api_client, d)
                     ))
             except Exception as e:
                 logger.warning(f"Failed to list deployments for {cluster_name}: {e}")
@@ -246,7 +265,8 @@ class GKEConsistentScanner(BaseScanner):
                         current_replicas=hpa.status.current_replicas or 0,
                         desired_replicas=hpa.status.desired_replicas or 0,
                         target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
-                        creation_timestamp=hpa.metadata.creation_timestamp
+                        creation_timestamp=hpa.metadata.creation_timestamp,
+                        yaml_manifest=self._to_yaml(api_client, hpa)
                     ))
             except Exception as e:
                 logger.warning(f"Failed to list HPAs for {cluster_name}: {e}")
@@ -268,7 +288,8 @@ class GKEConsistentScanner(BaseScanner):
                     external_ip=ext_ip,
                     ports=[{'port': p.port, 'targetPort': str(p.target_port), 'protocol': p.protocol} for p in s.spec.ports or []],
                     selector=s.spec.selector or {},
-                    creation_timestamp=s.metadata.creation_timestamp
+                    creation_timestamp=s.metadata.creation_timestamp,
+                    yaml_manifest=self._to_yaml(api_client, s)
                 ))
 
             # Ingress
@@ -287,7 +308,8 @@ class GKEConsistentScanner(BaseScanner):
                         hosts=[rule.host for rule in i.spec.rules or [] if rule.host],
                         address=addr,
                         rules=[], # Simplified for now
-                        creation_timestamp=i.metadata.creation_timestamp
+                        creation_timestamp=i.metadata.creation_timestamp,
+                        yaml_manifest=self._to_yaml(api_client, i)
                     ))
             except Exception:
                 logger.warning(f"Ingress API not reachable or permitted in cluster {cluster_name}")
@@ -301,7 +323,8 @@ class GKEConsistentScanner(BaseScanner):
                     cluster_name=cluster_name,
                     project_id=project_id,
                     data_keys=list((cm.data or {}).keys()),
-                    creation_timestamp=cm.metadata.creation_timestamp
+                    creation_timestamp=cm.metadata.creation_timestamp,
+                    yaml_manifest=self._to_yaml(api_client, cm)
                 ))
 
             # Secrets
@@ -314,7 +337,8 @@ class GKEConsistentScanner(BaseScanner):
                     project_id=project_id,
                     type=sec.type,
                     data_keys=list((sec.data or {}).keys()),
-                    creation_timestamp=sec.metadata.creation_timestamp
+                    creation_timestamp=sec.metadata.creation_timestamp,
+                    yaml_manifest=self._to_yaml(api_client, sec)
                 ))
 
             # PVCs
@@ -330,7 +354,8 @@ class GKEConsistentScanner(BaseScanner):
                     capacity=pvc.status.capacity.get('storage') if pvc.status.capacity else None,
                     access_modes=pvc.spec.access_modes or [],
                     storage_class=pvc.spec.storage_class_name,
-                    creation_timestamp=pvc.metadata.creation_timestamp
+                    creation_timestamp=pvc.metadata.creation_timestamp,
+                    yaml_manifest=self._to_yaml(api_client, pvc)
                 ))
 
         except Exception as e:

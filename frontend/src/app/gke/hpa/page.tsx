@@ -15,12 +15,14 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 
 function GKEHPAContent() {
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
     const { data: hpas, loading, error } = useResources<GKEHPA>('gke-hpa');
     const [selectedHPA, setSelectedHPA] = useState<GKEHPA | null>(null);
+    const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -142,11 +144,11 @@ function GKEHPAContent() {
 
             <SlideOver
                 isOpen={!!selectedHPA}
-                onClose={() => setSelectedHPA(null)}
+                onClose={() => { setSelectedHPA(null); setDetailTab('details'); }}
                 title="HPA Details"
             >
                 {selectedHPA && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedHPA.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -155,40 +157,57 @@ function GKEHPAContent() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Target CPU</div>
-                                <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                    {selectedHPA.target_cpu_utilization_percentage ? `${selectedHPA.target_cpu_utilization_percentage}%` : 'N/A'}
-                                </div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Replicas (Min/Max)</div>
-                                <div className="font-mono font-bold">{selectedHPA.min_replicas ?? 1} / {selectedHPA.max_replicas}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Current Replicas</div>
-                                <div className="font-mono font-bold">{selectedHPA.current_replicas}</div>
-                            </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Desired Replicas</div>
-                                <div className="font-mono font-bold">{selectedHPA.desired_replicas}</div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button onClick={() => setDetailTab('details')} className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}>
+                                Details
+                                {detailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button onClick={() => setDetailTab('yaml')} className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}>
+                                YAML
+                                {detailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
                         </div>
 
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Cluster Info</h4>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Cluster</span>
-                                    <span className="font-medium">{selectedHPA.cluster_name}</span>
+                        {detailTab === 'details' ? (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Target CPU</div>
+                                        <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                            {selectedHPA.target_cpu_utilization_percentage ? `${selectedHPA.target_cpu_utilization_percentage}%` : 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Replicas (Min/Max)</div>
+                                        <div className="font-mono font-bold">{selectedHPA.min_replicas ?? 1} / {selectedHPA.max_replicas}</div>
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Current Replicas</div>
+                                        <div className="font-mono font-bold">{selectedHPA.current_replicas}</div>
+                                    </div>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Desired Replicas</div>
+                                        <div className="font-mono font-bold">{selectedHPA.desired_replicas}</div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Project</span>
-                                    <span className="font-mono">{selectedHPA.project_id}</span>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Cluster Info</h4>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Cluster</span>
+                                            <span className="font-medium">{selectedHPA.cluster_name}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Project</span>
+                                            <span className="font-mono">{selectedHPA.project_id}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedHPA.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>

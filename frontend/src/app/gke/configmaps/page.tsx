@@ -16,12 +16,14 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 
 function GKEConfigMapsContent() {
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
     const { data: configMaps, loading } = useResources<GKEConfigMap>('gke-configmaps');
     const [selectedCM, setSelectedCM] = useState<GKEConfigMap | null>(null);
+    const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -138,11 +140,11 @@ function GKEConfigMapsContent() {
 
             <SlideOver
                 isOpen={!!selectedCM}
-                onClose={() => setSelectedCM(null)}
+                onClose={() => { setSelectedCM(null); setDetailTab('details'); }}
                 title="ConfigMap Details"
             >
                 {selectedCM && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedCM.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -151,42 +153,64 @@ function GKEConfigMapsContent() {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Data Keys</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-wrap gap-2">
-                                    {selectedCM.data_keys.length > 0 ? (
-                                        selectedCM.data_keys.map(key => (
-                                            <Badge key={key} variant="secondary" pill className="text-[10px] font-mono">
-                                                {key}
-                                            </Badge>
-                                        ))
-                                    ) : (
-                                        <span className="text-xs text-slate-500 italic">No data keys found</span>
-                                    )}
-                                </div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {detailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {detailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                        </div>
 
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Cluster</div>
-                                        <div className="font-mono font-medium text-sm">{selectedCM.cluster_name}</div>
+                        {detailTab === 'details' ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Data Keys</h4>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-wrap gap-2">
+                                        {selectedCM.data_keys.length > 0 ? (
+                                            selectedCM.data_keys.map(key => (
+                                                <Badge key={key} variant="secondary" pill className="text-[10px] font-mono">
+                                                    {key}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500 italic">No data keys found</span>
+                                        )}
                                     </div>
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Project</div>
-                                        <div className="font-mono font-medium text-sm">{selectedCM.project_id}</div>
-                                    </div>
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg col-span-2">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Created At</div>
-                                        <div className="font-mono font-medium text-sm">
-                                            {selectedCM.creation_timestamp ? new Date(selectedCM.creation_timestamp).toLocaleString() : 'N/A'}
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                            <div className="text-xs text-slate-500 uppercase mb-1">Cluster</div>
+                                            <div className="font-mono font-medium text-sm">{selectedCM.cluster_name}</div>
+                                        </div>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                                            <div className="text-xs text-slate-500 uppercase mb-1">Project</div>
+                                            <div className="font-mono font-medium text-sm">{selectedCM.project_id}</div>
+                                        </div>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg col-span-2">
+                                            <div className="text-xs text-slate-500 uppercase mb-1">Created At</div>
+                                            <div className="font-mono font-medium text-sm">
+                                                {selectedCM.creation_timestamp ? new Date(selectedCM.creation_timestamp).toLocaleString() : 'N/A'}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <YamlViewer yaml={selectedCM.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>

@@ -16,6 +16,7 @@ import {
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
+import YamlViewer from '@/components/YamlViewer';
 import Link from 'next/link';
 
 function GKEIngressContent() {
@@ -23,6 +24,7 @@ function GKEIngressContent() {
     const [search, setSearch] = useState('');
     const { data: ingressList, loading } = useResources<GKEIngress>('gke-ingress');
     const [selectedIngress, setSelectedIngress] = useState<GKEIngress | null>(null);
+    const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -139,11 +141,11 @@ function GKEIngressContent() {
 
             <SlideOver
                 isOpen={!!selectedIngress}
-                onClose={() => setSelectedIngress(null)}
+                onClose={() => { setSelectedIngress(null); setDetailTab('details'); }}
                 title="Ingress Details"
             >
                 {selectedIngress && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedIngress.name}</h3>
                             <div className="flex gap-2 mt-2">
@@ -152,71 +154,95 @@ function GKEIngressContent() {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Hosts</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-col gap-2">
-                                    {selectedIngress.hosts.map((host, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <Globe size={14} className="text-slate-400" />
-                                            <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{host}</span>
-                                            <a href={`http://${host}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-indigo-500 hover:text-indigo-600">
-                                                <ExternalLink size={14} />
-                                            </a>
-                                        </div>
-                                    ))}
-                                    {selectedIngress.hosts.length === 0 && (
-                                        <span className="text-sm text-slate-500 italic">No hosts defined (catch-all)</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 uppercase mb-1">Load Balancer IP</div>
-                                <div className="font-mono font-bold text-lg text-indigo-600 dark:text-indigo-400">
-                                    {selectedIngress.address ? (
-                                        <Link href={`/public-ips?q=${selectedIngress.address}`} className="hover:underline">
-                                            {selectedIngress.address}
-                                        </Link>
-                                    ) : 'None'}
-                                </div>
-                            </div>
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDetailTab('details')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'details' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Details
+                                {detailTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
+                            <button
+                                onClick={() => setDetailTab('yaml')}
+                                className={`px-4 py-2 text-sm font-medium transition-colors relative ${detailTab === 'yaml' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                YAML
+                                {detailTab === 'yaml' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" />}
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Rules</h4>
-                                <div className="space-y-3">
-                                    {selectedIngress.rules.map((r, ri) => (
-                                        <div key={ri} className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
-                                            <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-tight">Host: {r.host || '*'}</div>
-                                            <div className="space-y-1">
-                                                {r.http?.paths.map((p: any, pi: number) => (
-                                                    <div key={pi} className="flex justify-between text-xs font-mono">
-                                                        <span className="text-indigo-600 dark:text-indigo-400">{p.path}</span>
-                                                        <span className="text-slate-500">→ {p.backend.service.name}:{p.backend.service.port.number}</span>
+                        {detailTab === 'details' ? (
+                            <>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Hosts</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex flex-col gap-2">
+                                            {selectedIngress.hosts.map((host, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <Globe size={14} className="text-slate-400" />
+                                                    <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{host}</span>
+                                                    <a href={`http://${host}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-indigo-500 hover:text-indigo-600">
+                                                        <ExternalLink size={14} />
+                                                    </a>
+                                                </div>
+                                            ))}
+                                            {selectedIngress.hosts.length === 0 && (
+                                                <span className="text-sm text-slate-500 italic">No hosts defined (catch-all)</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Load Balancer IP</div>
+                                        <div className="font-mono font-bold text-lg text-indigo-600 dark:text-indigo-400">
+                                            {selectedIngress.address ? (
+                                                <Link href={`/public-ips?q=${selectedIngress.address}`} className="hover:underline">
+                                                    {selectedIngress.address}
+                                                </Link>
+                                            ) : 'None'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Rules</h4>
+                                        <div className="space-y-3">
+                                            {selectedIngress.rules.map((r, ri) => (
+                                                <div key={ri} className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+                                                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-tight">Host: {r.host || '*'}</div>
+                                                    <div className="space-y-1">
+                                                        {r.http?.paths.map((p: any, pi: number) => (
+                                                            <div key={pi} className="flex justify-between text-xs font-mono">
+                                                                <span className="text-indigo-600 dark:text-indigo-400">{p.path}</span>
+                                                                <span className="text-slate-500">→ {p.backend.service.name}:{p.backend.service.port.number}</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Cluster</span>
+                                                <span className="font-medium">{selectedIngress.cluster_name}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Created</span>
+                                                <span className="font-mono text-xs">{selectedIngress.creation_timestamp ? new Date(selectedIngress.creation_timestamp).toLocaleString() : 'N/A'}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Metadata</h4>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Cluster</span>
-                                        <span className="font-medium">{selectedIngress.cluster_name}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Created</span>
-                                        <span className="font-mono text-xs">{selectedIngress.creation_timestamp ? new Date(selectedIngress.creation_timestamp).toLocaleString() : 'N/A'}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        ) : (
+                            <YamlViewer yaml={selectedIngress.yaml_manifest || ''} />
+                        )}
                     </div>
                 )}
             </SlideOver>
