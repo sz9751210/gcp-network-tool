@@ -341,7 +341,7 @@ export default function DomainSearchPage() {
                     {results && results.length > 0 && (
                         <div className="mt-8">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{t('domainSearch.topology')}</h2>
-                            <div className="h-[700px] bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="h-[900px] bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <DomainTopology
                                     domain={domain}
                                     resolvedIps={results.map(r => r.ip)}

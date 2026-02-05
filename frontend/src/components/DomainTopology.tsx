@@ -28,7 +28,7 @@ const nodeHeight = 80;
 
 // Custom Node Components
 const DomainNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30 min-w-[180px] max-w-[400px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30 min-w-[180px] max-w-[400px] cursor-pointer transition-all duration-200 hover:scale-[1.35] hover:z-50 hover:shadow-xl hover:shadow-indigo-500/50">
         <Handle type="source" position={Position.Bottom} className="!bg-indigo-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
             <Globe size={18} className="text-indigo-200 flex-shrink-0" />
@@ -40,7 +40,7 @@ const DomainNode = memo(({ data }: NodeProps) => (
 DomainNode.displayName = 'DomainNode';
 
 const IpNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-lg shadow-slate-900/30 border border-slate-600/50 min-w-[140px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-lg shadow-slate-900/30 border border-slate-600/50 min-w-[140px] cursor-pointer transition-all duration-200 hover:scale-[1.15] hover:z-50 hover:shadow-xl hover:shadow-slate-900/50">
         <Handle type="target" position={Position.Top} className="!bg-slate-400 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-slate-400 !w-3 !h-3" />
         <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ const IpNode = memo(({ data }: NodeProps) => (
 IpNode.displayName = 'IpNode';
 
 const ResourceNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400/30 min-w-[180px] max-w-[400px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400/30 min-w-[180px] max-w-[400px] cursor-pointer transition-all duration-200 hover:scale-[1.15] hover:z-50 hover:shadow-xl hover:shadow-emerald-500/50">
         <Handle type="target" position={Position.Top} className="!bg-emerald-300 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-emerald-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ const ResourceNode = memo(({ data }: NodeProps) => (
 ResourceNode.displayName = 'ResourceNode';
 
 const BackendServiceNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 min-w-[180px] max-w-[400px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 min-w-[180px] max-w-[400px] cursor-pointer transition-all duration-200 hover:scale-[1.15] hover:z-50 hover:shadow-xl hover:shadow-blue-500/50">
         <Handle type="target" position={Position.Top} className="!bg-blue-300 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-blue-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
@@ -82,7 +82,7 @@ const BackendServiceNode = memo(({ data }: NodeProps) => (
 BackendServiceNode.displayName = 'BackendServiceNode';
 
 const BackendNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 border border-rose-400/30 min-w-[160px] max-w-[400px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 border border-rose-400/30 min-w-[160px] max-w-[400px] cursor-pointer transition-all duration-200 hover:scale-[1.15] hover:z-50 hover:shadow-xl hover:shadow-rose-500/50">
         <Handle type="target" position={Position.Top} className="!bg-rose-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
             <Cpu size={16} className="text-rose-200 flex-shrink-0" />
@@ -94,7 +94,7 @@ const BackendNode = memo(({ data }: NodeProps) => (
 BackendNode.displayName = 'BackendNode';
 
 const CloudArmorNode = memo(({ data }: NodeProps) => (
-    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30 border border-amber-400/30 min-w-[140px]">
+    <div className="px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30 border border-amber-400/30 min-w-[140px] cursor-pointer transition-all duration-200 hover:scale-[1.15] hover:z-50 hover:shadow-xl hover:shadow-amber-500/50">
         <Handle type="target" position={Position.Top} className="!bg-amber-300 !w-3 !h-3" />
         <Handle type="source" position={Position.Bottom} className="!bg-amber-300 !w-3 !h-3" />
         <div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ export default function DomainTopology({ domain, resolvedIps, topology }: Domain
     }, [initialNodes, initialEdges, setNodes, setEdges]);
 
     return (
-        <div className="h-[500px] w-full">
+        <div className="h-full w-full min-h-[600px]">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -313,7 +313,10 @@ export default function DomainTopology({ domain, resolvedIps, topology }: Domain
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
                 fitView
-                fitViewOptions={{ padding: 0.2 }}
+                fitViewOptions={{ padding: 0.15, minZoom: 0.8, maxZoom: 1.5 }}
+                defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                minZoom={0.5}
+                maxZoom={2.5}
                 attributionPosition="bottom-right"
                 className="bg-slate-900 rounded-xl border border-slate-700"
                 proOptions={{ hideAttribution: true }}
