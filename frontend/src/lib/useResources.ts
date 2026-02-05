@@ -11,7 +11,16 @@ interface CacheEntry<T> {
 const resourceCache: Record<string, CacheEntry<any>> = {};
 
 export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs' | 'gke-hpa') {
-    const [data, setData] = useState<T[]>([]);
+    // Initialize with cached data if available and still valid
+    const getCachedData = (): T[] => {
+        const cached = resourceCache[type];
+        if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+            return cached.data;
+        }
+        return [];
+    };
+
+    const [data, setData] = useState<T[]>(getCachedData);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
