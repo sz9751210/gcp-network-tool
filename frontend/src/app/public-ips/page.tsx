@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useScan } from '@/contexts/ScanContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PublicIP } from '@/types/network';
@@ -268,13 +269,41 @@ function PublicIPsContent() {
                                 {paginatedIPs.map((ip, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">{ip.ip_address}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{ip.resource_name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {(() => {
+                                                const type = ip.resource_type?.toUpperCase() || '';
+                                                const isLoadBalancer = type.includes('LOADBALANCER') || type.includes('LOAD_BALANCER') || type.includes('FORWARDING');
+                                                // Use url_map name (from gcloud compute url-maps list) if available
+                                                const lbName = ip.details?.url_map || ip.resource_name;
+
+                                                if (isLoadBalancer) {
+                                                    return (
+                                                        <Link
+                                                            href={`/load-balancers?q=${ip.ip_address}`}
+                                                            className="group flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
+                                                                <rect width="18" height="18" x="3" y="3" rx="2" />
+                                                                <path d="M3 9h18" />
+                                                                <path d="M3 15h18" />
+                                                            </svg>
+                                                            <span className="font-medium group-hover:underline">{lbName}</span>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
+                                                                <path d="M5 12h14" />
+                                                                <path d="m12 5 7 7-7 7" />
+                                                            </svg>
+                                                        </Link>
+                                                    );
+                                                }
+                                                return <span className="text-slate-700 dark:text-slate-300">{ip.resource_name}</span>;
+                                            })()}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {(() => {
                                                 let variant: any = 'default';
                                                 const type = ip.resource_type?.toUpperCase() || '';
                                                 if (type === 'VM') variant = 'info';
-                                                else if (type.includes('LOAD_BALANCER') || type.includes('FORWARDING_RULE')) variant = 'indigo';
+                                                else if (type.includes('LOAD_BALANCER') || type.includes('FORWARDING_RULE') || type.includes('LOADBALANCER')) variant = 'indigo';
                                                 else if (type === 'CLOUD_NAT') variant = 'amber';
                                                 else if (type.includes('VPN')) variant = 'purple';
 
