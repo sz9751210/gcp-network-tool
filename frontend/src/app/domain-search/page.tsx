@@ -248,6 +248,7 @@ export default function DomainSearchPage() {
                                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                                     <tr>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{t('domainSearch.ipAddress')}</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Resource</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Load Balancer</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Cloud Armor</th>
                                     </tr>
@@ -257,39 +258,64 @@ export default function DomainSearchPage() {
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             {/* IP Address Column */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="font-mono font-bold text-slate-900 dark:text-white">{result.ip}</span>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${result.type === 'Public' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                            result.type === 'Internal' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                                            }`}>
-                                                            {result.type}
-                                                        </span>
-                                                    </div>
-                                                    {result.detailsLink && (
+                                                <div className="flex items-center gap-3">
+                                                    {result.detailsLink ? (
                                                         <Link
                                                             href={result.detailsLink}
-                                                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline mt-1"
+                                                            className="font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline flex items-center gap-1.5"
                                                         >
-                                                            View IP
+                                                            {result.ip}
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                                                <polyline points="15 3 21 3 21 9" />
+                                                                <line x1="10" x2="21" y1="14" y2="3" />
+                                                            </svg>
                                                         </Link>
+                                                    ) : (
+                                                        <span className="font-mono font-bold text-slate-900 dark:text-white">{result.ip}</span>
                                                     )}
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${result.type === 'Public' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                        result.type === 'Internal' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                            'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                                        }`}>
+                                                        {result.type}
+                                                    </span>
                                                 </div>
+                                            </td>
+
+                                            {/* Resource Column */}
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {result.resourceName ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{result.resourceName}</span>
+                                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                            {result.resourceType && <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">{result.resourceType}</span>}
+                                                            {result.region && <span>{result.region}</span>}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
                                             </td>
 
                                             {/* Load Balancer Column */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {result.loadBalancer ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{result.loadBalancer.name}</span>
-                                                        <Link
-                                                            href={result.loadBalancer.link}
-                                                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline mt-0.5"
-                                                        >
-                                                            View LB
-                                                        </Link>
-                                                    </div>
+                                                    <Link
+                                                        href={result.loadBalancer.link}
+                                                        className="group flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600 dark:text-indigo-400">
+                                                            <rect width="18" height="18" x="3" y="3" rx="2" />
+                                                            <path d="M3 9h18" />
+                                                            <path d="M3 15h18" />
+                                                        </svg>
+                                                        <span className="font-medium text-indigo-700 dark:text-indigo-300 group-hover:underline">{result.loadBalancer.name}</span>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400 dark:text-indigo-500">
+                                                            <path d="M5 12h14" />
+                                                            <path d="m12 5 7 7-7 7" />
+                                                        </svg>
+                                                    </Link>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
                                                 )}
@@ -300,15 +326,20 @@ export default function DomainSearchPage() {
                                                 {result.cloudArmor && result.cloudArmor.policies.length > 0 ? (
                                                     <div className="flex flex-col gap-2">
                                                         {result.cloudArmor.policies.map((policy, pIdx) => (
-                                                            <div key={pIdx} className="flex flex-col">
-                                                                <span className="font-medium text-slate-900 dark:text-slate-100">{policy}</span>
-                                                                <Link
-                                                                    href={`/cloud-armor?q=${policy}`}
-                                                                    className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline mt-0.5"
-                                                                >
-                                                                    View Cloud Armor
-                                                                </Link>
-                                                            </div>
+                                                            <Link
+                                                                key={pIdx}
+                                                                href={`/cloud-armor?q=${policy}`}
+                                                                className="group flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400">
+                                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                                                                </svg>
+                                                                <span className="font-medium text-amber-700 dark:text-amber-300 group-hover:underline">{policy}</span>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 dark:text-amber-500">
+                                                                    <path d="M5 12h14" />
+                                                                    <path d="m12 5 7 7-7 7" />
+                                                                </svg>
+                                                            </Link>
                                                         ))}
                                                     </div>
                                                 ) : (
