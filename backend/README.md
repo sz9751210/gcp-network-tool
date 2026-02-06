@@ -1,5 +1,7 @@
 # GCP Network Planner - Backend
 
+[English](README.md) | [繁體中文](README_zh-TW.md)
+
 The backend service for GCP Network Planner, built with **FastAPI** and **Python 3.11**. It handles GCP API interactions, network scanning, data persistence, and analytical tasks.
 
 ## Architecture

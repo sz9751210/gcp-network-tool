@@ -1,5 +1,7 @@
 # GCP Network Planner - Frontend
 
+[English](README.md) | [繁體中文](README_zh-TW.md)
+
 The frontend interface for GCP Network Planner, built with **Next.js 14**, **React**, and **Tailwind CSS**. It provides a responsive, modern UI for managing scans and visualizing network topology.
 
 ## Tech Stack
