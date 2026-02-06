@@ -7,13 +7,20 @@ An Internal Developer Platform (IDP) module for visualizing GCP network topology
 ## Features
 
 ### 🌐 Network Visualization
-- **Hierarchical View**: Visualize partial tree of Projects -> VPCs -> Subnets.
+- **Interactive Topology**: Visualize specific domains and their downstream dependencies (IPs, Load Balancers, Backend Services, Instances/Pods) using an interactive graph.
+- **Hierarchical View**: Navigate through the structure of Projects -> VPCs -> Subnets.
 - **Multi-Source Scanning**: Recursively scan Folders, Organizations, or specific Projects.
+- **Granular Scan Scope**: Configure scans to selectively include/exclude GKE Clusters, GCE Instances, Cloud Storage, or Firewalls for optimized performance.
 - **Shared VPC Support**: Automatically identify Host Projects and Service Projects relationship.
+
+### ☸️ GKE Deep Dive
+- **Comprehensive Resource Views**: specialized views for Workloads, Services, Ingress, HPA, PVCs, ConfigMaps, and Secrets.
+- **YAML Manifest Viewer**: Inspect raw YAML configurations for GKE resources directly within the UI.
+- **Topology Integration**: See how GKE pods and services connect to the broader network.
 
 ### 🛡️ Security & Analysis
 - **Cloud Armor Simulator**: Simulate traffic against your security policies to test rules before deployment.
-- **Firewall Rule Analysis**: comprehensive view of all allow/deny rules across your network.
+- **Firewall Rule Analysis**: Comprehensive view of all allow/deny rules across your network.
 - **Public IP Auditing**: Track all external IP addresses and their attached resources.
 
 ### 🔢 Network Planning
@@ -21,7 +28,7 @@ An Internal Developer Platform (IDP) module for visualizing GCP network topology
 - **Utilization Analysis**: Monitor IP limits and usage per VPC / Subnet.
 
 ### ⚙️ Enterprise Features
-- **Multi-Credential Management**: storage and switch between multiple GCP Service Account credentials securely.
+- **Multi-Credential Management**: Store and switch between multiple GCP Service Account credentials securely.
 - **Multi-Language Support**: Fully localized interface in English, Traditional Chinese (繁體中文), and Simplified Chinese (简体中文).
 
 ## Quick Start
@@ -30,8 +37,10 @@ An Internal Developer Platform (IDP) module for visualizing GCP network topology
 1. **Docker & Docker Compose** installed.
 2. A **GCP Service Account Key** (JSON) with the following roles:
    - `roles/compute.networkViewer`
+   - `roles/container.clusterViewer` (for GKE features)
+   - `roles/container.developer` (optional, for reading GKE resource details)
    - `roles/resourcemanager.folderViewer`
-   - `roles/browser` (optional, for project browsing)
+   - `roles/storage.objectViewer` (optional, for bucket details)
 
 ### Installation
 
@@ -55,39 +64,33 @@ An Internal Developer Platform (IDP) module for visualizing GCP network topology
    - Go to **Settings** page.
    - Under **Credentials Management**, upload your GCP Service Account JSON key.
    - Click **Set Active** on your uploaded credential.
-   - Configure your scan scope (Organization ID, Folder ID, or Project IDs).
+   - Configure your scan scope (Source ID) and **Scan Options** (toggle GKE, Instances, etc.).
    - Click **Start Scan**.
 
-## detailed Guide
+## Detailed Guide
 
-### Credential Management
-The application supports managing multiple GCP service accounts. This is useful for:
-- Managing different environments (Staging vs Production) in isolated GCP organizations.
-- Testing permissions with different service accounts.
-- Credentials are stored securely in the `backend/credentials/` directory (mapped volume).
-
-### Internationalization (i18n)
-Switch languages instantly using the dropdown menu in the top-right corner.
-- **Supported Languages**: English, Traditional Chinese (繁體中文), Simplified Chinese (简体中文).
-- Preferences are saved locally in your browser.
+### Scan Settings
+The application now supports **Granular Scanning** to improve performance:
+- **Scan Scope**: Select specific resource types to include (GKE, Instances, Storage, Firewalls).
+- Uncheck unused resources to significantly reduce scan time for large organizations.
 
 ### Cloud Armor Simulator
-A powerful tool to validte your WAF rules:
+A powerful tool to validate your WAF rules:
 1. Navigate to **Cloud Armor** page.
 2. Select a policy.
 3. Use the **Rule Simulator** panel on the right.
-4. Enter test IP addresses or request headers (coming soon) to see which rules match and whether traffic would be allowed or denied.
+4. Enter test IP addresses or request headers to see which rules match and whether traffic would be allowed or denied.
 
 ## Architecture
 
 - **Backend**: Python FastAPI
-  - `google-cloud-compute` & `google-cloud-resource-manager` for API interaction.
+  - **Modular Scanners**: `backend/scanners/` for distinct resource types (GKE, Network, Compute, etc.).
+  - `ThreadPoolExecutor` for parallelized scanning of project resources.
   - Custom `CredentialsManager` for handling auth contexts.
-  - Multi-process scanning for performance.
 - **Frontend**: Next.js 14 (React)
-  - TypeScript & Tailwind CSS.
-  - `React Context` for global state (Scan Data, Language).
-  - D3.js / Recharts for visualizations (planned).
+  - **Visualization**: `React Flow` for interactive topology graphs.
+  - **UI Components**: Shadcn UI + Tailwind CSS.
+  - **State Management**: React Context for global state (Scan Data, Language).
 - **Deployment**: Docker Compose
   - Hot-reloading enabled for development.
 
@@ -96,12 +99,14 @@ A powerful tool to validte your WAF rules:
 ### Project Structure
 ```
 ├── backend/
+│   ├── scanners/       # Modular scanner implementations
 │   ├── credentials/    # Stored key files (gitignored)
 │   ├── main.py         # API Entry point
-│   ├── gcp_scanner.py  # Scanning logic
+│   ├── gcp_scanner.py  # Orchestrator
 │   └── ...
 ├── frontend/
 │   ├── src/app/        # Next.js App Router pages
+│   ├── src/components/ # Reusable UI components
 │   ├── src/locales/    # i18n JSON files
 │   └── ...
 └── docker-compose.yml

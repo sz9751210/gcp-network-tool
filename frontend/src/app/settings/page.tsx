@@ -23,6 +23,12 @@ export default function SettingsPage() {
     const [sourceType, setSourceType] = useState<'folder' | 'organization' | 'project' | 'all_accessible'>('all_accessible');
     const [sourceId, setSourceId] = useState('');
     const [includeSharedVpc, setIncludeSharedVpc] = useState(true);
+    const [scanOptions, setScanOptions] = useState({
+        include_gke: true,
+        include_instances: true,
+        include_storage: true,
+        include_firewalls: true
+    });
 
     // Credentials state
     const [credentials, setCredentials] = useState<Credential[]>([]);
@@ -89,6 +95,7 @@ export default function SettingsPage() {
             source_type: sourceType,
             source_id: sourceType === 'all_accessible' ? 'all_accessible' : sourceId,
             include_shared_vpc: includeSharedVpc,
+            scan_options: scanOptions
         });
     };
 
@@ -415,6 +422,63 @@ export default function SettingsPage() {
                         <label htmlFor="sharedVpc" className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                             {t('settings.includeSharedVpc')}
                         </label>
+                    </div>
+
+                    {/* Scan Scope Options */}
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-3">
+                            Scan Scope
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                <input
+                                    type="checkbox"
+                                    id="includeGKE"
+                                    checked={scanOptions.include_gke}
+                                    onChange={(e) => setScanOptions(prev => ({ ...prev, include_gke: e.target.checked }))}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-600 rounded focus:ring-indigo-500"
+                                />
+                                <label htmlFor="includeGKE" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    GKE Clusters & Workloads
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                <input
+                                    type="checkbox"
+                                    id="includeInstances"
+                                    checked={scanOptions.include_instances}
+                                    onChange={(e) => setScanOptions(prev => ({ ...prev, include_instances: e.target.checked }))}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-600 rounded focus:ring-indigo-500"
+                                />
+                                <label htmlFor="includeInstances" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    GCE Instances
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                <input
+                                    type="checkbox"
+                                    id="includeStorage"
+                                    checked={scanOptions.include_storage}
+                                    onChange={(e) => setScanOptions(prev => ({ ...prev, include_storage: e.target.checked }))}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-600 rounded focus:ring-indigo-500"
+                                />
+                                <label htmlFor="includeStorage" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    Cloud Storage
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                <input
+                                    type="checkbox"
+                                    id="includeFirewalls"
+                                    checked={scanOptions.include_firewalls}
+                                    onChange={(e) => setScanOptions(prev => ({ ...prev, include_firewalls: e.target.checked }))}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-600 rounded focus:ring-indigo-500"
+                                />
+                                <label htmlFor="includeFirewalls" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    Firewalls & Policies
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Submit Button or Status Card */}

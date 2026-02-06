@@ -47,7 +47,8 @@ class GCPScanner:
         self,
         source_type: str,
         source_id: str,
-        include_shared_vpc: bool = True
+        include_shared_vpc: bool = True,
+        scan_options: Dict[str, bool] = None
     ) -> NetworkTopology:
         """
         Main entry point for scanning.
@@ -95,7 +96,7 @@ class GCPScanner:
         
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_pid = {
-                executor.submit(self._scan_single_project, pid, include_shared_vpc): pid 
+                executor.submit(self._scan_single_project, pid, include_shared_vpc, scan_options): pid 
                 for pid in project_ids
             }
             
@@ -156,12 +157,19 @@ class GCPScanner:
         logger.info(f"Scan finished in {time.time() - start_time:.2f}s")
         return topology
 
-    def _scan_single_project(self, project_id: str, include_shared_vpc: bool) -> Dict[str, Any]:
+    def _scan_single_project(self, project_id: str, include_shared_vpc: bool, scan_options: Dict[str, bool] = None) -> Dict[str, Any]:
         """
         Scans a single project for all resources using parallel sub-tasks.
         """
         logger.info(f"Scanning project {project_id}...")
         
+        # Default options
+        opts = scan_options or {}
+        include_instances = opts.get('include_instances', True)
+        include_gke = opts.get('include_gke', True)
+        include_storage = opts.get('include_storage', True)
+        include_firewalls = opts.get('include_firewalls', True)
+
         # Get basic project info
         details = self.project_scanner.get_project_details(project_id)
         if not details:
@@ -181,11 +189,26 @@ class GCPScanner:
             with ThreadPoolExecutor(max_workers=8) as executor:
                 # 1. Start all basic network scans
                 f_vpcs = executor.submit(self.network_scanner.scan_vpc_networks, project_id, include_shared_vpc)
-                f_firewalls = executor.submit(self.firewall_scanner.scan_firewalls, project_id)
-                f_policies = executor.submit(self.firewall_scanner.scan_cloud_armor, project_id)
-                f_instances = executor.submit(self.instance_scanner.scan_instances, project_id)
-                f_gke = executor.submit(self.gke_scanner.scan_all, project_id)
-                f_storage = executor.submit(self.storage_scanner.scan_buckets, project_id)
+                
+                # Conditional Scans
+                f_firewalls = None
+                f_policies = None
+                if include_firewalls:
+                    f_firewalls = executor.submit(self.firewall_scanner.scan_firewalls, project_id)
+                    f_policies = executor.submit(self.firewall_scanner.scan_cloud_armor, project_id)
+                
+                f_instances = None
+                if include_instances:
+                    f_instances = executor.submit(self.instance_scanner.scan_instances, project_id)
+                
+                f_gke = None
+                if include_gke:
+                    f_gke = executor.submit(self.gke_scanner.scan_all, project_id)
+                
+                f_storage = None
+                if include_storage:
+                    f_storage = executor.submit(self.storage_scanner.scan_buckets, project_id)
+                
                 f_lb_context = executor.submit(self.lb_scanner.prefetch_resources, project_id)
 
                 # Wait for core network results needed for IPs
@@ -202,12 +225,13 @@ class GCPScanner:
                 f_public_ips = executor.submit(self.address_scanner.scan_addresses, project_id, "EXTERNAL", self.lb_scanner, lb_context=lb_context)
                 f_internal_ips = executor.submit(self.address_scanner.scan_addresses, project_id, "INTERNAL", self.lb_scanner, subnet_map=subnet_map, lb_context=lb_context)
 
-                # Collect all remaining results
-                firewalls = f_firewalls.result()
-                policies = f_policies.result()
-                instances = f_instances.result()
-                gke_data = f_gke.result()
-                storage_buckets = f_storage.result()
+                # Collect all remaining results (handle skipped scans)
+                firewalls = f_firewalls.result() if f_firewalls else []
+                policies = f_policies.result() if f_policies else []
+                instances = f_instances.result() if f_instances else []
+                gke_data = f_gke.result() if f_gke else {}
+                storage_buckets = f_storage.result() if f_storage else []
+                
                 public_ips = f_public_ips.result()
                 internal_ips = f_internal_ips.result()
 

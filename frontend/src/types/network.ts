@@ -380,6 +380,12 @@ export interface ScanRequest {
     source_type: 'folder' | 'organization' | 'project' | 'all_accessible';
     source_id: string;
     include_shared_vpc: boolean;
+    scan_options?: {
+        include_instances?: boolean;
+        include_gke?: boolean;
+        include_storage?: boolean;
+        include_firewalls?: boolean;
+    };
 }
 
 export interface ScanStatusResponse {

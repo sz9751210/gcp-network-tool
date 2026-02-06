@@ -391,6 +391,7 @@ class ScanRequest(BaseModel):
     source_type: str = Field(..., pattern="^(folder|organization|project|all_accessible)$")
     source_id: str
     include_shared_vpc: bool = True
+    scan_options: Optional[Dict[str, bool]] = None
 
 
 class CIDRCheckRequest(BaseModel):

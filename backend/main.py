@@ -5,7 +5,7 @@ FastAPI application for scanning and analyzing GCP network topology.
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -64,7 +64,7 @@ app.add_middleware(
 )
 
 
-def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared_vpc: bool):
+def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared_vpc: bool, scan_options: Optional[Dict[str, bool]] = None):
     """Background task for running network scan."""
     try:
         # Update running status
@@ -77,7 +77,8 @@ def run_scan_task(scan_id: str, source_type: str, source_id: str, include_shared
         topology = scanner.scan_network_topology(
             source_type=source_type,
             source_id=source_id,
-            include_shared_vpc=include_shared_vpc
+            include_shared_vpc=include_shared_vpc,
+            scan_options=scan_options
         )
         
         # Prepare result
@@ -158,7 +159,8 @@ async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
         scan_id,
         request.source_type,
         request.source_id,
-        request.include_shared_vpc
+        request.include_shared_vpc,
+        request.scan_options
     )
     
     logger.info(f"Started scan {scan_id} for {request.source_type}/{request.source_id}")
