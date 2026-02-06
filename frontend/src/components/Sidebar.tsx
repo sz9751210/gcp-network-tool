@@ -26,7 +26,8 @@ import {
     Lock,
     HardDrive,
     ShieldCheck,
-    Scale
+    Scale,
+    Layers
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -54,6 +55,9 @@ export default function Sidebar() {
         { key: 'sidebar.gkeConfigMaps', path: '/gke/configmaps', icon: <Settings2 size={18} /> },
         { key: 'sidebar.gkeSecrets', path: '/gke/secrets', icon: <Lock size={18} /> },
         { key: 'sidebar.gkePvcs', path: '/gke/pvcs', icon: <HardDrive size={18} /> },
+        { key: 'sidebar.gkePvcs', path: '/gke/pvcs', icon: <HardDrive size={18} /> },
+        { key: 'nav.gke.statefulsets', path: '/gke/statefulsets', icon: <Database size={18} /> },
+        { key: 'nav.gke.daemonsets', path: '/gke/daemonsets', icon: <Layers size={18} /> },
         { key: 'HPA', path: '/gke/hpa', icon: <Scale size={18} /> },
     ];
 

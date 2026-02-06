@@ -20,7 +20,8 @@ except ImportError:
 from scanners.base import BaseScanner
 from models import (
     GKECluster, GKEPod, GKEDeployment, GKEService, 
-    GKEIngress, GKEConfigMap, GKESecret, GKEPVC, GKEContainer, GKEHPA
+    GKEIngress, GKEConfigMap, GKESecret, GKEPVC, GKEContainer, GKEHPA,
+    GKEStatefulSet, GKEDaemonSet
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,9 @@ class GKEConsistentScanner(BaseScanner):
         all_configmaps = []
         all_secrets = []
         all_pvcs = []
+        all_hpas = []
+        all_statefulsets = []
+        all_daemonsets = []
 
         for c in raw_clusters:
             cluster_model = self._to_cluster_model(project_id, c)
@@ -51,7 +55,8 @@ class GKEConsistentScanner(BaseScanner):
             return {
                 'clusters': clusters, 'pods': [], 'deployments': [], 
                 'services': [], 'ingress': [], 'configmaps': [], 
-                'secrets': [], 'pvcs': []
+                'secrets': [], 'pvcs': [], 'hpas': [], 
+                'statefulsets': [], 'daemonsets': []
             }
 
         # Scan workloads in parallel across clusters
@@ -72,6 +77,15 @@ class GKEConsistentScanner(BaseScanner):
                     all_configmaps.extend(res['configmaps'])
                     all_secrets.extend(res['secrets'])
                     all_pvcs.extend(res['pvcs'])
+                    all_hpas.extend(res.get('hpas', []))
+                    all_statefulsets.extend(res.get('statefulsets', []))
+                    all_daemonsets.extend(res.get('daemonsets', []))
+ 
+                    # Wait, checking line 172 of gke_scanner.py: 
+                    # res = {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs', 'hpas']}
+                    # But the return statement of scan_all usually aggregates these. 
+                    # The previous scan_all I saw (lines 28-87) did NOT include 'hpas' or 'statefulsets' etc in the final return. 
+
                 except Exception as e:
                     logger.error(f"Error scanning workloads for cluster {c_name}: {e}")
 
@@ -83,7 +97,10 @@ class GKEConsistentScanner(BaseScanner):
             'ingress': all_ingress,
             'configmaps': all_configmaps,
             'secrets': all_secrets,
-            'pvcs': all_pvcs
+            'pvcs': all_pvcs,
+            'hpas': all_hpas,
+            'statefulsets': all_statefulsets,
+            'daemonsets': all_daemonsets
         }
 
     def _list_raw_clusters(self, project_id: str):
@@ -169,7 +186,7 @@ class GKEConsistentScanner(BaseScanner):
         if not api_client:
             return {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs']}
 
-        res = {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs', 'hpas']}
+        res = {k: [] for k in ['pods', 'deployments', 'services', 'ingress', 'configmaps', 'secrets', 'pvcs', 'hpas', 'statefulsets', 'daemonsets']}
         cluster_name = cluster.name
 
         try:
@@ -357,6 +374,51 @@ class GKEConsistentScanner(BaseScanner):
                     creation_timestamp=pvc.metadata.creation_timestamp,
                     yaml_manifest=self._to_yaml(api_client, pvc)
                 ))
+
+            # StatefulSets
+            try:
+                stateful_sets = apps_v1.list_stateful_set_for_all_namespaces(timeout_seconds=10)
+                for ss in stateful_sets.items:
+                    res['statefulsets'].append(GKEStatefulSet(
+                        name=ss.metadata.name,
+                        namespace=ss.metadata.namespace,
+                        cluster_name=cluster_name,
+                        project_id=project_id,
+                        replicas=ss.spec.replicas or 0,
+                        current_replicas=ss.status.current_replicas or 0,
+                        ready_replicas=ss.status.ready_replicas or 0,
+                        updated_replicas=ss.status.updated_replicas or 0,
+                        service_name=ss.spec.service_name or "",
+                        labels=ss.metadata.labels or {},
+                        selector=ss.spec.selector.match_labels or {},
+                        creation_timestamp=ss.metadata.creation_timestamp,
+                        yaml_manifest=self._to_yaml(api_client, ss)
+                    ))
+            except Exception as e:
+                logger.warning(f"Failed to list StatefulSets for {cluster_name}: {e}")
+
+            # DaemonSets
+            try:
+                daemon_sets = apps_v1.list_daemon_set_for_all_namespaces(timeout_seconds=10)
+                for ds in daemon_sets.items:
+                    res['daemonsets'].append(GKEDaemonSet(
+                        name=ds.metadata.name,
+                        namespace=ds.metadata.namespace,
+                        cluster_name=cluster_name,
+                        project_id=project_id,
+                        desired_number_scheduled=ds.status.desired_number_scheduled,
+                        current_number_scheduled=ds.status.current_number_scheduled,
+                        number_available=ds.status.number_available or 0,
+                        number_misscheduled=ds.status.number_misscheduled,
+                        number_ready=ds.status.number_ready,
+                        updated_number_scheduled=ds.status.updated_number_scheduled or 0,
+                        labels=ds.metadata.labels or {},
+                        selector=ds.spec.selector.match_labels or {},
+                        creation_timestamp=ds.metadata.creation_timestamp,
+                        yaml_manifest=self._to_yaml(api_client, ds)
+                    ))
+            except Exception as e:
+                logger.warning(f"Failed to list DaemonSets for {cluster_name}: {e}")
 
         except Exception as e:
             logger.error(f"Error calling Kubernetes API for {cluster_name}: {e}")

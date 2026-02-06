@@ -70,8 +70,12 @@ export function ScanProvider({ children }: { children: ReactNode }) {
             loadScanHistory();
 
             // Save to session storage
-            sessionStorage.setItem('lastScanId', scan_id);
-            sessionStorage.setItem('lastTopology', JSON.stringify(result));
+            try {
+                sessionStorage.setItem('lastScanId', scan_id);
+                sessionStorage.setItem('lastTopology', JSON.stringify(result));
+            } catch (storageError) {
+                console.warn('Failed to save scan to session storage (likely quota exceeded):', storageError);
+            }
         } catch (err: any) {
             const errorMsg = err.message || 'Scan failed';
             setError(errorMsg);
@@ -130,8 +134,13 @@ export function ScanProvider({ children }: { children: ReactNode }) {
             setScanStatus('');
 
             // Save to session storage
-            sessionStorage.setItem('lastScanId', scanId);
-            sessionStorage.setItem('lastTopology', JSON.stringify(result));
+            try {
+                sessionStorage.setItem('lastScanId', scanId);
+                sessionStorage.setItem('lastTopology', JSON.stringify(result));
+            } catch (storageError) {
+                console.warn('Failed to save scan to session storage (likely quota exceeded):', storageError);
+                // Optionally clear old data or just ignore
+            }
         } catch (e) {
             const msg = e instanceof Error ? e.message : 'Failed to load scan';
             setError(msg);

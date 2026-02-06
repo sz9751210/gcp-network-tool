@@ -143,6 +143,41 @@ export interface GKEHPA {
     yaml_manifest?: string;
 }
 
+export interface GKEStatefulSet {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    replicas: number;
+    current_replicas: number;
+    ready_replicas: number;
+    updated_replicas: number;
+    service_name: string;
+    conditions: Array<{ type: string, status: string, reason?: string }>;
+    labels: Record<string, string>;
+    selector: Record<string, string>;
+    creation_timestamp: string | null;
+    yaml_manifest?: string;
+}
+
+export interface GKEDaemonSet {
+    name: string;
+    namespace: string;
+    cluster_name: string;
+    project_id: string;
+    desired_number_scheduled: number;
+    current_number_scheduled: number;
+    number_available: number;
+    number_misscheduled: number;
+    number_ready: number;
+    updated_number_scheduled: number;
+    conditions: Array<{ type: string, status: string, reason?: string }>;
+    labels: Record<string, string>;
+    selector: Record<string, string>;
+    creation_timestamp: string | null;
+    yaml_manifest?: string;
+}
+
 export interface GKEService {
     name: string;
     namespace: string;
@@ -374,6 +409,9 @@ export interface NetworkTopology {
     gke_configmaps?: GKEConfigMap[];
     gke_secrets?: GKESecret[];
     gke_pvcs?: GKEPVC[];
+    gke_hpas?: GKEHPA[];
+    gke_statefulsets?: GKEStatefulSet[];
+    gke_daemonsets?: GKEDaemonSet[];
 }
 
 export interface ScanRequest {

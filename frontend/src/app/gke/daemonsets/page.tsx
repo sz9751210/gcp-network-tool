@@ -3,25 +3,26 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useResources } from '@/lib/useResources';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { GKEHPA } from '@/types/network';
+import { GKEDaemonSet } from '@/types/network';
 import {
     Activity,
     Search,
     Filter,
-    Scale,
+    Server, // Using Server icon for DaemonSet for now, or Layers
     Layers,
-    ChevronRight
+    ChevronRight,
+    CheckCircle
 } from 'lucide-react';
 import Badge from '@/components/Badge';
 import Pagination from '@/components/Pagination';
 import SlideOver from '@/components/SlideOver';
 import YamlViewer from '@/components/YamlViewer';
 
-function GKEHPAContent() {
+function GKEDaemonSetContent() {
     const { t } = useLanguage();
     const [search, setSearch] = useState('');
-    const { data: hpas, loading, error } = useResources<GKEHPA>('gke-hpa');
-    const [selectedHPA, setSelectedHPA] = useState<GKEHPA | null>(null);
+    const { data: daemonsets, loading, error } = useResources<GKEDaemonSet>('gke-daemonsets');
+    const [selectedDS, setSelectedDS] = useState<GKEDaemonSet | null>(null);
     const [detailTab, setDetailTab] = useState<'details' | 'yaml'>('details');
 
     const [page, setPage] = useState(1);
@@ -33,34 +34,34 @@ function GKEHPAContent() {
 
     // Derived Lists
     const uniqueClusters = useMemo(() => {
-        const set = new Set(hpas.map(r => r.cluster_name));
+        const set = new Set(daemonsets.map(r => r.cluster_name));
         return Array.from(set).sort();
-    }, [hpas]);
+    }, [daemonsets]);
 
     const uniqueNamespaces = useMemo(() => {
-        const set = new Set(hpas.map(r => r.namespace));
+        const set = new Set(daemonsets.map(r => r.namespace));
         return Array.from(set).sort();
-    }, [hpas]);
+    }, [daemonsets]);
 
-    const filteredHPAs = useMemo(() => {
-        return hpas.filter(hpa => {
-            const matchesSearch = hpa.name.toLowerCase().includes(search.toLowerCase()) ||
-                hpa.namespace.toLowerCase().includes(search.toLowerCase()) ||
-                hpa.cluster_name.toLowerCase().includes(search.toLowerCase());
+    const filteredDS = useMemo(() => {
+        return daemonsets.filter(ds => {
+            const matchesSearch = ds.name.toLowerCase().includes(search.toLowerCase()) ||
+                ds.namespace.toLowerCase().includes(search.toLowerCase()) ||
+                ds.cluster_name.toLowerCase().includes(search.toLowerCase());
 
-            const matchesCluster = selectedCluster === 'all' || hpa.cluster_name === selectedCluster;
-            const matchesNamespace = selectedNamespace === 'all' || hpa.namespace === selectedNamespace;
+            const matchesCluster = selectedCluster === 'all' || ds.cluster_name === selectedCluster;
+            const matchesNamespace = selectedNamespace === 'all' || ds.namespace === selectedNamespace;
 
             return matchesSearch && matchesCluster && matchesNamespace;
         });
-    }, [hpas, search, selectedCluster, selectedNamespace]);
+    }, [daemonsets, search, selectedCluster, selectedNamespace]);
 
-    const paginatedHPAs = useMemo(() => {
+    const paginatedDS = useMemo(() => {
         const start = (page - 1) * itemsPerPage;
-        return filteredHPAs.slice(start, start + itemsPerPage);
-    }, [filteredHPAs, page, itemsPerPage]);
+        return filteredDS.slice(start, start + itemsPerPage);
+    }, [filteredDS, page, itemsPerPage]);
 
-    if (loading && hpas.length === 0) {
+    if (loading && daemonsets.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4">
@@ -75,19 +76,19 @@ function GKEHPAContent() {
         <div className="p-8 max-w-[1800px] mx-auto">
             <div className="flex flex-col gap-2 mb-8">
                 <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 mb-1">
-                    <Scale size={24} />
+                    <Layers size={24} />
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Horizontal Pod Autoscalers
+                        DaemonSets
                     </h1>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 text-lg">
-                    Manage autoscaling policies for your workloads
+                    Manage system daemons and per-node workloads
                 </p>
             </div>
 
             {error && (
                 <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
-                    <p className="font-bold">Error loading HPAs:</p>
+                    <p className="font-bold">Error loading DaemonSets:</p>
                     <p>{error}</p>
                 </div>
             )}
@@ -98,7 +99,7 @@ function GKEHPAContent() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Search HPAs..."
+                            placeholder="Search DaemonSets..."
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -135,38 +136,40 @@ function GKEHPAContent() {
                             <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Namespace</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Targets</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Replicas (Min/Cur/Max)</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Desired/Ready</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Available</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cluster</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                            {paginatedHPAs.map((hpa, idx) => (
+                            {paginatedDS.map((ds, idx) => (
                                 <tr
-                                    key={`${hpa.cluster_name}-${hpa.namespace}-${hpa.name}-${idx}`}
+                                    key={`${ds.cluster_name}-${ds.namespace}-${ds.name}-${idx}`}
                                     className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
-                                    onClick={() => setSelectedHPA(hpa)}
+                                    onClick={() => setSelectedDS(ds)}
                                 >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <Scale className="text-indigo-500" size={18} />
-                                            <span className="font-medium text-slate-900 dark:text-white">{hpa.name}</span>
+                                            <Layers className="text-indigo-500" size={18} />
+                                            <span className="font-medium text-slate-900 dark:text-white">{ds.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{hpa.namespace}</td>
+                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{ds.namespace}</td>
                                     <td className="px-6 py-4 font-mono text-xs">
-                                        {hpa.target_cpu_utilization_percentage ? `${hpa.target_cpu_utilization_percentage}% CPU` : 'Custom'}
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold">{ds.desired_number_scheduled}</span>
+                                            <span className="text-slate-400">/</span>
+                                            <span className="text-emerald-600 dark:text-emerald-400">{ds.number_ready}</span>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 font-mono text-xs">
-                                        {hpa.min_replicas ?? 1} / <span className="text-indigo-600 dark:text-indigo-400 font-bold">{hpa.current_replicas}</span> / {hpa.max_replicas}
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-500 text-xs font-mono">{hpa.cluster_name}</td>
+                                    <td className="px-6 py-4 font-mono text-xs">{ds.number_available}</td>
+                                    <td className="px-6 py-4 text-slate-500 text-xs font-mono">{ds.cluster_name}</td>
                                 </tr>
                             ))}
-                            {filteredHPAs.length === 0 && (
+                            {filteredDS.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                                        No HPAs found
+                                        No DaemonSets found
                                     </td>
                                 </tr>
                             )}
@@ -176,28 +179,30 @@ function GKEHPAContent() {
 
                 <Pagination
                     currentPage={page}
-                    totalPages={Math.ceil(filteredHPAs.length / itemsPerPage)}
+                    totalPages={Math.ceil(filteredDS.length / itemsPerPage)}
                     onPageChange={setPage}
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={setItemsPerPage}
-                    totalItems={hpas.length}
-                    filteredCount={filteredHPAs.length}
+                    totalItems={daemonsets.length}
+                    filteredCount={filteredDS.length}
                 />
             </div>
 
             <SlideOver
-                isOpen={!!selectedHPA}
-                onClose={() => { setSelectedHPA(null); setDetailTab('details'); }}
-                title="HPA Details"
+                isOpen={!!selectedDS}
+                onClose={() => { setSelectedDS(null); setDetailTab('details'); }}
+                title="DaemonSet Details"
                 width="max-w-3xl"
             >
-                {selectedHPA && (
+                {selectedDS && (
                     <div className="space-y-4">
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedHPA.name}</h3>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedDS.name}</h3>
                             <div className="flex gap-2 mt-2">
-                                <Badge variant="indigo" pill>{selectedHPA.namespace}</Badge>
-                                <Badge variant="emerald" pill>{selectedHPA.current_replicas} Replicas</Badge>
+                                <Badge variant="indigo" pill>{selectedDS.namespace}</Badge>
+                                <Badge variant="emerald" pill>
+                                    {selectedDS.number_ready}/{selectedDS.desired_number_scheduled} Ready
+                                </Badge>
                             </div>
                         </div>
 
@@ -217,22 +222,20 @@ function GKEHPAContent() {
                             <>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Target CPU</div>
-                                        <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                            {selectedHPA.target_cpu_utilization_percentage ? `${selectedHPA.target_cpu_utilization_percentage}%` : 'N/A'}
-                                        </div>
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Desired</div>
+                                        <div className="font-mono font-bold">{selectedDS.desired_number_scheduled}</div>
                                     </div>
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Replicas (Min/Max)</div>
-                                        <div className="font-mono font-bold">{selectedHPA.min_replicas ?? 1} / {selectedHPA.max_replicas}</div>
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Ready</div>
+                                        <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{selectedDS.number_ready}</div>
                                     </div>
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Current Replicas</div>
-                                        <div className="font-mono font-bold">{selectedHPA.current_replicas}</div>
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Available</div>
+                                        <div className="font-mono font-bold">{selectedDS.number_available}</div>
                                     </div>
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                        <div className="text-xs text-slate-500 uppercase mb-1">Desired Replicas</div>
-                                        <div className="font-mono font-bold">{selectedHPA.desired_replicas}</div>
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Updated</div>
+                                        <div className="font-mono font-bold">{selectedDS.updated_number_scheduled}</div>
                                     </div>
                                 </div>
                                 <div>
@@ -240,17 +243,17 @@ function GKEHPAContent() {
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg space-y-2">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-slate-500">Cluster</span>
-                                            <span className="font-medium">{selectedHPA.cluster_name}</span>
+                                            <span className="font-medium">{selectedDS.cluster_name}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-slate-500">Project</span>
-                                            <span className="font-mono">{selectedHPA.project_id}</span>
+                                            <span className="font-mono">{selectedDS.project_id}</span>
                                         </div>
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            <YamlViewer yaml={selectedHPA.yaml_manifest || ''} />
+                            <YamlViewer yaml={selectedDS.yaml_manifest || ''} />
                         )}
                     </div>
                 )}
@@ -259,10 +262,10 @@ function GKEHPAContent() {
     );
 }
 
-export default function GKEHPAPage() {
+export default function GKEDaemonSetPage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading HPAs...</div>}>
-            <GKEHPAContent />
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading DaemonSets...</div>}>
+            <GKEDaemonSetContent />
         </Suspense>
     );
 }

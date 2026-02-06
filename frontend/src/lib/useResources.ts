@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 
 const resourceCache: Record<string, CacheEntry<any>> = {};
 
-export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs' | 'gke-hpa') {
+export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-buckets' | 'vpcs' | 'public-ips' | 'gke-pods' | 'gke-deployments' | 'gke-services' | 'gke-ingress' | 'gke-configmaps' | 'gke-secrets' | 'gke-pvcs' | 'gke-hpa' | 'gke-statefulsets' | 'gke-daemonsets') {
     // Initialize with cached data if available and still valid
     const getCachedData = (): T[] => {
         const cached = resourceCache[type];
@@ -74,6 +74,12 @@ export function useResources<T>(type: 'instances' | 'gke-clusters' | 'storage-bu
                     break;
                 case 'gke-hpa':
                     result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-hpa`).then(res => res.json());
+                    break;
+                case 'gke-statefulsets':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-statefulsets`).then(res => res.json());
+                    break;
+                case 'gke-daemonsets':
+                    result = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/resources/gke-daemonsets`).then(res => res.json());
                     break;
             }
             setData(result);

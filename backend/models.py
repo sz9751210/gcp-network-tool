@@ -243,6 +243,41 @@ class GKEHPA(BaseModel):
     creation_timestamp: Optional[datetime] = None
     yaml_manifest: Optional[str] = None
 
+class GKEStatefulSet(BaseModel):
+    """Represents a StatefulSet in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    replicas: int
+    current_replicas: int
+    ready_replicas: int
+    updated_replicas: int
+    service_name: str
+    conditions: List[Dict[str, str]] = Field(default_factory=list)
+    labels: Dict[str, str] = Field(default_factory=dict)
+    selector: Dict[str, str] = Field(default_factory=dict)
+    creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
+
+class GKEDaemonSet(BaseModel):
+    """Represents a DaemonSet in a GKE Cluster."""
+    name: str
+    namespace: str
+    cluster_name: str
+    project_id: str
+    desired_number_scheduled: int
+    current_number_scheduled: int
+    number_available: int
+    number_misscheduled: int
+    number_ready: int
+    updated_number_scheduled: int
+    conditions: List[Dict[str, str]] = Field(default_factory=list)
+    labels: Dict[str, str] = Field(default_factory=dict)
+    selector: Dict[str, str] = Field(default_factory=dict)
+    creation_timestamp: Optional[datetime] = None
+    yaml_manifest: Optional[str] = None
+
 class GKEService(BaseModel):
     """Represents a Service in a GKE Cluster."""
     name: str

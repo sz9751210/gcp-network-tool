@@ -31,15 +31,35 @@ function GKEServicesContent() {
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // Filtering State
+    const [selectedCluster, setSelectedCluster] = useState('all');
+    const [selectedNamespace, setSelectedNamespace] = useState('all');
+
+    // Derived Lists
+    const uniqueClusters = useMemo(() => {
+        const set = new Set(services.map(r => r.cluster_name));
+        return Array.from(set).sort();
+    }, [services]);
+
+    const uniqueNamespaces = useMemo(() => {
+        const set = new Set(services.map(r => r.namespace));
+        return Array.from(set).sort();
+    }, [services]);
+
     const filtered = useMemo(() => {
-        return services.filter(s =>
-            s.name.toLowerCase().includes(search.toLowerCase()) ||
-            s.namespace.toLowerCase().includes(search.toLowerCase()) ||
-            s.cluster_name.toLowerCase().includes(search.toLowerCase()) ||
-            (s.cluster_ip || '').includes(search) ||
-            (s.external_ip || '').includes(search)
-        );
-    }, [services, search]);
+        return services.filter(s => {
+            const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+                s.namespace.toLowerCase().includes(search.toLowerCase()) ||
+                s.cluster_name.toLowerCase().includes(search.toLowerCase()) ||
+                (s.cluster_ip || '').includes(search) ||
+                (s.external_ip || '').includes(search);
+
+            const matchesCluster = selectedCluster === 'all' || s.cluster_name === selectedCluster;
+            const matchesNamespace = selectedNamespace === 'all' || s.namespace === selectedNamespace;
+
+            return matchesSearch && matchesCluster && matchesNamespace;
+        });
+    }, [services, search, selectedCluster, selectedNamespace]);
 
     const paginated = useMemo(() => {
         const start = (page - 1) * itemsPerPage;
@@ -82,6 +102,29 @@ function GKEServicesContent() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <select
+                            value={selectedCluster}
+                            onChange={(e) => setSelectedCluster(e.target.value)}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer text-sm font-medium min-w-[160px]"
+                        >
+                            <option value="all">{t('gke.workloads.allClusters')}</option>
+                            {uniqueClusters.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={selectedNamespace}
+                            onChange={(e) => setSelectedNamespace(e.target.value)}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer text-sm font-medium min-w-[160px]"
+                        >
+                            <option value="all">{t('gke.workloads.allNamespaces')}</option>
+                            {uniqueNamespaces.map(ns => (
+                                <option key={ns} value={ns}>{ns}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
